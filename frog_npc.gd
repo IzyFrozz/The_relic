@@ -29,7 +29,7 @@ func _process(_delta: float) -> void:
 			trigger_black_win_screen()
 		else:
 			if is_instance_valid(prompt_label):
-				prompt_label.text = "Ribbit! Relic!! Ribbit!!!"
+				prompt_label.text = "Ribbit! Rvrbby!! Ribbit!!!"
 
 func trigger_black_win_screen() -> void:
 	# 🎯 GLOBAL RADAR HUNT: Scans the entire active game tree to find your lifeLabel node
