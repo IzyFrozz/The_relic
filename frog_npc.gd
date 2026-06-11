@@ -61,7 +61,7 @@ func _on_body_entered(body: Node2D) -> void:
 			elif QuestManager.has_relic:
 				prompt_label.text = "[E] Give Ancient Relic"
 			else:
-				prompt_label.text = "[E] Talk to Frog NPC"
+				prompt_label.text = "[E] Talk to Frog Man"
 			prompt_label.visible = true
 
 func _on_body_exited(body: Node2D) -> void:
