@@ -3,6 +3,7 @@
 [ext_resource type="Script" uid="uid://b8infvc4qgtke" path="res://main.gd" id="1_074og"]
 [ext_resource type="Script" uid="uid://c0i1ayu6cesit" path="res://CombatUI.gd" id="2_htxhm"]
 [ext_resource type="Script" uid="uid://cxn105fiix3v" path="res://mainplayer.gd" id="3_82xsv"]
+<<<<<<< Updated upstream
 [ext_resource type="Script" uid="uid://5fw3555pk2gh" path="res://life_label.gd" id="4_0odxb"]
 [ext_resource type="Texture2D" uid="uid://drly61g263uh3" path="res://Asset/Pixel Crawler - Free Pack/Environment/Tilesets/Floors_Tiles.png" id="5_gngh3"]
 [ext_resource type="Texture2D" uid="uid://qdbfdki5po53" path="res://Asset/Pixel Crawler - Free Pack/Environment/Tilesets/Wall_Tiles.png" id="6_0n3wm"]
@@ -22,6 +23,11 @@
 [ext_resource type="Texture2D" uid="uid://cat6ifa0sbpd5" path="res://Asset/Pixel Crawler - Free Pack/Environment/Tilesets/Dungeon_Tiles.png" id="20_e71vb"]
 [ext_resource type="Script" uid="uid://bff64csp1dyxc" path="res://MobEnemy.gd" id="21_jq2sk"]
 [ext_resource type="Texture2D" uid="uid://buhi0iaxa7sdp" path="res://Asset/Pixel Crawler - Free Pack/Environment/Structures/Buildings/Floors.png" id="21_qnost"]
+=======
+[ext_resource type="PackedScene" uid="uid://d4g0bdlo6sbss" path="res://map.tscn" id="3_d13ii"]
+[ext_resource type="PackedScene" uid="uid://bvfbtrx3nso6i" path="res://character.tscn" id="4_vivmo"]
+[ext_resource type="PackedScene" uid="uid://bthp4nwyq6ewh" path="res://quest.tscn" id="5_dg77c"]
+>>>>>>> Stashed changes
 [ext_resource type="Texture2D" uid="uid://d2b5gfvc577yl" path="res://Asset/sprites/characters/player.png" id="22_4lmeg"]
 [ext_resource type="Texture2D" uid="uid://bw5m635bpg3yk" path="res://Asset/Pixel Crawler - Free Pack/Environment/Structures/Buildings/Props.png" id="22_wnkbs"]
 [ext_resource type="Script" uid="uid://dn2n6hy830nqg" path="res://frog_npc.gd" id="23_1u8w0"]
@@ -97538,6 +97544,7 @@ radius = 49.09175
 [sub_resource type="CircleShape2D" id="CircleShape2D_jq2sk"]
 radius = 23.021729
 
+<<<<<<< Updated upstream
 [sub_resource type="CircleShape2D" id="CircleShape2D_kq58d"]
 radius = 11.401754
 
@@ -97547,6 +97554,19 @@ radius = 8.0
 [node name="main" type="Node2D" unique_id=821692882]
 script = ExtResource("1_074og")
 
+=======
+[node name="main" type="Node2D" unique_id=821692882]
+script = ExtResource("1_074og")
+
+[node name="GameUI" parent="." unique_id=560062949 instance=ExtResource("2_ryguw")]
+
+[node name="Map" parent="." unique_id=1786850984 instance=ExtResource("3_d13ii")]
+
+[node name="Character" parent="." unique_id=220561368 instance=ExtResource("4_vivmo")]
+
+[node name="QuestSystem" parent="." unique_id=636915324 instance=ExtResource("5_dg77c")]
+
+>>>>>>> Stashed changes
 [node name="BattlePlayerMarker" type="Marker2D" parent="." unique_id=389816795]
 position = Vector2(1006, 286)
 
@@ -98117,6 +98137,7 @@ text = "[E] Exit"
 [node name="OutsideSpawnMarker" type="Marker2D" parent="InsideDoor/CollisionShape2D/PromptLabel" unique_id=1654383068]
 position = Vector2(2304, 1722)
 
+<<<<<<< Updated upstream
 [node name="QuestItem" type="Area2D" parent="." unique_id=1606418988]
 visible = false
 position = Vector2(-170, 167)
@@ -98451,6 +98472,8 @@ texture = ExtResource("36_facbu")
 [connection signal="body_entered" from="mob2/deadzone" to="mainplayer" method="_on_deadzone_body_entered"]
 [connection signal="body_entered" from="mob3/deadzone" to="mainplayer" method="_on_deadzone_body_entered"]
 [connection signal="body_entered" from="mob4/deadzone" to="mainplayer" method="_on_deadzone_body_entered"]
+=======
+>>>>>>> Stashed changes
 [connection signal="body_entered" from="FrogNPC" to="FrogNPC" method="_on_body_entered"]
 [connection signal="body_exited" from="FrogNPC" to="FrogNPC" method="_on_body_exited"]
 [connection signal="body_entered" from="FrogNPC/InteractionArea" to="FrogNPC" method="_on_interaction_area_body_entered"]
@@ -98461,6 +98484,7 @@ texture = ExtResource("36_facbu")
 [connection signal="body_exited" from="OutsideDoor" to="OutsideDoor" method="_on_body_exited"]
 [connection signal="body_entered" from="InsideDoor" to="InsideDoor" method="_on_body_entered"]
 [connection signal="body_exited" from="InsideDoor" to="InsideDoor" method="_on_body_exited"]
+<<<<<<< Updated upstream
 [connection signal="body_entered" from="QuestItem" to="QuestItem" method="_on_body_entered"]
 [connection signal="body_exited" from="QuestItem" to="QuestItem" method="_on_body_exited"]
 [connection signal="body_entered" from="QuestItem2" to="QuestItem2" method="_on_body_entered"]
@@ -98481,3 +98505,5 @@ texture = ExtResource("36_facbu")
 [connection signal="body_exited" from="QuestItem9" to="QuestItem9" method="_on_body_exited"]
 [connection signal="body_entered" from="QuestItem10" to="QuestItem10" method="_on_body_entered"]
 [connection signal="body_exited" from="QuestItem10" to="QuestItem10" method="_on_body_exited"]
+=======
+>>>>>>> Stashed changes
