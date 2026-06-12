@@ -1,11 +1,11 @@
 [gd_scene format=3 uid="uid://cm3xwd4it3us3"]
 
 [ext_resource type="Script" uid="uid://b8infvc4qgtke" path="res://main.gd" id="1_074og"]
-[ext_resource type="PackedScene" uid="uid://kdxi5lf0kmey" path="res://ui.tscn" id="2_ryguw"]
+[ext_resource type="PackedScene" path="res://ui.tscn" id="2_ryguw"]
 [ext_resource type="Script" uid="uid://cxn105fiix3v" path="res://mainplayer.gd" id="3_82xsv"]
-[ext_resource type="PackedScene" uid="uid://dvtgclme3yw30" path="res://map.tscn" id="3_d13ii"]
-[ext_resource type="PackedScene" uid="uid://b5s0bfhkjp1hq" path="res://character.tscn" id="4_vivmo"]
-[ext_resource type="PackedScene" uid="uid://bln4ob8osar2u" path="res://quest.tscn" id="5_dg77c"]
+[ext_resource type="PackedScene" path="res://map.tscn" id="3_d13ii"]
+[ext_resource type="PackedScene" path="res://character.tscn" id="4_vivmo"]
+[ext_resource type="PackedScene" path="res://quest.tscn" id="5_dg77c"]
 [ext_resource type="Texture2D" uid="uid://d2b5gfvc577yl" path="res://Asset/sprites/characters/player.png" id="22_4lmeg"]
 [ext_resource type="Script" uid="uid://dn2n6hy830nqg" path="res://frog_npc.gd" id="23_1u8w0"]
 [ext_resource type="Texture2D" uid="uid://bo1vgt0hrwf02" path="res://Asset/Meta data assets files/Visuals/OBJECTS/sprites/chest-closed.png" id="27_xuqvo"]
@@ -388,22 +388,29 @@ radius = 23.021729
 [node name="main" type="Node2D" unique_id=821692882]
 script = ExtResource("1_074og")
 
-[node name="GameUI" parent="." unique_id=560062949 instance=ExtResource("2_ryguw")]
+[node name="ui" parent="." unique_id=560062949 instance=ExtResource("2_ryguw")]
 
 [node name="Map" parent="." unique_id=1786850984 instance=ExtResource("3_d13ii")]
 
 [node name="Character" parent="." unique_id=220561368 instance=ExtResource("4_vivmo")]
 
+[node name="mob1" parent="Character" index="0" unique_id=8730518 node_paths=PackedStringArray("combat_ui", "lose_ui")]
+combat_ui = NodePath("../../ui/CombatUI")
+lose_ui = NodePath("../../ui/LoseUI")
+
+[node name="mob2" parent="Character" index="1" unique_id=1081548398 node_paths=PackedStringArray("combat_ui", "lose_ui")]
+combat_ui = NodePath("../../ui/CombatUI")
+lose_ui = NodePath("../../ui/LoseUI")
+
+[node name="mob3" parent="Character" index="2" unique_id=1476578817 node_paths=PackedStringArray("combat_ui", "lose_ui")]
+combat_ui = NodePath("../../ui/CombatUI")
+lose_ui = NodePath("../../ui/LoseUI")
+
+[node name="mob4" parent="Character" index="3" unique_id=262431056 node_paths=PackedStringArray("combat_ui", "lose_ui")]
+combat_ui = NodePath("../../ui/CombatUI")
+lose_ui = NodePath("../../ui/LoseUI")
+
 [node name="QuestSystem" parent="." unique_id=636915324 instance=ExtResource("5_dg77c")]
-
-[node name="BattlePlayerMarker" type="Marker2D" parent="." unique_id=389816795]
-position = Vector2(1006, 286)
-
-[node name="BattleEnemyMarker" type="Marker2D" parent="." unique_id=819830270]
-position = Vector2(1006, 224)
-
-[node name="GraveyardMarker" type="Marker2D" parent="." unique_id=886395089]
-position = Vector2(-1632, -1010)
 
 [node name="mainplayer" type="CharacterBody2D" parent="." unique_id=1827658377]
 position = Vector2(-10, 327)
@@ -568,3 +575,6 @@ position = Vector2(2304, 1722)
 [connection signal="body_exited" from="OutsideDoor" to="OutsideDoor" method="_on_body_exited"]
 [connection signal="body_entered" from="InsideDoor" to="InsideDoor" method="_on_body_entered"]
 [connection signal="body_exited" from="InsideDoor" to="InsideDoor" method="_on_body_exited"]
+
+[editable path="ui"]
+[editable path="Character"]

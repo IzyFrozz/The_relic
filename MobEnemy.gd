@@ -36,9 +36,11 @@ var player_ref: Node2D = null
 var is_in_combat: bool = false
 var enemy_overworld_position: Vector2 = Vector2.ZERO
 
+
 func _ready() -> void:
 	_initialize_mob_stats_by_character_tier()
 	_auto_wire_overworld_signals()
+
 
 func _auto_wire_overworld_signals() -> void:
 	var deadzone_node = find_child("deadzone")
@@ -47,19 +49,27 @@ func _auto_wire_overworld_signals() -> void:
 			deadzone_node.body_entered.disconnect(_on_deadzone_body_entered)
 		deadzone_node.body_entered.connect(_on_deadzone_body_entered)
 
+
 func _initialize_mob_stats_by_character_tier() -> void:
 	match enemy_level:
-		1: enemy_max_health = 100
-		2: enemy_max_health = 140
-		3: enemy_max_health = 180
-		4: enemy_max_health = 220
+		1:
+			enemy_max_health = 100
+		2:
+			enemy_max_health = 140
+		3:
+			enemy_max_health = 180
+		4:
+			enemy_max_health = 220
+
 	enemy_health = enemy_max_health
 	current_items_per_deal = 1 
+
 
 func _on_deadzone_body_entered(body: Node2D) -> void:
 	if body.name == "mainplayer" and not is_in_combat:
 		player_ref = body
 		start_combat()
+
 
 func start_combat() -> void:
 	is_in_combat = true
@@ -79,6 +89,7 @@ func start_combat() -> void:
 	cycles_until_drop = 1
 
 	QuestManager.player_health = QuestManager.MAX_HEALTH
+
 	_apply_supply_drop_rewards()
 
 	if is_instance_valid(player_ref):
@@ -92,6 +103,7 @@ func start_combat() -> void:
 	if is_instance_valid(combat_ui):
 		combat_ui.open_combat_screen(self)
 		combat_ui.start_player_turn()
+
 
 func use_player_item(item_type: String) -> void:
 	if not item_type in player_inventory:
@@ -114,6 +126,7 @@ func use_player_item(item_type: String) -> void:
 					combat_ui.display_round_history("🧲 Magnet cancelled.", true)
 			if combat_ui: combat_ui._refresh_ui_states()
 			return
+
 		_:
 			player_inventory.erase(item_type)
 
@@ -135,6 +148,7 @@ func use_player_item(item_type: String) -> void:
 			if combat_ui: combat_ui.display_round_history("📌 Loaded a Needle (Pierces Enemy Armor)", true)
 
 	if combat_ui: combat_ui._refresh_ui_states()
+
 
 func process_player_attack_phase() -> void:
 	if player_is_disarmed:
@@ -175,6 +189,7 @@ func process_player_attack_phase() -> void:
 
 	if combat_ui: combat_ui.start_enemy_turn_visuals()
 	await get_tree().create_timer(1.3).timeout
+
 	_execute_enemy_turn_ai()
 
 func _execute_enemy_turn_ai() -> void:
@@ -192,24 +207,40 @@ func _execute_enemy_turn_ai() -> void:
 	}
 	
 	var shield_grindstone_evaluated: bool = false
+
 	var processing_combat_actions = true
-	
 	while processing_combat_actions:
 		var item_to_play = ""
+
+		# 1. EMERGENCY SURVIVAL
 		if enemy_health <= (enemy_max_health - 20) and enemy_inventory.has("potion") and items_played_tracking["potion"] < 1:
 			item_to_play = "potion"
+
+		# 2. TURN DENIAL CONTROL
 		elif not player_is_disarmed and enemy_inventory.has("whip") and items_played_tracking["whip"] < 1:
 			item_to_play = "whip"
+
+		# 3. SPECIFIC SHIELD vs GRINDSTONE BAIT (The 50/50 Player Gift)
 		elif player_active_armor and enemy_inventory.has("grindstone") and items_played_tracking["grindstone"] < 1 and not shield_grindstone_evaluated:
 			shield_grindstone_evaluated = true
-			if randf() < 0.50: item_to_play = "grindstone"
-			else: items_played_tracking["grindstone"] = 1
+			if randf() < 0.50:
+				item_to_play = "grindstone"
+			else:
+				items_played_tracking["grindstone"] = 1
+
+		# 4. ARMOR BYPASSING
 		elif player_active_armor and enemy_inventory.has("needle") and items_played_tracking["needle"] < 1 and not enemy_piercing:
 			item_to_play = "needle"
+
+		# 5. MITIGATION SETUP
 		elif not enemy_active_armor and enemy_inventory.has("shield") and items_played_tracking["shield"] < 1:
 			item_to_play = "shield"
+
+		# 6. GENERAL OFFENSIVE ADVANTAGE (Fixed the "Hand" typo here)
 		elif not enemy_sharpened and enemy_inventory.has("grindstone") and items_played_tracking["grindstone"] < 1:
 			item_to_play = "grindstone"
+
+		# 7. RESOURCE EXTRACTION
 		elif player_inventory.size() > 0 and enemy_inventory.has("magnet") and items_played_tracking["magnet"] < 1:
 			item_to_play = "magnet"
 
@@ -221,6 +252,7 @@ func _execute_enemy_turn_ai() -> void:
 
 	if not is_in_combat: return
 
+	# === FINAL ATTACK PHASE ===
 	var raw_dmg = 20
 	if enemy_sharpened:
 		raw_dmg *= 2
@@ -248,6 +280,7 @@ func _execute_enemy_turn_ai() -> void:
 
 	if _check_combat_end_conditions():
 		return
+
 	_conclude_round_cycle_ticks()
 
 func _enemy_execute_item(item_type: String, tracking: Dictionary) -> void:
@@ -279,26 +312,34 @@ func _enemy_execute_item(item_type: String, tracking: Dictionary) -> void:
 			outcome_text = "🪡 The enemy loaded a Needle! Next strike PIERCES your armor!"
 			if combat_ui: combat_ui.display_round_history("🪡 Enemy loaded a Needle.", false)
 		"magnet":
+			# Filter player inventory to build a pool that EXCLUDES magnets
 			var valid_targets = player_inventory.filter(func(item): return item != "magnet")
+
 			if valid_targets.size() > 0:
 				var steal_target = ""
+				# Check priority targets within the safe, filtered pool
 				if valid_targets.has("needle"): steal_target = "needle"
 				elif valid_targets.has("grindstone"): steal_target = "grindstone"
 				elif valid_targets.has("shield"): steal_target = "shield"
 				else: steal_target = valid_targets.pick_random()
 
+				# Erase from player inventory and transfer to the enemy
 				player_inventory.erase(steal_target)
 				enemy_inventory.append(steal_target)
 				outcome_text = "🧲 MAGNET! The enemy stole your [%s]!" % [steal_target.to_upper()]
 				if combat_ui: combat_ui.display_round_history("🧲 Enemy stole your [%s]!" % steal_target, false)
 			else:
+				# UI still fires, but we safely refund the item back to the enemy's inventory
 				outcome_text = "🧲 MAGNET... Enemy reached in but you have no stealable items!"
 				if combat_ui: combat_ui.display_round_history("🧲 Enemy Magnet fizzled — Refunded to inventory.", false)
+				
+				# FIX: Give the item back so it isn't permanently wasted
 				enemy_inventory.append("magnet")
 
 	if combat_ui:
 		combat_ui._refresh_ui_states()
 		await combat_ui.show_blocking_popup("💀 ENEMY ACTION", outcome_text, false)
+
 
 func _conclude_round_cycle_ticks() -> void:
 	cycles_until_drop -= 1
@@ -310,14 +351,18 @@ func _conclude_round_cycle_ticks() -> void:
 		combat_ui.start_player_turn()
 		combat_ui._refresh_ui_states()
 
+
 func _apply_supply_drop_rewards() -> void:
 	drop_round_index += 1
+
 	var item_cap = max(1, (2 + (enemy_level * 2)) - 1)
 	var items_this_drop = max(1, min(2 + ((drop_round_index - 1) * 2), item_cap) - 1)
 	current_items_per_deal = items_this_drop
 
-	if drop_round_index == 1: cycles_until_drop = 2
-	else: cycles_until_drop = int(pow(2, drop_round_index - 1))
+	if drop_round_index == 1:
+		cycles_until_drop = 2
+	else:
+		cycles_until_drop = int(pow(2, drop_round_index - 1))
 
 	var pool = ["potion", "shield", "grindstone"]
 	if enemy_level >= 2: pool.append("whip")
@@ -328,6 +373,7 @@ func _apply_supply_drop_rewards() -> void:
 		player_inventory.append(pool.pick_random())
 		enemy_inventory.append(pool.pick_random())
 
+
 func _reset_all_combat_modifiers() -> void:
 	player_active_armor = false
 	player_sharpened = false
@@ -337,6 +383,7 @@ func _reset_all_combat_modifiers() -> void:
 	enemy_sharpened = false
 	enemy_piercing = false
 	enemy_is_disarmed = false
+
 
 func _check_combat_end_conditions() -> bool:
 	if QuestManager.player_health <= 0:
@@ -349,6 +396,7 @@ func _check_combat_end_conditions() -> bool:
 
 	if enemy_health <= 0:
 		if is_instance_valid(combat_ui): combat_ui.visible = false
+
 		var meta_key = "hp_rewards_earned_level_" + str(enemy_level)
 		var rewards_claimed = 0
 		if QuestManager.has_meta(meta_key):
@@ -357,6 +405,10 @@ func _check_combat_end_conditions() -> bool:
 		if rewards_claimed < 2:
 			QuestManager.MAX_HEALTH += 20
 			QuestManager.set_meta(meta_key, rewards_claimed + 1)
+			print("Max HP Increased! Level %d rewards claimed: %d/2" % [enemy_level, rewards_claimed + 1])
+		else:
+			print("Max HP capped for Level %d enemies. No stat increase." % enemy_level)
+
 		QuestManager.player_health = QuestManager.MAX_HEALTH
 
 		if is_instance_valid(player_ref):

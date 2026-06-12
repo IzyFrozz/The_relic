@@ -1,4 +1,4 @@
-[gd_scene format=3 uid="uid://rptb7m0fa7fu"]
+[gd_scene format=3 uid="uid://kdxi5lf0kmey"]
 
 [ext_resource type="Script" uid="uid://cm02qgkexeu3h" path="res://LoseUI.gd" id="1_27fn8"]
 [ext_resource type="Script" uid="uid://c0i1ayu6cesit" path="res://CombatUI.gd" id="2_nltto"]
@@ -61,7 +61,6 @@ offset_bottom = 418.0
 text = "Restart Game!"
 
 [node name="CombatUI" type="CanvasLayer" parent="." unique_id=313349406]
-visible = false
 script = ExtResource("2_nltto")
 
 [node name="RightTopGroup" type="VBoxContainer" parent="CombatUI" unique_id=1594275861]
