@@ -4,36 +4,42 @@ extends CanvasLayer
 var current_enemy = null 
 var is_waiting_on_action: bool = false 
 
-var turn_title_label: Label
-var drop_countdown_label: Label
-var fight_button: Button
+# --- NODE ASSIGNMENTS VIA THE INSPECTOR ---
+@export_group("Core UI Labels")
+@export var turn_title_label: Label
+@export var drop_countdown_label: Label
+@export var fight_button: Button
 
-var player_hp: Label
-var player_buffs_lbl: Label
-var enemy_hp: Label
-var enemy_buffs_lbl: Label
+@export_group("Stats Labels")
+@export var player_hp: Label
+@export_group("Stats Labels")
+@export var player_buffs_lbl: Label
+@export var enemy_hp: Label
+@export var enemy_buffs_lbl: Label
 
-# Scene-linked Unified History Trackers
-var history_label: Label
-var history_scroll: ScrollContainer
+@export_group("History Trackers")
+@export var history_label: Label
+@export var history_scroll: ScrollContainer
 var combined_history_text: String = ""
 
-var heal_btn: Button
-var defend_btn: Button
-var sharpen_btn: Button
-var disarm_btn: Button
-var pierce_btn: Button
-var magnet_btn: Button
+@export_group("Player Item Buttons")
+@export var heal_btn: Button
+@export var defend_btn: Button
+@export var sharpen_btn: Button
+@export var disarm_btn: Button
+@export var pierce_btn: Button
+@export var magnet_btn: Button
 
-var enemy_inventory_container: GridContainer
-var enemy_potion_lbl: Label
-var enemy_shield_lbl: Label
-var enemy_grindstone_lbl: Label
-var enemy_whip_lbl: Label
-var enemy_needle_lbl: Label
-var enemy_magnet_lbl: Label
+@export_group("Enemy Inventory Display")
+@export var enemy_inventory_container: GridContainer
+@export var enemy_potion_lbl: Label
+@export var enemy_shield_lbl: Label
+@export var enemy_grindstone_lbl: Label
+@export var enemy_whip_lbl: Label
+@export var enemy_needle_lbl: Label
+@export var enemy_magnet_lbl: Label
 
-# Modal popup layout components
+# Modal popup layout components (Built programmatically)
 var popup_overlay: ColorRect
 var popup_panel: Panel
 var popup_title_lbl: Label
@@ -50,50 +56,16 @@ signal magnet_choice_resolved(chosen_item_id: String)
 
 func _ready() -> void:
 	visible = false
-	_find_nodes_automatically()
 	_connect_button_signals()
 	_setup_floating_tooltips()
 	_build_dynamic_popup_window()
 	_disable_engine_focus_modes()
 
-func _find_nodes_automatically() -> void:
-	turn_title_label = find_child("TurnTitleLabel") as Label
-	drop_countdown_label = find_child("DropCountdownLabel") as Label
-	fight_button = find_child("fight_button") as Button
-	
-	player_hp = find_child("PlayerHPLabel") as Label
-	player_buffs_lbl = find_child("PlayerBuffsLabel") as Label
-	enemy_hp = find_child("EnemyHPLabel") as Label
-	enemy_buffs_lbl = find_child("EnemyBuffsLabel") as Label
-	
-	history_label = find_child("HistoryLabel") as Label
-	
-	if is_instance_valid(history_label):
-		var parent_node = history_label.get_parent()
-		while parent_node and not parent_node is ScrollContainer:
-			parent_node = parent_node.get_parent()
-		if parent_node is ScrollContainer:
-			history_scroll = parent_node as ScrollContainer
-	
-	heal_btn = find_child("HealButton") as Button
-	defend_btn = find_child("DefendButton") as Button
-	sharpen_btn = find_child("SharpenButton") as Button
-	disarm_btn = find_child("DisarmButton") as Button
-	pierce_btn = find_child("PierceButton") as Button
-	magnet_btn = find_child("MagnetButton") as Button 
-	
-	enemy_inventory_container = find_child("EnemyInventoryGrid") as GridContainer
-	enemy_potion_lbl = find_child("EnemyPotionLabel") as Label
-	enemy_shield_lbl = find_child("EnemyShieldLabel") as Label
-	enemy_grindstone_lbl = find_child("EnemyGrindstoneLabel") as Label
-	enemy_whip_lbl = find_child("EnemyWhipLabel") as Label
-	enemy_needle_lbl = find_child("EnemyNeedleLabel") as Label
-	enemy_magnet_lbl = find_child("EnemyMagnetLabel") as Label 
-
 func _disable_engine_focus_modes() -> void:
 	var items = [fight_button, heal_btn, defend_btn, sharpen_btn, disarm_btn, pierce_btn, magnet_btn, popup_confirm_btn, popup_cancel_btn]
 	for btn in items:
-		if is_instance_valid(btn): btn.focus_mode = Control.FOCUS_NONE
+		if is_instance_valid(btn): 
+			btn.focus_mode = Control.FOCUS_NONE
 
 func _connect_button_signals() -> void:
 	var clean_connect = func(btn: Button, item_type: String):
@@ -224,7 +196,7 @@ func _input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
 		match event.keycode:
 			KEY_SPACE, KEY_ENTER, KEY_KP_ENTER:
-				if not fight_button.disabled:
+				if fight_button and not fight_button.disabled:
 					get_viewport().set_input_as_handled()
 					_on_fight_pressed()
 			KEY_1: _trigger_shortcut_action("potion", heal_btn)
