@@ -1,16 +1,11 @@
 [gd_scene format=3 uid="uid://cm3xwd4it3us3"]
 
 [ext_resource type="Script" uid="uid://b8infvc4qgtke" path="res://main.gd" id="1_074og"]
-[ext_resource type="PackedScene" uid="uid://rptb7m0fa7fu" path="res://ui.tscn" id="2_ryguw"]
+[ext_resource type="PackedScene" uid="uid://kdxi5lf0kmey" path="res://ui.tscn" id="2_ryguw"]
 [ext_resource type="Script" uid="uid://cxn105fiix3v" path="res://mainplayer.gd" id="3_82xsv"]
-[ext_resource type="PackedScene" uid="uid://d4g0bdlo6sbss" path="res://map.tscn" id="3_d13ii"]
-[ext_resource type="PackedScene" uid="uid://bvfbtrx3nso6i" path="res://character.tscn" id="4_vivmo"]
-[ext_resource type="PackedScene" uid="uid://bthp4nwyq6ewh" path="res://quest.tscn" id="5_dg77c"]
-[ext_resource type="Script" uid="uid://bff64csp1dyxc" path="res://MobEnemy.gd" id="13_yaehf"]
-[ext_resource type="Texture2D" uid="uid://c6djafs2rafsh" path="res://Asset/Pixel Crawler - Free Pack/Entities/Mobs/Orc Crew/Orc - Rogue/Idle/Idle-Sheet.png" id="14_074og"]
-[ext_resource type="Texture2D" uid="uid://cuo5syd714lwf" path="res://Asset/Pixel Crawler - Free Pack/Entities/Mobs/Orc Crew/Orc - Shaman/Idle/Idle-Sheet.png" id="15_cegan"]
-[ext_resource type="Texture2D" uid="uid://hj74ineqxkih" path="res://Asset/Pixel Crawler - Free Pack/Entities/Mobs/Orc Crew/Orc - Warrior/Idle/Idle-Sheet.png" id="16_82xsv"]
-[ext_resource type="Texture2D" uid="uid://6ys7jpnflwia" path="res://Asset/Pixel Crawler - Free Pack/Entities/Mobs/Skeleton Crew/Skeleton - Mage/Idle/Idle-Sheet.png" id="17_getpj"]
+[ext_resource type="PackedScene" uid="uid://dvtgclme3yw30" path="res://map.tscn" id="3_d13ii"]
+[ext_resource type="PackedScene" uid="uid://b5s0bfhkjp1hq" path="res://character.tscn" id="4_vivmo"]
+[ext_resource type="PackedScene" uid="uid://bln4ob8osar2u" path="res://quest.tscn" id="5_dg77c"]
 [ext_resource type="Texture2D" uid="uid://d2b5gfvc577yl" path="res://Asset/sprites/characters/player.png" id="22_4lmeg"]
 [ext_resource type="Script" uid="uid://dn2n6hy830nqg" path="res://frog_npc.gd" id="23_1u8w0"]
 [ext_resource type="Texture2D" uid="uid://bo1vgt0hrwf02" path="res://Asset/Meta data assets files/Visuals/OBJECTS/sprites/chest-closed.png" id="27_xuqvo"]
@@ -390,180 +385,6 @@ radius = 49.09175
 [sub_resource type="CircleShape2D" id="CircleShape2D_jq2sk"]
 radius = 23.021729
 
-[sub_resource type="CircleShape2D" id="CircleShape2D_ryguw"]
-radius = 21.023796
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_birbe"]
-atlas = ExtResource("14_074og")
-region = Rect2(0, 0, 32, 32)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_f1p13"]
-atlas = ExtResource("14_074og")
-region = Rect2(32, 0, 32, 32)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_4obbf"]
-atlas = ExtResource("14_074og")
-region = Rect2(64, 0, 32, 32)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_ovcoh"]
-atlas = ExtResource("14_074og")
-region = Rect2(96, 0, 32, 32)
-
-[sub_resource type="SpriteFrames" id="SpriteFrames_d13ii"]
-animations = [{
-"frames": [{
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_birbe")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_f1p13")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_4obbf")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_ovcoh")
-}],
-"loop": true,
-"name": &"default",
-"speed": 5.0
-}]
-
-[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_1u8w0"]
-radius = 8.0
-height = 32.0
-
-[sub_resource type="CircleShape2D" id="CircleShape2D_0odxb"]
-radius = 21.0
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_ppx11"]
-atlas = ExtResource("15_cegan")
-region = Rect2(0, 0, 32, 32)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_1yv1y"]
-atlas = ExtResource("15_cegan")
-region = Rect2(32, 0, 32, 32)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_5yh34"]
-atlas = ExtResource("15_cegan")
-region = Rect2(64, 0, 32, 32)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_pjuso"]
-atlas = ExtResource("15_cegan")
-region = Rect2(96, 0, 32, 32)
-
-[sub_resource type="SpriteFrames" id="SpriteFrames_lswn8"]
-animations = [{
-"frames": [],
-"loop": true,
-"name": &"Run",
-"speed": 5.0
-}, {
-"frames": [{
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_ppx11")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_1yv1y")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_5yh34")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_pjuso")
-}],
-"loop": true,
-"name": &"default",
-"speed": 5.0
-}]
-
-[sub_resource type="CircleShape2D" id="CircleShape2D_a6jrf"]
-radius = 13.038404
-
-[sub_resource type="CircleShape2D" id="CircleShape2D_xuqvo"]
-radius = 21.095022
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_23xmf"]
-atlas = ExtResource("16_82xsv")
-region = Rect2(0, 0, 32, 32)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_swlj1"]
-atlas = ExtResource("16_82xsv")
-region = Rect2(32, 0, 32, 32)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_yysqy"]
-atlas = ExtResource("16_82xsv")
-region = Rect2(64, 0, 32, 32)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_n5t1e"]
-atlas = ExtResource("16_82xsv")
-region = Rect2(96, 0, 32, 32)
-
-[sub_resource type="SpriteFrames" id="SpriteFrames_qsp4k"]
-animations = [{
-"frames": [{
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_23xmf")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_swlj1")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_yysqy")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_n5t1e")
-}],
-"loop": true,
-"name": &"default",
-"speed": 5.0
-}]
-
-[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_kq58d"]
-radius = 8.0
-height = 28.0
-
-[sub_resource type="CircleShape2D" id="CircleShape2D_4k2k6"]
-radius = 22.022715
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_h6isl"]
-atlas = ExtResource("17_getpj")
-region = Rect2(0, 0, 32, 32)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_53bls"]
-atlas = ExtResource("17_getpj")
-region = Rect2(32, 0, 32, 32)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_lwnsi"]
-atlas = ExtResource("17_getpj")
-region = Rect2(64, 0, 32, 32)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_41lik"]
-atlas = ExtResource("17_getpj")
-region = Rect2(96, 0, 32, 32)
-
-[sub_resource type="SpriteFrames" id="SpriteFrames_0rl1p"]
-animations = [{
-"frames": [{
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_h6isl")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_53bls")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_lwnsi")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_41lik")
-}],
-"loop": true,
-"name": &"default",
-"speed": 5.0
-}]
-
-[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_ok6jj"]
-
 [node name="main" type="Node2D" unique_id=821692882]
 script = ExtResource("1_074og")
 
@@ -572,7 +393,6 @@ script = ExtResource("1_074og")
 [node name="Map" parent="." unique_id=1786850984 instance=ExtResource("3_d13ii")]
 
 [node name="Character" parent="." unique_id=220561368 instance=ExtResource("4_vivmo")]
-visible = false
 
 [node name="QuestSystem" parent="." unique_id=636915324 instance=ExtResource("5_dg77c")]
 
@@ -738,89 +558,6 @@ text = "[E] Exit"
 [node name="OutsideSpawnMarker" type="Marker2D" parent="InsideDoor/CollisionShape2D/PromptLabel" unique_id=1654383068]
 position = Vector2(2304, 1722)
 
-[node name="mob1" type="CharacterBody2D" parent="." unique_id=931434570]
-position = Vector2(-108, 300)
-script = ExtResource("13_yaehf")
-
-[node name="deadzone" type="Area2D" parent="mob1" unique_id=1649212166]
-
-[node name="DZcollison" type="CollisionShape2D" parent="mob1/deadzone" unique_id=1457759580]
-shape = SubResource("CircleShape2D_ryguw")
-debug_color = Color(0.9823695, 0, 0.36699468, 0.41960785)
-
-[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="mob1" unique_id=716178590]
-position = Vector2(4.7683716e-07, 3.8146973e-06)
-scale = Vector2(0.8359378, 0.8359378)
-sprite_frames = SubResource("SpriteFrames_d13ii")
-autoplay = "default"
-flip_h = true
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="mob1" unique_id=157340910]
-shape = SubResource("CapsuleShape2D_1u8w0")
-
-[node name="mob2" type="CharacterBody2D" parent="." unique_id=95917042]
-position = Vector2(57, 233)
-script = ExtResource("13_yaehf")
-enemy_level = 2
-
-[node name="deadzone" type="Area2D" parent="mob2" unique_id=80387908]
-
-[node name="DZcollison" type="CollisionShape2D" parent="mob2/deadzone" unique_id=669585919]
-shape = SubResource("CircleShape2D_0odxb")
-debug_color = Color(0.9823695, 0, 0.36699468, 0.41960785)
-
-[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="mob2" unique_id=329628522]
-position = Vector2(3.8146973e-06, -3.0000038)
-scale = Vector2(0.882813, 0.882813)
-sprite_frames = SubResource("SpriteFrames_lswn8")
-autoplay = "default"
-flip_h = true
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="mob2" unique_id=2002729576]
-shape = SubResource("CircleShape2D_a6jrf")
-
-[node name="mob3" type="CharacterBody2D" parent="." unique_id=272229488]
-position = Vector2(66, 512)
-script = ExtResource("13_yaehf")
-enemy_level = 3
-
-[node name="deadzone" type="Area2D" parent="mob3" unique_id=1769000673]
-
-[node name="DZcollison" type="CollisionShape2D" parent="mob3/deadzone" unique_id=1826706218]
-shape = SubResource("CircleShape2D_xuqvo")
-debug_color = Color(0.9823695, 0, 0.36699468, 0.41960785)
-
-[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="mob3" unique_id=789049470]
-position = Vector2(-1.5258789e-05, 0)
-scale = Vector2(0.8124994, 0.8124994)
-sprite_frames = SubResource("SpriteFrames_qsp4k")
-autoplay = "default"
-flip_h = true
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="mob3" unique_id=1405545164]
-shape = SubResource("CapsuleShape2D_kq58d")
-
-[node name="mob4" type="CharacterBody2D" parent="." unique_id=479061308]
-position = Vector2(-85, 139)
-script = ExtResource("13_yaehf")
-enemy_level = 4
-
-[node name="deadzone" type="Area2D" parent="mob4" unique_id=1356277906]
-
-[node name="DZcollison" type="CollisionShape2D" parent="mob4/deadzone" unique_id=801752113]
-shape = SubResource("CircleShape2D_4k2k6")
-debug_color = Color(0.9823695, 0, 0.36699468, 0.41960785)
-
-[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="mob4" unique_id=1832103369]
-position = Vector2(-3.8146973e-06, 1.66893e-06)
-scale = Vector2(0.8593749, 0.8593749)
-sprite_frames = SubResource("SpriteFrames_0rl1p")
-autoplay = "default"
-flip_h = true
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="mob4" unique_id=255650474]
-shape = SubResource("CapsuleShape2D_ok6jj")
-
 [connection signal="body_entered" from="FrogNPC" to="FrogNPC" method="_on_body_entered"]
 [connection signal="body_exited" from="FrogNPC" to="FrogNPC" method="_on_body_exited"]
 [connection signal="body_entered" from="FrogNPC/InteractionArea" to="FrogNPC" method="_on_interaction_area_body_entered"]
@@ -831,4 +568,3 @@ shape = SubResource("CapsuleShape2D_ok6jj")
 [connection signal="body_exited" from="OutsideDoor" to="OutsideDoor" method="_on_body_exited"]
 [connection signal="body_entered" from="InsideDoor" to="InsideDoor" method="_on_body_entered"]
 [connection signal="body_exited" from="InsideDoor" to="InsideDoor" method="_on_body_exited"]
-[connection signal="body_entered" from="mob1/deadzone" to="mob1" method="_on_deadzone_body_entered"]
