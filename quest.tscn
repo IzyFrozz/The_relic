@@ -1,0 +1,246 @@
+[gd_scene format=3 uid="uid://bthp4nwyq6ewh"]
+
+[ext_resource type="Script" uid="uid://dsadsi3vkxgu7" path="res://quest_item.gd" id="1_k6fxs"]
+[ext_resource type="Texture2D" uid="uid://f55hikcsiv8g" path="res://Asset/Meta data assets files/Visuals/OBJECTS/coin/coin1.png" id="2_0m6oi"]
+[ext_resource type="Script" uid="uid://mmgbpo2ji13k" path="res://HealingItem.gd" id="3_mtwby"]
+[ext_resource type="Texture2D" uid="uid://r6g0mj8q30ep" path="res://Asset/Meta data assets files/Visuals/FX/shot.png" id="4_lujm5"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_2ue2u"]
+radius = 11.401754
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_o5wto"]
+radius = 8.0
+
+[node name="QuestSystem" type="Node2D" unique_id=636915324]
+
+[node name="QuestItem" type="Area2D" parent="." unique_id=686129129]
+position = Vector2(-170, 167)
+script = ExtResource("1_k6fxs")
+
+[node name="Label" type="Label" parent="QuestItem" unique_id=1400593140]
+offset_left = -20.0
+offset_top = 5.0
+offset_right = 62.0
+offset_bottom = 28.0
+scale = Vector2(0.5, 0.5)
+text = "[E] Pick Up"
+horizontal_alignment = 1
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="QuestItem" unique_id=425926458]
+shape = SubResource("CircleShape2D_2ue2u")
+
+[node name="Sprite2D" type="Sprite2D" parent="QuestItem" unique_id=1704700991]
+scale = Vector2(0.7, 0.7)
+texture = ExtResource("2_0m6oi")
+
+[node name="QuestItem2" type="Area2D" parent="." unique_id=121284780]
+position = Vector2(-358, 7)
+script = ExtResource("1_k6fxs")
+
+[node name="Label" type="Label" parent="QuestItem2" unique_id=663040469]
+offset_left = -20.0
+offset_top = 5.0
+offset_right = 62.0
+offset_bottom = 28.0
+scale = Vector2(0.5, 0.5)
+text = "[E] Pick Up"
+horizontal_alignment = 1
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="QuestItem2" unique_id=654672361]
+shape = SubResource("CircleShape2D_2ue2u")
+
+[node name="Sprite2D" type="Sprite2D" parent="QuestItem2" unique_id=1959366077]
+scale = Vector2(0.7, 0.7)
+texture = ExtResource("2_0m6oi")
+
+[node name="QuestItem3" type="Area2D" parent="." unique_id=1956589706]
+position = Vector2(-73, -265)
+script = ExtResource("1_k6fxs")
+
+[node name="Label" type="Label" parent="QuestItem3" unique_id=252338516]
+offset_left = -20.0
+offset_top = 5.0
+offset_right = 62.0
+offset_bottom = 28.0
+scale = Vector2(0.5, 0.5)
+text = "[E] Pick Up"
+horizontal_alignment = 1
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="QuestItem3" unique_id=1502498728]
+shape = SubResource("CircleShape2D_2ue2u")
+
+[node name="Sprite2D" type="Sprite2D" parent="QuestItem3" unique_id=1611992672]
+scale = Vector2(0.7, 0.7)
+texture = ExtResource("2_0m6oi")
+
+[node name="QuestItem4" type="Area2D" parent="." unique_id=961203095]
+position = Vector2(-606, -370)
+script = ExtResource("1_k6fxs")
+
+[node name="Label" type="Label" parent="QuestItem4" unique_id=847858455]
+offset_left = -20.0
+offset_top = 5.0
+offset_right = 62.0
+offset_bottom = 28.0
+scale = Vector2(0.5, 0.5)
+text = "[E] Pick Up"
+horizontal_alignment = 1
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="QuestItem4" unique_id=223783758]
+shape = SubResource("CircleShape2D_2ue2u")
+
+[node name="Sprite2D" type="Sprite2D" parent="QuestItem4" unique_id=738082516]
+scale = Vector2(0.7, 0.7)
+texture = ExtResource("2_0m6oi")
+
+[node name="QuestItem5" type="Area2D" parent="." unique_id=299110873]
+position = Vector2(-606, -370)
+script = ExtResource("1_k6fxs")
+
+[node name="Label" type="Label" parent="QuestItem5" unique_id=723421388]
+offset_left = -20.0
+offset_top = 5.0
+offset_right = 62.0
+offset_bottom = 28.0
+scale = Vector2(0.5, 0.5)
+text = "[E] Pick Up"
+horizontal_alignment = 1
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="QuestItem5" unique_id=1257240783]
+shape = SubResource("CircleShape2D_2ue2u")
+
+[node name="Sprite2D" type="Sprite2D" parent="QuestItem5" unique_id=1247036367]
+scale = Vector2(0.7, 0.7)
+texture = ExtResource("2_0m6oi")
+
+[node name="QuestItem6" type="Area2D" parent="." unique_id=942836682]
+position = Vector2(-606, -370)
+script = ExtResource("1_k6fxs")
+
+[node name="Label" type="Label" parent="QuestItem6" unique_id=238033655]
+offset_left = -20.0
+offset_top = 5.0
+offset_right = 62.0
+offset_bottom = 28.0
+scale = Vector2(0.5, 0.5)
+text = "[E] Pick Up"
+horizontal_alignment = 1
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="QuestItem6" unique_id=15242272]
+shape = SubResource("CircleShape2D_2ue2u")
+
+[node name="Sprite2D" type="Sprite2D" parent="QuestItem6" unique_id=2114385693]
+scale = Vector2(0.7, 0.7)
+texture = ExtResource("2_0m6oi")
+
+[node name="QuestItem7" type="Area2D" parent="." unique_id=1795054188]
+position = Vector2(-606, -370)
+script = ExtResource("1_k6fxs")
+
+[node name="Label" type="Label" parent="QuestItem7" unique_id=1236315824]
+offset_left = -20.0
+offset_top = 5.0
+offset_right = 62.0
+offset_bottom = 28.0
+scale = Vector2(0.5, 0.5)
+text = "[E] Pick Up"
+horizontal_alignment = 1
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="QuestItem7" unique_id=2086351027]
+shape = SubResource("CircleShape2D_2ue2u")
+
+[node name="Sprite2D" type="Sprite2D" parent="QuestItem7" unique_id=1350362907]
+scale = Vector2(0.7, 0.7)
+texture = ExtResource("2_0m6oi")
+
+[node name="QuestItem8" type="Area2D" parent="." unique_id=793524220]
+position = Vector2(-606, -370)
+script = ExtResource("1_k6fxs")
+
+[node name="Label" type="Label" parent="QuestItem8" unique_id=1886619570]
+offset_left = -20.0
+offset_top = 5.0
+offset_right = 62.0
+offset_bottom = 28.0
+scale = Vector2(0.5, 0.5)
+text = "[E] Pick Up"
+horizontal_alignment = 1
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="QuestItem8" unique_id=262639025]
+shape = SubResource("CircleShape2D_2ue2u")
+
+[node name="Sprite2D" type="Sprite2D" parent="QuestItem8" unique_id=782390908]
+scale = Vector2(0.7, 0.7)
+texture = ExtResource("2_0m6oi")
+
+[node name="QuestItem9" type="Area2D" parent="." unique_id=1809527125]
+position = Vector2(-606, -370)
+script = ExtResource("1_k6fxs")
+
+[node name="Label" type="Label" parent="QuestItem9" unique_id=1423130703]
+offset_left = -20.0
+offset_top = 5.0
+offset_right = 62.0
+offset_bottom = 28.0
+scale = Vector2(0.5, 0.5)
+text = "[E] Pick Up"
+horizontal_alignment = 1
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="QuestItem9" unique_id=533599819]
+shape = SubResource("CircleShape2D_2ue2u")
+
+[node name="Sprite2D" type="Sprite2D" parent="QuestItem9" unique_id=359346956]
+scale = Vector2(0.7, 0.7)
+texture = ExtResource("2_0m6oi")
+
+[node name="QuestItem10" type="Area2D" parent="." unique_id=446069766]
+position = Vector2(-606, -370)
+script = ExtResource("1_k6fxs")
+
+[node name="Label" type="Label" parent="QuestItem10" unique_id=1131884656]
+offset_left = -20.0
+offset_top = 5.0
+offset_right = 62.0
+offset_bottom = 28.0
+scale = Vector2(0.5, 0.5)
+text = "[E] Pick Up"
+horizontal_alignment = 1
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="QuestItem10" unique_id=1946682668]
+shape = SubResource("CircleShape2D_2ue2u")
+
+[node name="Sprite2D" type="Sprite2D" parent="QuestItem10" unique_id=365315544]
+scale = Vector2(0.7, 0.7)
+texture = ExtResource("2_0m6oi")
+
+[node name="HealingPotion" type="Area2D" parent="." unique_id=192408140]
+position = Vector2(-260, 81)
+script = ExtResource("3_mtwby")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="HealingPotion" unique_id=6742836]
+shape = SubResource("CircleShape2D_o5wto")
+
+[node name="Sprite2D" type="Sprite2D" parent="HealingPotion" unique_id=1316337837]
+scale = Vector2(0.625, 0.625)
+texture = ExtResource("4_lujm5")
+
+[connection signal="body_entered" from="QuestItem" to="QuestItem" method="_on_body_entered"]
+[connection signal="body_exited" from="QuestItem" to="QuestItem" method="_on_body_exited"]
+[connection signal="body_entered" from="QuestItem2" to="QuestItem2" method="_on_body_entered"]
+[connection signal="body_exited" from="QuestItem2" to="QuestItem2" method="_on_body_exited"]
+[connection signal="body_entered" from="QuestItem3" to="QuestItem3" method="_on_body_entered"]
+[connection signal="body_exited" from="QuestItem3" to="QuestItem3" method="_on_body_exited"]
+[connection signal="body_entered" from="QuestItem4" to="QuestItem4" method="_on_body_entered"]
+[connection signal="body_exited" from="QuestItem4" to="QuestItem4" method="_on_body_exited"]
+[connection signal="body_entered" from="QuestItem5" to="QuestItem5" method="_on_body_entered"]
+[connection signal="body_exited" from="QuestItem5" to="QuestItem5" method="_on_body_exited"]
+[connection signal="body_entered" from="QuestItem6" to="QuestItem6" method="_on_body_entered"]
+[connection signal="body_exited" from="QuestItem6" to="QuestItem6" method="_on_body_exited"]
+[connection signal="body_entered" from="QuestItem7" to="QuestItem7" method="_on_body_entered"]
+[connection signal="body_exited" from="QuestItem7" to="QuestItem7" method="_on_body_exited"]
+[connection signal="body_entered" from="QuestItem8" to="QuestItem8" method="_on_body_entered"]
+[connection signal="body_exited" from="QuestItem8" to="QuestItem8" method="_on_body_exited"]
+[connection signal="body_entered" from="QuestItem9" to="QuestItem9" method="_on_body_entered"]
+[connection signal="body_exited" from="QuestItem9" to="QuestItem9" method="_on_body_exited"]
+[connection signal="body_entered" from="QuestItem10" to="QuestItem10" method="_on_body_entered"]
+[connection signal="body_exited" from="QuestItem10" to="QuestItem10" method="_on_body_exited"]
