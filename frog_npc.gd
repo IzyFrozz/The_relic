@@ -29,8 +29,7 @@ func _process(_delta: float) -> void:
 			trigger_black_win_screen()
 		else:
 			if is_instance_valid(prompt_label):
-
-				prompt_label.text = "Ribbit! Relich65hu6n!! Ribbit!!!"
+				prompt_label.text = "Heh mfker"
 
 func trigger_black_win_screen() -> void:
 	# 🎯 GLOBAL RADAR HUNT: Scans the entire active game tree to find your lifeLabel node
@@ -62,7 +61,7 @@ func _on_body_entered(body: Node2D) -> void:
 			elif QuestManager.has_relic:
 				prompt_label.text = "[E] Give Ancient Relic"
 			else:
-				prompt_label.text = "[E] Talk to Frog Man"
+				prompt_label.text = "[E] Talk to Frog NPC"
 			prompt_label.visible = true
 
 func _on_body_exited(body: Node2D) -> void:
