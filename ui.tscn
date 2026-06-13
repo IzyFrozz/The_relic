@@ -1,0 +1,218 @@
+[gd_scene format=3 uid="uid://kdxi5lf0kmey"]
+
+[ext_resource type="Script" uid="uid://cm02qgkexeu3h" path="res://LoseUI.gd" id="1_27fn8"]
+[ext_resource type="Script" uid="uid://c0i1ayu6cesit" path="res://CombatUI.gd" id="2_nltto"]
+[ext_resource type="Script" uid="uid://5fw3555pk2gh" path="res://life_label.gd" id="3_ibotj"]
+
+[sub_resource type="FontFile" id="FontFile_h8e4i"]
+subpixel_positioning = 0
+msdf_pixel_range = 14
+msdf_size = 128
+cache/0/variation_coordinates = {}
+cache/0/face_index = 0
+cache/0/embolden = 0.0
+cache/0/transform = Transform2D(1, 0, 0, 1, 0, 0)
+cache/0/spacing_top = 0
+cache/0/spacing_bottom = 0
+cache/0/spacing_space = 0
+cache/0/spacing_glyph = 0
+cache/0/baseline_offset = 0.0
+cache/0/16/0/ascent = 0.0
+cache/0/16/0/descent = 0.0
+cache/0/16/0/underline_position = 0.0
+cache/0/16/0/underline_thickness = 0.0
+cache/0/16/0/scale = 1.0
+
+[sub_resource type="LabelSettings" id="LabelSettings_n5ude"]
+font = SubResource("FontFile_h8e4i")
+
+[node name="UI" type="Node2D" unique_id=560062949]
+
+[node name="LoseUI" type="CanvasLayer" parent="." unique_id=967082692]
+visible = false
+script = ExtResource("1_27fn8")
+
+[node name="Panel" type="Panel" parent="LoseUI" unique_id=1427044771]
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="ColorRect" type="ColorRect" parent="LoseUI/Panel" unique_id=310120209]
+layout_mode = 0
+offset_right = 1162.0
+offset_bottom = 655.0
+color = Color(0, 0, 0, 1)
+
+[node name="Label" type="Label" parent="LoseUI/Panel/ColorRect" unique_id=2072090991]
+modulate = Color(0.9850134, 0.0009824448, 0.0005384868, 1)
+layout_mode = 0
+offset_left = 524.0
+offset_top = 222.0
+offset_right = 592.0
+offset_bottom = 245.0
+scale = Vector2(2, 2)
+text = "You Die!"
+
+[node name="RestartButton" type="Button" parent="LoseUI/Panel/ColorRect" unique_id=812930809]
+layout_mode = 0
+offset_left = 503.0
+offset_top = 370.0
+offset_right = 673.0
+offset_bottom = 418.0
+text = "Restart Game!"
+
+[node name="CombatUI" type="CanvasLayer" parent="." unique_id=313349406]
+script = ExtResource("2_nltto")
+
+[node name="RightTopGroup" type="VBoxContainer" parent="CombatUI" unique_id=1594275861]
+offset_right = 358.0
+offset_bottom = 300.0
+size_flags_horizontal = 3
+
+[node name="HistoryScroll" type="ScrollContainer" parent="CombatUI/RightTopGroup" unique_id=9332017]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="HistoryLabel" type="RichTextLabel" parent="CombatUI/RightTopGroup/HistoryScroll" unique_id=991351191]
+layout_mode = 2
+scroll_following = true
+
+[node name="TopHUD" type="HBoxContainer" parent="CombatUI" unique_id=1609322381]
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 300.0
+grow_horizontal = 2
+theme_override_constants/separation = 80
+
+[node name="LeftTopGroup" type="VBoxContainer" parent="CombatUI/TopHUD" unique_id=1698759797]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 2.0
+
+[node name="TurnTitleLabel" type="Label" parent="CombatUI/TopHUD/LeftTopGroup" unique_id=1467964531]
+layout_mode = 2
+
+[node name="DropCountdownLabel" type="Label" parent="CombatUI/TopHUD/LeftTopGroup" unique_id=1997162130]
+layout_mode = 2
+
+[node name="CombatPanel" type="Panel" parent="CombatUI" unique_id=296805917]
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -276.0
+offset_bottom = 4.0
+grow_horizontal = 2
+grow_vertical = 0
+
+[node name="MainLayout" type="VBoxContainer" parent="CombatUI/CombatPanel" unique_id=1043278422]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 15
+
+[node name="CombatantsSplit" type="HBoxContainer" parent="CombatUI/CombatPanel/MainLayout" unique_id=1549937371]
+layout_mode = 2
+
+[node name="PlayerSection" type="VBoxContainer" parent="CombatUI/CombatPanel/MainLayout/CombatantsSplit" unique_id=1921330279]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="PlayerHPLabel" type="Label" parent="CombatUI/CombatPanel/MainLayout/CombatantsSplit/PlayerSection" unique_id=2093044007]
+layout_mode = 2
+
+[node name="PlayerBuffsLabel" type="Label" parent="CombatUI/CombatPanel/MainLayout/CombatantsSplit/PlayerSection" unique_id=28018381]
+layout_mode = 2
+
+[node name="PlayerItemsGrid" type="GridContainer" parent="CombatUI/CombatPanel/MainLayout/CombatantsSplit/PlayerSection" unique_id=525662687]
+layout_mode = 2
+size_flags_vertical = 3
+columns = 3
+
+[node name="HealButton" type="Button" parent="CombatUI/CombatPanel/MainLayout/CombatantsSplit/PlayerSection/PlayerItemsGrid" unique_id=1804029883]
+layout_mode = 2
+
+[node name="DefendButton" type="Button" parent="CombatUI/CombatPanel/MainLayout/CombatantsSplit/PlayerSection/PlayerItemsGrid" unique_id=1577790374]
+layout_mode = 2
+
+[node name="SharpenButton" type="Button" parent="CombatUI/CombatPanel/MainLayout/CombatantsSplit/PlayerSection/PlayerItemsGrid" unique_id=576637657]
+layout_mode = 2
+
+[node name="DisarmButton" type="Button" parent="CombatUI/CombatPanel/MainLayout/CombatantsSplit/PlayerSection/PlayerItemsGrid" unique_id=248416858]
+layout_mode = 2
+
+[node name="PierceButton" type="Button" parent="CombatUI/CombatPanel/MainLayout/CombatantsSplit/PlayerSection/PlayerItemsGrid" unique_id=1209806454]
+layout_mode = 2
+
+[node name="MagnetButton" type="Button" parent="CombatUI/CombatPanel/MainLayout/CombatantsSplit/PlayerSection/PlayerItemsGrid" unique_id=529382396]
+layout_mode = 2
+
+[node name="EnemySection" type="VBoxContainer" parent="CombatUI/CombatPanel/MainLayout/CombatantsSplit" unique_id=49837739]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="EnemyHPLabel" type="Label" parent="CombatUI/CombatPanel/MainLayout/CombatantsSplit/EnemySection" unique_id=695317421]
+layout_mode = 2
+
+[node name="EnemyBuffsLabel" type="Label" parent="CombatUI/CombatPanel/MainLayout/CombatantsSplit/EnemySection" unique_id=1695829262]
+layout_mode = 2
+
+[node name="EnemyItemsGrid" type="GridContainer" parent="CombatUI/CombatPanel/MainLayout/CombatantsSplit/EnemySection" unique_id=864570497]
+layout_mode = 2
+size_flags_vertical = 3
+columns = 3
+
+[node name="EnemyPotionLabel" type="Label" parent="CombatUI/CombatPanel/MainLayout/CombatantsSplit/EnemySection/EnemyItemsGrid" unique_id=606937046]
+layout_mode = 2
+text = "Potion (x0)"
+
+[node name="EnemyShieldLabel" type="Label" parent="CombatUI/CombatPanel/MainLayout/CombatantsSplit/EnemySection/EnemyItemsGrid" unique_id=1588630898]
+layout_mode = 2
+text = "Shield (x0)"
+
+[node name="EnemyGrindstoneLabel" type="Label" parent="CombatUI/CombatPanel/MainLayout/CombatantsSplit/EnemySection/EnemyItemsGrid" unique_id=1054034887]
+layout_mode = 2
+text = "Grindstone (x0)"
+
+[node name="EnemyWhipLabel" type="Label" parent="CombatUI/CombatPanel/MainLayout/CombatantsSplit/EnemySection/EnemyItemsGrid" unique_id=1169042677]
+layout_mode = 2
+text = "Whip (x0)"
+
+[node name="EnemyNeedleLabel" type="Label" parent="CombatUI/CombatPanel/MainLayout/CombatantsSplit/EnemySection/EnemyItemsGrid" unique_id=2044051927]
+layout_mode = 2
+text = "Needle (x0)"
+
+[node name="EnemyMagnetLabel" type="Label" parent="CombatUI/CombatPanel/MainLayout/CombatantsSplit/EnemySection/EnemyItemsGrid" unique_id=1095650732]
+layout_mode = 2
+text = "Lens (x0)"
+
+[node name="fight_button" type="Button" parent="CombatUI/CombatPanel" unique_id=741457388]
+layout_mode = 0
+offset_top = 200.0
+offset_right = 1152.0
+offset_bottom = 280.0
+theme_override_font_sizes/font_size = 22
+text = "⚔️ EXECUTE FIGHT! ⚔️"
+
+[node name="CanvasLayer" type="CanvasLayer" parent="." unique_id=1556923697]
+
+[node name="UI" type="Panel" parent="CanvasLayer" unique_id=1837741141]
+offset_top = -83.0
+offset_right = 40.0
+offset_bottom = -43.0
+scale = Vector2(1.8, 1.8)
+
+[node name="Stat" type="HBoxContainer" parent="CanvasLayer/UI" unique_id=1362460858]
+layout_mode = 1
+offset_left = 12.5
+offset_top = 46.666668
+offset_right = 52.5
+offset_bottom = 86.66667
+
+[node name="lifeLabel" type="Label" parent="CanvasLayer/UI/Stat" unique_id=1699964471]
+layout_mode = 2
+text = "HP: "
+label_settings = SubResource("LabelSettings_n5ude")
+script = ExtResource("3_ibotj")

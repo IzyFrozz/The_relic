@@ -1,6 +1,6 @@
 extends Node2D
 
-@onready var combat_ui = $CombatUI
+@onready var combat_ui = $ui
 
 var active_enemy = null
 
