@@ -42,6 +42,11 @@ func trigger_black_win_screen() -> void:
 	
 	# Also hunt down and hide the container panel or UI canvas layer if needed
 	var overworld_ui = get_tree().root.find_child("UI", true, false)
+	var overworld_hud = get_tree().root.find_child("OverworldHUD", true, false)
+	
+	if is_instance_valid(overworld_hud):
+		overworld_hud.visible = false
+	
 	if is_instance_valid(overworld_ui):
 		overworld_ui.visible = false
 	

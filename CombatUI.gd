@@ -488,14 +488,10 @@ func _refresh_ui_states() -> void:
 	var tier: int = current_enemy.enemy_level if "enemy_level" in current_enemy else 1
 	update_btn.call(heal_btn, "potion", "🧪 Potion [1]", QuestManager.player_health >= QuestManager.MAX_HEALTH, true)
 	update_btn.call(defend_btn, "shield", "🛡️ Shield [2]", current_enemy.player_active_armor, true)
-	update_btn.call(sharpen_btn, "grindstone", "🪨 Grindstone [3]", current_enemy.player_sharpened, true)
-	update_btn.call(disarm_btn, "whip", "💥 Whip [4]", current_enemy.enemy_is_disarmed, tier >= 2)
-	update_btn.call(pierce_btn, "needle", "📌 Needle [5]", current_enemy.player_piercing, tier >= 3)
-	update_btn.call(magnet_btn, "magnet", "🧲 Magnet [6]", false, tier >= 4) 
-	
-	if enemy_whip_lbl: enemy_whip_lbl.visible = (tier >= 2)
-	if enemy_needle_lbl: enemy_needle_lbl.visible = (tier >= 3)
-	if enemy_magnet_lbl: enemy_magnet_lbl.visible = (tier >= 4)
+	update_btn.call(sharpen_btn, "grindstone", "🪨 Grindstone [3]", current_enemy.player_sharpened, QuestManager.unlocked_items.has("grindstone"))
+	update_btn.call(disarm_btn, "whip", "💥 Whip [4]", current_enemy.enemy_is_disarmed, QuestManager.unlocked_items.has("whip"))
+	update_btn.call(pierce_btn, "needle", "📌 Needle [5]", current_enemy.player_piercing, QuestManager.unlocked_items.has("needle"))
+	update_btn.call(magnet_btn, "magnet", "🧲 Magnet [6]", false, QuestManager.unlocked_items.has("magnet"))
 	
 	_update_enemy_inventory_grid()
 

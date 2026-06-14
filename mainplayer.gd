@@ -38,7 +38,10 @@ func _physics_process(delta: float) -> void:
 		return
 		
 	# ... your existing movement code (Input.get_vector, move_and_slide, etc.) continues below ...
-
+	var equipment_menu = get_tree().root.find_child("EquipmentMenu", true, false)
+	if is_instance_valid(equipment_menu) and equipment_menu.visible:
+		return
+	
 	if is_dashing:
 		move_and_slide()
 		return

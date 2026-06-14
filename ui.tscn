@@ -197,6 +197,7 @@ theme_override_font_sizes/font_size = 22
 text = "⚔️ EXECUTE FIGHT! ⚔️"
 
 [node name="CanvasLayer" type="CanvasLayer" parent="." unique_id=1556923697]
+visible = false
 
 [node name="UI" type="Panel" parent="CanvasLayer" unique_id=1837741141]
 offset_top = -83.0

@@ -16,16 +16,19 @@ var enemy_max_health: int = 100
 var enemy_inventory: Array[String] = []
 var player_inventory: Array[String] = []
 
+# === ENEMY ITEM POOL ===
+var enemy_item_pool: Array = []
+
 # === DROP RULES TRACKER ===
-var cycles_until_drop: int = 1        
-var drop_round_index: int = 0         
-var current_items_per_deal: int = 2   
+var cycles_until_drop: int = 1
+var drop_round_index: int = 0
+var current_items_per_deal: int = 2
 
 # === STATE BUFFS / CONDITIONS ===
 var player_active_armor: bool = false
 var player_sharpened: bool = false
 var player_piercing: bool = false
-var player_is_disarmed: bool = false   
+var player_is_disarmed: bool = false
 
 var enemy_active_armor: bool = false
 var enemy_sharpened: bool = false
@@ -54,15 +57,19 @@ func _initialize_mob_stats_by_character_tier() -> void:
 	match enemy_level:
 		1:
 			enemy_max_health = 100
+			enemy_item_pool = ["potion", "shield"]
 		2:
 			enemy_max_health = 140
+			enemy_item_pool = ["potion", "shield", "grindstone"]
 		3:
 			enemy_max_health = 180
+			enemy_item_pool = ["potion", "shield", "grindstone", "whip"]
 		4:
 			enemy_max_health = 220
+			enemy_item_pool = ["potion", "shield", "grindstone", "whip", "needle"]
 
 	enemy_health = enemy_max_health
-	current_items_per_deal = 1 
+	current_items_per_deal = 1
 
 
 func _on_deadzone_body_entered(body: Node2D) -> void:
@@ -157,13 +164,13 @@ func process_player_attack_phase() -> void:
 			combat_ui.display_round_history("💥 You were DISARMED! Your attack phase was skipped!", true)
 			combat_ui._refresh_ui_states()
 			await combat_ui.show_blocking_popup("⚡ DISARMED!", "The Enemy's Whip disarmed you — your attack phase is skipped this round!", false)
-		
+
 		if _check_combat_end_conditions():
 			return
 
 		if combat_ui: combat_ui.start_enemy_turn_visuals()
 		await get_tree().create_timer(1.3).timeout
-		
+
 		_execute_enemy_turn_ai()
 		return
 
@@ -192,6 +199,7 @@ func process_player_attack_phase() -> void:
 
 	_execute_enemy_turn_ai()
 
+
 func _execute_enemy_turn_ai() -> void:
 	if enemy_is_disarmed:
 		enemy_is_disarmed = false
@@ -205,42 +213,29 @@ func _execute_enemy_turn_ai() -> void:
 		"potion": 0, "shield": 0, "grindstone": 0,
 		"whip": 0, "needle": 0, "magnet": 0
 	}
-	
+
 	var shield_grindstone_evaluated: bool = false
 
 	var processing_combat_actions = true
 	while processing_combat_actions:
 		var item_to_play = ""
 
-		# 1. EMERGENCY SURVIVAL
 		if enemy_health <= (enemy_max_health - 20) and enemy_inventory.has("potion") and items_played_tracking["potion"] < 1:
 			item_to_play = "potion"
-
-		# 2. TURN DENIAL CONTROL
 		elif not player_is_disarmed and enemy_inventory.has("whip") and items_played_tracking["whip"] < 1:
 			item_to_play = "whip"
-
-		# 3. SPECIFIC SHIELD vs GRINDSTONE BAIT (The 50/50 Player Gift)
 		elif player_active_armor and enemy_inventory.has("grindstone") and items_played_tracking["grindstone"] < 1 and not shield_grindstone_evaluated:
 			shield_grindstone_evaluated = true
 			if randf() < 0.50:
 				item_to_play = "grindstone"
 			else:
 				items_played_tracking["grindstone"] = 1
-
-		# 4. ARMOR BYPASSING
 		elif player_active_armor and enemy_inventory.has("needle") and items_played_tracking["needle"] < 1 and not enemy_piercing:
 			item_to_play = "needle"
-
-		# 5. MITIGATION SETUP
 		elif not enemy_active_armor and enemy_inventory.has("shield") and items_played_tracking["shield"] < 1:
 			item_to_play = "shield"
-
-		# 6. GENERAL OFFENSIVE ADVANTAGE (Fixed the "Hand" typo here)
 		elif not enemy_sharpened and enemy_inventory.has("grindstone") and items_played_tracking["grindstone"] < 1:
 			item_to_play = "grindstone"
-
-		# 7. RESOURCE EXTRACTION
 		elif player_inventory.size() > 0 and enemy_inventory.has("magnet") and items_played_tracking["magnet"] < 1:
 			item_to_play = "magnet"
 
@@ -283,6 +278,7 @@ func _execute_enemy_turn_ai() -> void:
 
 	_conclude_round_cycle_ticks()
 
+
 func _enemy_execute_item(item_type: String, tracking: Dictionary) -> void:
 	if not enemy_inventory.has(item_type): return
 
@@ -312,28 +308,20 @@ func _enemy_execute_item(item_type: String, tracking: Dictionary) -> void:
 			outcome_text = "🪡 The enemy loaded a Needle! Next strike PIERCES your armor!"
 			if combat_ui: combat_ui.display_round_history("🪡 Enemy loaded a Needle.", false)
 		"magnet":
-			# Filter player inventory to build a pool that EXCLUDES magnets
 			var valid_targets = player_inventory.filter(func(item): return item != "magnet")
-
 			if valid_targets.size() > 0:
 				var steal_target = ""
-				# Check priority targets within the safe, filtered pool
 				if valid_targets.has("needle"): steal_target = "needle"
 				elif valid_targets.has("grindstone"): steal_target = "grindstone"
 				elif valid_targets.has("shield"): steal_target = "shield"
 				else: steal_target = valid_targets.pick_random()
-
-				# Erase from player inventory and transfer to the enemy
 				player_inventory.erase(steal_target)
 				enemy_inventory.append(steal_target)
 				outcome_text = "🧲 MAGNET! The enemy stole your [%s]!" % [steal_target.to_upper()]
 				if combat_ui: combat_ui.display_round_history("🧲 Enemy stole your [%s]!" % steal_target, false)
 			else:
-				# UI still fires, but we safely refund the item back to the enemy's inventory
 				outcome_text = "🧲 MAGNET... Enemy reached in but you have no stealable items!"
 				if combat_ui: combat_ui.display_round_history("🧲 Enemy Magnet fizzled — Refunded to inventory.", false)
-				
-				# FIX: Give the item back so it isn't permanently wasted
 				enemy_inventory.append("magnet")
 
 	if combat_ui:
@@ -364,14 +352,9 @@ func _apply_supply_drop_rewards() -> void:
 	else:
 		cycles_until_drop = int(pow(2, drop_round_index - 1))
 
-	var pool = ["potion", "shield", "grindstone"]
-	if enemy_level >= 2: pool.append("whip")
-	if enemy_level >= 3: pool.append("needle")
-	if enemy_level >= 4: pool.append("magnet")
-
 	for i in range(items_this_drop):
-		player_inventory.append(pool.pick_random())
-		enemy_inventory.append(pool.pick_random())
+		player_inventory.append(QuestManager.equipped_items.pick_random())
+		enemy_inventory.append(enemy_item_pool.pick_random())
 
 
 func _reset_all_combat_modifiers() -> void:
@@ -397,17 +380,14 @@ func _check_combat_end_conditions() -> bool:
 	if enemy_health <= 0:
 		if is_instance_valid(combat_ui): combat_ui.visible = false
 
-		var meta_key = "hp_rewards_earned_level_" + str(enemy_level)
-		var rewards_claimed = 0
-		if QuestManager.has_meta(meta_key):
-			rewards_claimed = QuestManager.get_meta(meta_key)
-
-		if rewards_claimed < 2:
-			QuestManager.MAX_HEALTH += 20
-			QuestManager.set_meta(meta_key, rewards_claimed + 1)
-			print("Max HP Increased! Level %d rewards claimed: %d/2" % [enemy_level, rewards_claimed + 1])
-		else:
-			print("Max HP capped for Level %d enemies. No stat increase." % enemy_level)
+		# === XP REWARD ===
+		var xp_reward := 25
+		match enemy_level:
+			1: xp_reward = 25
+			2: xp_reward = 40
+			3: xp_reward = 60
+			4: xp_reward = 90
+		QuestManager.gain_xp(xp_reward)
 
 		QuestManager.player_health = QuestManager.MAX_HEALTH
 
