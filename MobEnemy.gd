@@ -1,30 +1,23 @@
 extends CharacterBody2D
 
-# === CHARACTER DESIGN SELECTION ===
 @export var enemy_level: int = 1
 
-# === OVERWORLD MARKER REFERENCES ===
 @export var battle_player_marker: Marker2D
 @export var battle_enemy_marker: Marker2D
 @export var graveyard_marker: Marker2D
 @export var combat_ui: CanvasLayer
 @export var lose_ui: CanvasLayer
 
-# === COMBAT STATES ===
 var enemy_health: int = 100
 var enemy_max_health: int = 100
 var enemy_inventory: Array[String] = []
 var player_inventory: Array[String] = []
-
-# === ENEMY ITEM POOL ===
 var enemy_item_pool: Array = []
 
-# === DROP RULES TRACKER ===
 var cycles_until_drop: int = 1
 var drop_round_index: int = 0
-var current_items_per_deal: int = 2
+var current_items_per_deal: int = 1
 
-# === STATE BUFFS / CONDITIONS ===
 var player_active_armor: bool = false
 var player_sharpened: bool = false
 var player_piercing: bool = false
@@ -54,19 +47,15 @@ func _auto_wire_overworld_signals() -> void:
 
 
 func _initialize_mob_stats_by_character_tier() -> void:
-	match enemy_level:
-		1:
-			enemy_max_health = 100
-			enemy_item_pool = ["potion", "shield"]
-		2:
-			enemy_max_health = 140
-			enemy_item_pool = ["potion", "shield", "grindstone"]
-		3:
-			enemy_max_health = 180
-			enemy_item_pool = ["potion", "shield", "grindstone", "whip"]
-		4:
-			enemy_max_health = 220
-			enemy_item_pool = ["potion", "shield", "grindstone", "whip", "needle"]
+	# HP scales every level, no cap at 4
+	enemy_max_health = 80 + (enemy_level * 20)
+
+	# Build enemy pool: always starts with potion+shield, unlocks extras per level
+	enemy_item_pool = ["potion", "shield"]
+	if enemy_level >= 2: enemy_item_pool.append("grindstone")
+	if enemy_level >= 3: enemy_item_pool.append("whip")
+	if enemy_level >= 4: enemy_item_pool.append("needle")
+	if enemy_level >= 5: enemy_item_pool.append("magnet")
 
 	enemy_health = enemy_max_health
 	current_items_per_deal = 1
@@ -133,7 +122,6 @@ func use_player_item(item_type: String) -> void:
 					combat_ui.display_round_history("🧲 Magnet cancelled.", true)
 			if combat_ui: combat_ui._refresh_ui_states()
 			return
-
 		_:
 			player_inventory.erase(item_type)
 
@@ -170,7 +158,6 @@ func process_player_attack_phase() -> void:
 
 		if combat_ui: combat_ui.start_enemy_turn_visuals()
 		await get_tree().create_timer(1.3).timeout
-
 		_execute_enemy_turn_ai()
 		return
 
@@ -196,7 +183,6 @@ func process_player_attack_phase() -> void:
 
 	if combat_ui: combat_ui.start_enemy_turn_visuals()
 	await get_tree().create_timer(1.3).timeout
-
 	_execute_enemy_turn_ai()
 
 
@@ -213,7 +199,6 @@ func _execute_enemy_turn_ai() -> void:
 		"potion": 0, "shield": 0, "grindstone": 0,
 		"whip": 0, "needle": 0, "magnet": 0
 	}
-
 	var shield_grindstone_evaluated: bool = false
 
 	var processing_combat_actions = true
@@ -247,7 +232,6 @@ func _execute_enemy_turn_ai() -> void:
 
 	if not is_in_combat: return
 
-	# === FINAL ATTACK PHASE ===
 	var raw_dmg = 20
 	if enemy_sharpened:
 		raw_dmg *= 2
@@ -317,7 +301,7 @@ func _enemy_execute_item(item_type: String, tracking: Dictionary) -> void:
 				else: steal_target = valid_targets.pick_random()
 				player_inventory.erase(steal_target)
 				enemy_inventory.append(steal_target)
-				outcome_text = "🧲 MAGNET! The enemy stole your [%s]!" % [steal_target.to_upper()]
+				outcome_text = "🧲 MAGNET! The enemy stole your [%s]!" % steal_target.to_upper()
 				if combat_ui: combat_ui.display_round_history("🧲 Enemy stole your [%s]!" % steal_target, false)
 			else:
 				outcome_text = "🧲 MAGNET... Enemy reached in but you have no stealable items!"
@@ -343,18 +327,23 @@ func _conclude_round_cycle_ticks() -> void:
 func _apply_supply_drop_rewards() -> void:
 	drop_round_index += 1
 
-	var item_cap = max(1, (2 + (enemy_level * 2)) - 1)
-	var items_this_drop = max(1, min(2 + ((drop_round_index - 1) * 2), item_cap) - 1)
+	# Items per drop: starts at 1, caps at enemy_level (so lvl1=max1, lvl5=max5)
+	var items_this_drop = min(drop_round_index, enemy_level)
 	current_items_per_deal = items_this_drop
 
+	# Next drop timing: round 1 = after 2 rounds, then doubles each time
 	if drop_round_index == 1:
 		cycles_until_drop = 2
 	else:
 		cycles_until_drop = int(pow(2, drop_round_index - 1))
 
 	for i in range(items_this_drop):
-		player_inventory.append(QuestManager.equipped_items.pick_random())
-		enemy_inventory.append(enemy_item_pool.pick_random())
+		# Player draws from their equipped loadout
+		if QuestManager.equipped_items.size() > 0:
+			player_inventory.append(QuestManager.equipped_items.pick_random())
+		# Enemy draws from their pool
+		if enemy_item_pool.size() > 0:
+			enemy_inventory.append(enemy_item_pool.pick_random())
 
 
 func _reset_all_combat_modifiers() -> void:
@@ -380,13 +369,14 @@ func _check_combat_end_conditions() -> bool:
 	if enemy_health <= 0:
 		if is_instance_valid(combat_ui): combat_ui.visible = false
 
-		# === XP REWARD ===
+		# XP reward scales with enemy level
 		var xp_reward := 25
 		match enemy_level:
 			1: xp_reward = 25
 			2: xp_reward = 40
 			3: xp_reward = 60
 			4: xp_reward = 90
+			_: xp_reward = 90 + ((enemy_level - 4) * 30)
 		QuestManager.gain_xp(xp_reward)
 
 		QuestManager.player_health = QuestManager.MAX_HEALTH
