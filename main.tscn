@@ -1,22 +1,33 @@
 [gd_scene format=3 uid="uid://cm3xwd4it3us3"]
 
 [ext_resource type="Script" uid="uid://b8infvc4qgtke" path="res://main.gd" id="1_074og"]
+[ext_resource type="Script" uid="uid://dmlskgenraqjb" path="res://OverworldHUD.gd" id="2_d13ii"]
 [ext_resource type="PackedScene" uid="uid://kdxi5lf0kmey" path="res://ui.tscn" id="2_ryguw"]
+[ext_resource type="Script" uid="uid://dguo2l24kneq0" path="res://RoadmapPopup.gd" id="3_1u8w0"]
 [ext_resource type="Script" uid="uid://cxn105fiix3v" path="res://mainplayer.gd" id="3_82xsv"]
 [ext_resource type="PackedScene" uid="uid://d4g0bdlo6sbss" path="res://map.tscn" id="3_d13ii"]
+[ext_resource type="Script" uid="uid://dgpt3iklg6rmq" path="res://EquipmentMenu.gd" id="4_0odxb"]
 [ext_resource type="PackedScene" uid="uid://b5s0bfhkjp1hq" path="res://character.tscn" id="4_vivmo"]
 [ext_resource type="PackedScene" uid="uid://bthp4nwyq6ewh" path="res://quest.tscn" id="5_dg77c"]
+[ext_resource type="Script" uid="uid://ch7qn1m4lhwlc" path="res://ItemsStation.gd" id="9_lswn8"]
 [ext_resource type="Texture2D" uid="uid://cat6ifa0sbpd5" path="res://Asset/Pixel Crawler - Free Pack/Environment/Tilesets/Dungeon_Tiles.png" id="10_yaehf"]
 [ext_resource type="Texture2D" uid="uid://drly61g263uh3" path="res://Asset/Pixel Crawler - Free Pack/Environment/Tilesets/Floors_Tiles.png" id="11_074og"]
 [ext_resource type="Texture2D" uid="uid://qdbfdki5po53" path="res://Asset/Pixel Crawler - Free Pack/Environment/Tilesets/Wall_Tiles.png" id="12_cegan"]
 [ext_resource type="Texture2D" uid="uid://c0171hke3u23e" path="res://Asset/Pixel Crawler - Free Pack/Environment/Tilesets/Wall_Variations.png" id="13_82xsv"]
 [ext_resource type="Texture2D" uid="uid://b4k7n5mjjjkps" path="res://Asset/Pixel Crawler - Free Pack/Environment/Tilesets/Water_tiles.png" id="14_getpj"]
+[ext_resource type="Texture2D" uid="uid://b1ykf6xq4wg1u" path="res://Asset/Pixel Crawler - Free Pack/Environment/Structures/Stations/Anvil/Anvil only.png" id="18_074og"]
 [ext_resource type="Texture2D" uid="uid://d2b5gfvc577yl" path="res://Asset/sprites/characters/player.png" id="22_4lmeg"]
 [ext_resource type="Script" uid="uid://dn2n6hy830nqg" path="res://frog_npc.gd" id="23_1u8w0"]
 [ext_resource type="Texture2D" uid="uid://bo1vgt0hrwf02" path="res://Asset/Meta data assets files/Visuals/OBJECTS/sprites/chest-closed.png" id="27_xuqvo"]
 [ext_resource type="Script" uid="uid://iujueewjbunt" path="res://delivery_point.gd" id="28_kq58d"]
 [ext_resource type="Script" uid="uid://c0yq6db10h3yi" path="res://Doorway.gd" id="30_kq58d"]
 [ext_resource type="Texture2D" uid="uid://v6sfe4o7cjl4" path="res://Asset/Pixel Crawler - Free Pack/Entities/Npc's/Knight/Idle/Idle-Sheet.png" id="34_4lmeg"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_cegan"]
+size = Vector2(48, 29)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_82xsv"]
+size = Vector2(43, 33)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_4lmeg"]
 atlas = ExtResource("22_4lmeg")
@@ -3444,6 +3455,100 @@ radius = 23.021729
 
 [node name="main" type="Node2D" unique_id=821692882]
 script = ExtResource("1_074og")
+metadata/_edit_vertical_guides_ = [398.0, 749.0]
+metadata/_edit_horizontal_guides_ = [219.0, 338.0]
+
+[node name="OverworldHUD" type="CanvasLayer" parent="." unique_id=426747284]
+script = ExtResource("2_d13ii")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="OverworldHUD" unique_id=679644139]
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="LevelLabel" type="Label" parent="OverworldHUD/VBoxContainer" unique_id=1375684636]
+layout_mode = 2
+text = "Level: 1"
+
+[node name="MaxHPLabel" type="Label" parent="OverworldHUD/VBoxContainer" unique_id=1190307315]
+layout_mode = 2
+text = "Max HP: 100"
+
+[node name="XPBar" type="ProgressBar" parent="OverworldHUD/VBoxContainer" unique_id=1102117376]
+layout_mode = 2
+
+[node name="XPText" type="Label" parent="OverworldHUD/VBoxContainer" unique_id=1600954386]
+layout_mode = 2
+text = "                                                                "
+
+[node name="RoadmapButton" type="Button" parent="OverworldHUD/VBoxContainer" unique_id=1075789004]
+layout_mode = 2
+text = "Open Roadmap"
+
+[node name="RoadmapPopup" type="CanvasLayer" parent="." unique_id=3717834]
+script = ExtResource("3_1u8w0")
+
+[node name="Panel" type="Panel" parent="RoadmapPopup" unique_id=1727531082]
+offset_left = 5.0
+offset_top = -50.0
+offset_right = 45.0
+offset_bottom = -10.0
+
+[node name="RichTextLabel" type="RichTextLabel" parent="RoadmapPopup/Panel" unique_id=19851805]
+layout_mode = 0
+offset_left = -4.0
+offset_top = 205.0
+offset_right = 259.0
+offset_bottom = 346.0
+text = "Road Map"
+
+[node name="CloseButton" type="Button" parent="RoadmapPopup/Panel" unique_id=185379812]
+layout_mode = 0
+offset_left = -3.0
+offset_top = 357.0
+offset_right = 261.0
+offset_bottom = 388.0
+text = "Close Roadmap"
+
+[node name="EquipmentMenu" type="CanvasLayer" parent="." unique_id=2021918082]
+script = ExtResource("4_0odxb")
+
+[node name="Panel" type="Panel" parent="EquipmentMenu" unique_id=1422517685]
+offset_left = 552.0
+offset_top = -53.0
+offset_right = 592.0
+offset_bottom = -13.0
+
+[node name="TitleLabel" type="Label" parent="EquipmentMenu/Panel" unique_id=1470423410]
+layout_mode = 0
+offset_left = -47.0
+offset_top = 67.0
+offset_right = 86.0
+offset_bottom = 90.0
+text = "Equipment Menu"
+
+[node name="UnlockedGrid" type="GridContainer" parent="EquipmentMenu/Panel" unique_id=719893414]
+layout_mode = 0
+offset_left = -156.0
+offset_top = 108.0
+offset_right = 196.0
+offset_bottom = 269.0
+columns = 6
+
+[node name="EquippedGrid" type="GridContainer" parent="EquipmentMenu/Panel" unique_id=285528932]
+layout_mode = 0
+offset_left = -154.0
+offset_top = 298.0
+offset_right = 195.0
+offset_bottom = 391.0
+columns = 3
+
+[node name="CloseButton" type="Button" parent="EquipmentMenu/Panel" unique_id=166129530]
+layout_mode = 0
+offset_left = -153.0
+offset_top = 403.0
+offset_right = 195.0
+offset_bottom = 434.0
+text = "Save & Close"
 
 [node name="ui" parent="." unique_id=560062949 instance=ExtResource("2_ryguw")]
 
@@ -3468,6 +3573,32 @@ combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
 
 [node name="QuestSystem" parent="." unique_id=636915324 instance=ExtResource("5_dg77c")]
+
+[node name="ItemsStation" type="Area2D" parent="." unique_id=907402547]
+position = Vector2(-377, 160)
+script = ExtResource("9_lswn8")
+
+[node name="Sprite2D" type="Sprite2D" parent="ItemsStation" unique_id=1235821130]
+texture = ExtResource("18_074og")
+
+[node name="Label" type="Label" parent="ItemsStation" unique_id=136125649]
+offset_left = -20.0
+offset_top = 21.0
+offset_right = 66.0
+offset_bottom = 44.0
+scale = Vector2(0.5, 0.5)
+text = "[E] to Open"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="ItemsStation" unique_id=1595940762]
+position = Vector2(1, -4.5)
+shape = SubResource("RectangleShape2D_cegan")
+
+[node name="InteractArea" type="Area2D" parent="ItemsStation" unique_id=90187983]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="ItemsStation/InteractArea" unique_id=1771685510]
+position = Vector2(1.5, 16.5)
+shape = SubResource("RectangleShape2D_82xsv")
+debug_color = Color(0.61802286, 0.35644442, 1, 0.41960785)
 
 [node name="mainplayer" type="CharacterBody2D" parent="." unique_id=1827658377]
 position = Vector2(-10, 327)
