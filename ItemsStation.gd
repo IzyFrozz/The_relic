@@ -34,7 +34,7 @@ func _on_body_entered(body: Node2D) -> void:
 	if body.name == "mainplayer":
 		player_nearby = true
 		if is_instance_valid(prompt_label):
-			prompt_label.text = "[E] Configure Loadout"
+			prompt_label.text = "[E] Loadout"
 			prompt_label.visible = true
 
 func _on_body_exited(body: Node2D) -> void:
