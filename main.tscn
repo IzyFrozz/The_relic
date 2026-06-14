@@ -29,22 +29,6 @@ size = Vector2(48, 29)
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_82xsv"]
 size = Vector2(43, 33)
 
-[sub_resource type="AtlasTexture" id="AtlasTexture_4lmeg"]
-atlas = ExtResource("22_4lmeg")
-region = Rect2(0, 384, 48, 48)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_uatky"]
-atlas = ExtResource("22_4lmeg")
-region = Rect2(48, 384, 48, 48)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_rqtf5"]
-atlas = ExtResource("22_4lmeg")
-region = Rect2(96, 384, 48, 48)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_1vm84"]
-atlas = ExtResource("22_4lmeg")
-region = Rect2(144, 384, 48, 48)
-
 [sub_resource type="AtlasTexture" id="AtlasTexture_wu3dr"]
 atlas = ExtResource("22_4lmeg")
 region = Rect2(0, 288, 48, 48)
@@ -76,6 +60,22 @@ region = Rect2(96, 336, 48, 48)
 [sub_resource type="AtlasTexture" id="AtlasTexture_wy5fy"]
 atlas = ExtResource("22_4lmeg")
 region = Rect2(144, 336, 48, 48)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_4lmeg"]
+atlas = ExtResource("22_4lmeg")
+region = Rect2(0, 384, 48, 48)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_uatky"]
+atlas = ExtResource("22_4lmeg")
+region = Rect2(48, 384, 48, 48)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_rqtf5"]
+atlas = ExtResource("22_4lmeg")
+region = Rect2(96, 384, 48, 48)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_1vm84"]
+atlas = ExtResource("22_4lmeg")
+region = Rect2(144, 384, 48, 48)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_gx4rg"]
 atlas = ExtResource("22_4lmeg")
@@ -189,23 +189,6 @@ region = Rect2(240, 0, 48, 48)
 animations = [{
 "frames": [{
 "duration": 1.0,
-"texture": SubResource("AtlasTexture_4lmeg")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_uatky")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_rqtf5")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_1vm84")
-}],
-"loop": true,
-"name": &"Attack Up",
-"speed": 5.0
-}, {
-"frames": [{
-"duration": 1.0,
 "texture": SubResource("AtlasTexture_wu3dr")
 }, {
 "duration": 1.0,
@@ -236,6 +219,23 @@ animations = [{
 }],
 "loop": true,
 "name": &"AttackSide",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_4lmeg")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_uatky")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_rqtf5")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_1vm84")
+}],
+"loop": true,
+"name": &"AttackUp",
 "speed": 5.0
 }, {
 "frames": [{
@@ -3602,9 +3602,9 @@ texture = ExtResource("18_074og")
 
 [node name="Label" type="Label" parent="ItemsStation" unique_id=136125649]
 offset_left = -21.0
-offset_top = 21.0
+offset_top = -34.0
 offset_right = 67.0
-offset_bottom = 44.0
+offset_bottom = -11.0
 scale = Vector2(0.5, 0.5)
 text = "[E] Loadout"
 
@@ -3630,6 +3630,7 @@ zoom = Vector2(3, 3)
 position = Vector2(-1, -9.000008)
 scale = Vector2(1.1311195, 1.1311195)
 sprite_frames = SubResource("SpriteFrames_come4")
+animation = &"AttackDown"
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="mainplayer" unique_id=2000731134]
 position = Vector2(0, 4)
