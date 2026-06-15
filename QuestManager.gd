@@ -13,9 +13,7 @@ var MAX_HEALTH: int = 100
 var player_shield: int = 3
 const MAX_SHIELD: int = 3
 
-# Overworld inventory
 var potions_collected: int = 0
-
 var player_overworld_position: Vector2 = Vector2.ZERO
 var is_in_combat: bool = false
 
@@ -24,8 +22,9 @@ var player_level := 1
 var current_xp := 0
 var xp_required := 100
 
-var unlocked_items := ["potion", "shield"]
-var equipped_items := ["potion", "shield"]
+# equipped_items drives what spawns in combat — ORDER MATTERS (slot 1, 2, 3...)
+var unlocked_items: Array = ["potion", "shield"]
+var equipped_items: Array = ["potion", "shield"]
 
 var item_unlocks := {
 	2: "grindstone",
@@ -51,5 +50,8 @@ func gain_xp(amount: int) -> void:
 		player_level += 1
 		MAX_HEALTH += 20
 		if item_unlocks.has(player_level):
-			unlocked_items.append(item_unlocks[player_level])
+			var new_item = item_unlocks[player_level]
+			if not unlocked_items.has(new_item):
+				unlocked_items.append(new_item)
+			# Do NOT auto-add to equipped_items — player must visit station
 		xp_required = int(xp_required * 1.35)
