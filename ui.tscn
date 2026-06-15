@@ -131,24 +131,6 @@ layout_mode = 2
 size_flags_vertical = 3
 columns = 3
 
-[node name="HealButton" type="Button" parent="CombatUI/CombatPanel/MainLayout/CombatantsSplit/PlayerSection/PlayerItemsGrid" unique_id=1804029883]
-layout_mode = 2
-
-[node name="DefendButton" type="Button" parent="CombatUI/CombatPanel/MainLayout/CombatantsSplit/PlayerSection/PlayerItemsGrid" unique_id=1577790374]
-layout_mode = 2
-
-[node name="SharpenButton" type="Button" parent="CombatUI/CombatPanel/MainLayout/CombatantsSplit/PlayerSection/PlayerItemsGrid" unique_id=576637657]
-layout_mode = 2
-
-[node name="DisarmButton" type="Button" parent="CombatUI/CombatPanel/MainLayout/CombatantsSplit/PlayerSection/PlayerItemsGrid" unique_id=248416858]
-layout_mode = 2
-
-[node name="PierceButton" type="Button" parent="CombatUI/CombatPanel/MainLayout/CombatantsSplit/PlayerSection/PlayerItemsGrid" unique_id=1209806454]
-layout_mode = 2
-
-[node name="MagnetButton" type="Button" parent="CombatUI/CombatPanel/MainLayout/CombatantsSplit/PlayerSection/PlayerItemsGrid" unique_id=529382396]
-layout_mode = 2
-
 [node name="EnemySection" type="VBoxContainer" parent="CombatUI/CombatPanel/MainLayout/CombatantsSplit" unique_id=49837739]
 layout_mode = 2
 size_flags_horizontal = 3
