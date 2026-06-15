@@ -1,15 +1,15 @@
 [gd_scene format=3 uid="uid://cm3xwd4it3us3"]
 
 [ext_resource type="Script" uid="uid://b8infvc4qgtke" path="res://main.gd" id="1_074og"]
-[ext_resource type="Script" uid="uid://dmlskgenraqjb" path="res://OverworldHUD.gd" id="2_d13ii"]
+[ext_resource type="Script" path="res://OverworldHUD.gd" id="2_d13ii"]
 [ext_resource type="PackedScene" uid="uid://kdxi5lf0kmey" path="res://ui.tscn" id="2_ryguw"]
-[ext_resource type="Script" uid="uid://dguo2l24kneq0" path="res://RoadmapPopup.gd" id="3_1u8w0"]
+[ext_resource type="Script" path="res://RoadmapPopup.gd" id="3_1u8w0"]
 [ext_resource type="Script" uid="uid://cxn105fiix3v" path="res://mainplayer.gd" id="3_82xsv"]
 [ext_resource type="PackedScene" uid="uid://d4g0bdlo6sbss" path="res://map.tscn" id="3_d13ii"]
-[ext_resource type="Script" uid="uid://dgpt3iklg6rmq" path="res://EquipmentMenu.gd" id="4_0odxb"]
+[ext_resource type="Script" path="res://EquipmentMenu.gd" id="4_0odxb"]
 [ext_resource type="PackedScene" uid="uid://b5s0bfhkjp1hq" path="res://character.tscn" id="4_vivmo"]
 [ext_resource type="PackedScene" uid="uid://bthp4nwyq6ewh" path="res://quest.tscn" id="5_dg77c"]
-[ext_resource type="Script" uid="uid://ch7qn1m4lhwlc" path="res://ItemsStation.gd" id="9_lswn8"]
+[ext_resource type="Script" path="res://ItemsStation.gd" id="9_lswn8"]
 [ext_resource type="Texture2D" uid="uid://cat6ifa0sbpd5" path="res://Asset/Pixel Crawler - Free Pack/Environment/Tilesets/Dungeon_Tiles.png" id="10_yaehf"]
 [ext_resource type="Texture2D" uid="uid://drly61g263uh3" path="res://Asset/Pixel Crawler - Free Pack/Environment/Tilesets/Floors_Tiles.png" id="11_074og"]
 [ext_resource type="Texture2D" uid="uid://qdbfdki5po53" path="res://Asset/Pixel Crawler - Free Pack/Environment/Tilesets/Wall_Tiles.png" id="12_cegan"]
@@ -3748,12 +3748,12 @@ offset_bottom = 141.33333
 text = "Relic Gained!!!"
 
 [node name="OutsideDoor" type="Area2D" parent="." unique_id=1871006764 node_paths=PackedStringArray("target_marker")]
-position = Vector2(-517, 184)
+position = Vector2(-516, 178)
 script = ExtResource("30_kq58d")
 target_marker = NodePath("CollisionShape2D/PromptLabel/InsideSpawnMarker")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="OutsideDoor" unique_id=328411846]
-position = Vector2(0, -6)
+position = Vector2(-32, -72)
 shape = SubResource("CircleShape2D_htxhm")
 
 [node name="PromptLabel" type="Label" parent="OutsideDoor/CollisionShape2D" unique_id=838512896]
