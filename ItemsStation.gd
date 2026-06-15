@@ -1,4 +1,4 @@
-extends Node2D
+extends CharacterBody2D
 
 var player_nearby: bool = false
 var prompt_label: Label = null
@@ -11,14 +11,13 @@ func _ready() -> void:
 
 	equipment_menu = get_tree().root.find_child("EquipmentMenu", true, false) as CanvasLayer
 
-	# InteractArea handles trigger detection
+	# InteractArea — separate detection zone, triggers the prompt
 	var area = get_node_or_null("InteractArea") as Area2D
 	if is_instance_valid(area):
 		area.body_entered.connect(_on_body_entered)
 		area.body_exited.connect(_on_body_exited)
-
-	# The direct CollisionShape2D child provides physical wall collision — no code needed,
-	# it works automatically as part of this Node2D's physics body via the parent scene.
+	# The CollisionShape2D direct child blocks the player physically
+	# because this node is now a StaticBody2D
 
 func _process(_delta: float) -> void:
 	if player_nearby and Input.is_action_just_pressed("interact"):

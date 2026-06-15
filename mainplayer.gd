@@ -13,7 +13,7 @@ var is_knocked_back: bool = false
 
 var is_dashing: bool = false
 var can_dash: bool = true
-var last_input_dir: Vector2 = Vector2.DOWN
+var last_input_dir: Vector2 = Vector2.UP  # Default facing UP (toward enemies)
 
 @export var dash_speed: float = 400.0
 @export var dash_duration: float = 0.2
@@ -30,7 +30,6 @@ func _physics_process(delta: float) -> void:
 		move_and_slide()
 		return
 
-	# Freeze while equipment menu is open
 	var equipment_menu = get_tree().root.find_child("EquipmentMenu", true, false)
 	if is_instance_valid(equipment_menu) and equipment_menu.visible:
 		velocity = Vector2.ZERO
@@ -65,9 +64,16 @@ func _physics_process(delta: float) -> void:
 
 	move_and_slide()
 
+func face_up() -> void:
+	# Force the sprite to face upward — called when entering combat
+	last_input_dir = Vector2.UP
+	sprite.flip_h = false
+	sprite.play("WalkUp")
+	sprite.stop()
+	sprite.frame = 0
+
 func _play_walk_animation(dir: Vector2) -> void:
 	if abs(dir.x) >= abs(dir.y):
-		# Horizontal movement — flip for left
 		sprite.flip_h = dir.x < 0
 		sprite.play("WalkSide")
 	elif dir.y < 0:
@@ -77,16 +83,38 @@ func _play_walk_animation(dir: Vector2) -> void:
 		sprite.flip_h = false
 		sprite.play("WalkDown")
 
-func play_attack_animation() -> void:
-	if abs(last_input_dir.x) >= abs(last_input_dir.y):
-		sprite.flip_h = last_input_dir.x < 0
-		sprite.play("AttackSide")
-	elif last_input_dir.y < 0:
-		sprite.flip_h = false
-		sprite.play("AttackUp")
-	else:
-		sprite.flip_h = false
-		sprite.play("AttackDown")
+# Called by CombatUI after confirm — runs toward enemy, plays attack, shakes, returns
+func do_attack_lunge(enemy_pos: Vector2) -> void:
+	var start_pos = global_position
+	var lunge_target = start_pos.lerp(enemy_pos, 0.45)
+
+	# Always play AttackUp (enemy is always above player in combat layout)
+	sprite.flip_h = false
+	sprite.play("AttackUp")
+
+	# Lunge toward enemy
+	var tween = create_tween()
+	tween.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	tween.tween_property(self, "global_position", lunge_target, 0.18)
+	await tween.finished
+
+	# Shake
+	for i in range(6):
+		var offset = Vector2(randf_range(-4, 4), randf_range(-4, 4))
+		global_position += offset
+		await get_tree().create_timer(0.04).timeout
+	global_position = lunge_target
+
+	# Wait for attack animation to finish
+	await sprite.animation_finished
+
+	# Return to start
+	var tween2 = create_tween()
+	tween2.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+	tween2.tween_property(self, "global_position", start_pos, 0.15)
+	await tween2.finished
+
+	sprite.play("default")
 
 func execute_dash() -> void:
 	can_dash = false

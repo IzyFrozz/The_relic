@@ -92,6 +92,9 @@ func start_combat() -> void:
 		QuestManager.player_overworld_position = player_ref.global_position
 		if is_instance_valid(battle_player_marker):
 			player_ref.global_position = battle_player_marker.global_position
+		# Always face player toward enemy (upward) on combat start
+		if player_ref.has_method("face_up"):
+			player_ref.face_up()
 
 	if is_instance_valid(battle_enemy_marker):
 		self.global_position = battle_enemy_marker.global_position
@@ -238,19 +241,27 @@ func _execute_enemy_turn_ai() -> void:
 		enemy_sharpened = false
 
 	var attack_log = ""
-	var e_pierce_tag = " [🪡PIERCE]" if enemy_piercing else ""
 
 	if player_active_armor and not enemy_piercing:
+		# Shield blocks cleanly — consumed, needle not active
 		player_active_armor = false
 		attack_log = "🛡️ SAFE! Your armor absorbed their %d damage hit!" % raw_dmg
 		if combat_ui: combat_ui.display_round_history("🛡️ Your Shield blocked the enemy's hit.", false)
-	else:
-		if enemy_piercing and player_active_armor:
-			attack_log = "🪡 BYPASSED! "
-			player_active_armor = false
+	elif enemy_piercing:
+		# Needle bypasses armor — armor is NOT consumed, needle is spent
 		enemy_piercing = false
+		var had_armor = player_active_armor
 		QuestManager.player_health = clampi(QuestManager.player_health - raw_dmg, 0, QuestManager.MAX_HEALTH)
-		attack_log += "❌ OUCH! Enemy struck%s for %d damage!" % [e_pierce_tag, raw_dmg]
+		if had_armor:
+			attack_log = "🪡 PIERCED! Needle bypassed your shield for %d damage! (Shield still active)" % raw_dmg
+			if combat_ui: combat_ui.display_round_history("🪡 Enemy Needle bypassed your shield for %d dmg — shield intact!" % raw_dmg, false)
+		else:
+			attack_log = "🪡 PIERCED! Enemy struck for %d damage!" % raw_dmg
+			if combat_ui: combat_ui.display_round_history("🪡 Enemy Needle struck for %d damage!" % raw_dmg, false)
+	else:
+		# No armor, no needle — straight hit
+		QuestManager.player_health = clampi(QuestManager.player_health - raw_dmg, 0, QuestManager.MAX_HEALTH)
+		attack_log = "❌ OUCH! Enemy struck for %d damage!" % raw_dmg
 		if combat_ui: combat_ui.display_round_history("⚔️ Enemy dealt %d damage to you!" % raw_dmg, false)
 
 	if combat_ui:
@@ -327,21 +338,18 @@ func _conclude_round_cycle_ticks() -> void:
 func _apply_supply_drop_rewards() -> void:
 	drop_round_index += 1
 
-	# Items per drop: starts at 1, caps at enemy_level (so lvl1=max1, lvl5=max5)
-	var items_this_drop = min(drop_round_index, enemy_level)
+	# Items per drop: 1, 2, 3, 4, 5, 6 — capped at 6 forever
+	var items_this_drop = min(drop_round_index, 6)
 	current_items_per_deal = items_this_drop
 
-	# Next drop timing: round 1 = after 2 rounds, then doubles each time
-	if drop_round_index == 1:
-		cycles_until_drop = 2
-	else:
-		cycles_until_drop = int(pow(2, drop_round_index - 1))
+	# Drop timing schedule: after rounds 1, 2, 4, 6, 8, 8, 8...
+	const DROP_SCHEDULE = [1, 2, 4, 6, 8]
+	var next_idx = min(drop_round_index, DROP_SCHEDULE.size() - 1)
+	cycles_until_drop = DROP_SCHEDULE[next_idx]
 
 	for i in range(items_this_drop):
-		# Player draws from their equipped loadout
 		if QuestManager.equipped_items.size() > 0:
 			player_inventory.append(QuestManager.equipped_items.pick_random())
-		# Enemy draws from their pool
 		if enemy_item_pool.size() > 0:
 			enemy_inventory.append(enemy_item_pool.pick_random())
 

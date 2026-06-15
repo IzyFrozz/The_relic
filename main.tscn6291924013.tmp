@@ -3456,7 +3456,7 @@ radius = 23.021729
 [node name="main" type="Node2D" unique_id=821692882]
 script = ExtResource("1_074og")
 metadata/_edit_vertical_guides_ = [398.0, 749.0]
-metadata/_edit_horizontal_guides_ = [305.0, 236.0]
+metadata/_edit_horizontal_guides_ = [219.0, 338.0]
 
 [node name="OverworldHUD" type="CanvasLayer" parent="." unique_id=426747284]
 script = ExtResource("2_d13ii")
@@ -3473,22 +3473,16 @@ text = "Level: 1"
 layout_mode = 2
 text = "Max HP: 100"
 
+[node name="XPBar" type="ProgressBar" parent="OverworldHUD/VBoxContainer" unique_id=1102117376]
+layout_mode = 2
+
+[node name="XPText" type="Label" parent="OverworldHUD/VBoxContainer" unique_id=1600954386]
+layout_mode = 2
+text = "                                                                "
+
 [node name="RoadmapButton" type="Button" parent="OverworldHUD/VBoxContainer" unique_id=1075789004]
 layout_mode = 2
 text = "Open Roadmap"
-
-[node name="VBoxContainer2" type="VBoxContainer" parent="OverworldHUD" unique_id=1417548414]
-offset_left = 172.0
-offset_top = 6.0
-offset_right = 974.0
-offset_bottom = 60.0
-
-[node name="XPBar" type="ProgressBar" parent="OverworldHUD/VBoxContainer2" unique_id=1102117376]
-layout_mode = 2
-
-[node name="XPText" type="Label" parent="OverworldHUD/VBoxContainer2" unique_id=1600954386]
-layout_mode = 2
-text = "                                                                "
 
 [node name="RoadmapPopup" type="CanvasLayer" parent="." unique_id=3717834]
 script = ExtResource("3_1u8w0")
@@ -3502,17 +3496,17 @@ offset_bottom = -10.0
 [node name="RichTextLabel" type="RichTextLabel" parent="RoadmapPopup/Panel" unique_id=19851805]
 layout_mode = 0
 offset_left = -4.0
-offset_top = 167.0
+offset_top = 205.0
 offset_right = 259.0
-offset_bottom = 308.0
+offset_bottom = 346.0
 text = "Road Map"
 
 [node name="CloseButton" type="Button" parent="RoadmapPopup/Panel" unique_id=185379812]
 layout_mode = 0
 offset_left = -3.0
-offset_top = 324.0
+offset_top = 357.0
 offset_right = 261.0
-offset_bottom = 355.0
+offset_bottom = 388.0
 text = "Close Roadmap"
 
 [node name="EquipmentMenu" type="CanvasLayer" parent="." unique_id=2021918082]
@@ -3590,7 +3584,6 @@ combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
 
 [node name="mob4" parent="Character" index="6" unique_id=262431056 node_paths=PackedStringArray("combat_ui", "lose_ui")]
-position = Vector2(-54, 240)
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
 
@@ -3600,7 +3593,7 @@ lose_ui = NodePath("../../ui/LoseUI")
 
 [node name="QuestSystem" parent="." unique_id=636915324 instance=ExtResource("5_dg77c")]
 
-[node name="ItemsStation" type="CharacterBody2D" parent="." unique_id=1343851479]
+[node name="ItemsStation" type="Area2D" parent="." unique_id=907402547]
 position = Vector2(-377, 160)
 script = ExtResource("9_lswn8")
 
