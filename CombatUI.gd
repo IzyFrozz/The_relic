@@ -450,13 +450,14 @@ func _on_fight_pressed() -> void:
 		_refresh_ui_states()
 		return
 
-	# Step 2: Player lunges toward enemy, plays AttackUp, shakes both, returns
+	# Step 2: Player lunges — skip attack anim if disarmed
 	var player = get_tree().get_first_node_in_group("player")
 	if not is_instance_valid(player):
 		player = get_tree().root.find_child("mainplayer", true, false)
 	if is_instance_valid(player) and player.has_method("do_attack_lunge"):
 		var enemy_pos = current_enemy.global_position if is_instance_valid(current_enemy) else player.global_position
-		await player.do_attack_lunge(enemy_pos, current_enemy)
+		var is_disarmed = current_enemy.player_is_disarmed if "player_is_disarmed" in current_enemy else false
+		await player.do_attack_lunge(enemy_pos, current_enemy, is_disarmed)
 
 	# Step 3: Process the actual attack
 	if current_enemy.has_method("process_player_attack_phase"):

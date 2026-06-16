@@ -87,7 +87,6 @@ func start_combat() -> void:
 	QuestManager.player_health = QuestManager.MAX_HEALTH
 	_apply_supply_drop_rewards()
 
-	# Step 1: Move player to battle marker (camera still enabled — it follows)
 	if is_instance_valid(player_ref):
 		QuestManager.player_overworld_position = player_ref.global_position
 		if is_instance_valid(battle_player_marker):
@@ -97,16 +96,6 @@ func start_combat() -> void:
 
 	if is_instance_valid(battle_enemy_marker):
 		self.global_position = battle_enemy_marker.global_position
-
-	# Step 2: Wait one frame so camera catches up to the new position, then lock it
-	await get_tree().process_frame
-	await get_tree().process_frame
-	if is_instance_valid(player_ref):
-		var camera = player_ref.get_node_or_null("Camera2D") as Camera2D
-		if is_instance_valid(camera):
-			# Lock camera in place at current (combat) position
-			camera.position_smoothing_enabled = false
-			camera.enabled = false
 
 	if is_instance_valid(combat_ui):
 		combat_ui.open_combat_screen(self)
@@ -165,7 +154,7 @@ func process_player_attack_phase() -> void:
 			combat_ui._refresh_ui_states()
 			await combat_ui.show_blocking_popup("⚡ DISARMED!", "The Enemy's Whip disarmed you — your attack phase is skipped this round!", false)
 
-		if _check_combat_end_conditions():
+		if await _check_combat_end_conditions():
 			return
 
 		if combat_ui: combat_ui.start_enemy_turn_visuals()
@@ -190,7 +179,7 @@ func process_player_attack_phase() -> void:
 
 	if combat_ui: combat_ui._refresh_ui_states()
 
-	if _check_combat_end_conditions():
+	if await _check_combat_end_conditions():
 		return
 
 	if combat_ui: combat_ui.start_enemy_turn_visuals()
@@ -201,6 +190,9 @@ func process_player_attack_phase() -> void:
 func _execute_enemy_turn_ai() -> void:
 	if enemy_is_disarmed:
 		enemy_is_disarmed = false
+		# Disarmed — shake enemy in place, no lunge
+		if is_instance_valid(player_ref) and player_ref.has_method("do_enemy_lunge"):
+			await player_ref.do_enemy_lunge(self, player_ref.global_position, true)
 		if combat_ui:
 			combat_ui.display_round_history("💥 Enemy was disarmed and skipped their turn!", false)
 			await combat_ui.show_blocking_popup("💀 ENEMY ACTION", "The enemy is DISARMED and cannot act!", false)
@@ -275,9 +267,15 @@ func _execute_enemy_turn_ai() -> void:
 
 	if combat_ui:
 		combat_ui._refresh_ui_states()
+
+	# Enemy lunges toward player before showing attack result
+	if is_instance_valid(player_ref) and player_ref.has_method("do_enemy_lunge"):
+		await player_ref.do_enemy_lunge(self, player_ref.global_position, false)
+
+	if combat_ui:
 		await combat_ui.show_blocking_popup("💀 ENEMY ACTION", attack_log, false)
 
-	if _check_combat_end_conditions():
+	if await _check_combat_end_conditions():
 		return
 
 	_conclude_round_cycle_ticks()
@@ -380,12 +378,6 @@ func _check_combat_end_conditions() -> bool:
 		self.global_position = enemy_overworld_position
 		is_in_combat = false
 		QuestManager.is_in_combat = false
-		# Re-enable camera on death too
-		if is_instance_valid(player_ref):
-			var camera = player_ref.get_node_or_null("Camera2D") as Camera2D
-			if is_instance_valid(camera):
-				camera.enabled = true
-				camera.position_smoothing_enabled = true
 		if is_instance_valid(lose_ui): lose_ui.show_death_screen()
 		return true
 
@@ -404,14 +396,15 @@ func _check_combat_end_conditions() -> bool:
 
 		QuestManager.player_health = QuestManager.MAX_HEALTH
 
+		# Play die animation once before removing enemy
+		var enemy_sprite = get_node_or_null("AnimatedSprite2D") as AnimatedSprite2D
+		if is_instance_valid(enemy_sprite) and enemy_sprite.sprite_frames and enemy_sprite.sprite_frames.has_animation("die"):
+			enemy_sprite.play("die")
+			await enemy_sprite.animation_finished
+
 		if is_instance_valid(player_ref):
 			if "velocity" in player_ref: player_ref.velocity = Vector2.ZERO
 			player_ref.global_position = QuestManager.player_overworld_position
-			# Re-enable camera and restore smoothing
-			var camera = player_ref.get_node_or_null("Camera2D") as Camera2D
-			if is_instance_valid(camera):
-				camera.enabled = true
-				camera.position_smoothing_enabled = true
 
 		QuestManager.is_in_combat = false
 		queue_free()
