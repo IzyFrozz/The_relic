@@ -13,7 +13,7 @@ var is_knocked_back: bool = false
 
 var is_dashing: bool = false
 var can_dash: bool = true
-var last_input_dir: Vector2 = Vector2.DOWN
+var last_input_dir: Vector2 = Vector2.UP
 
 @export var dash_speed: float = 400.0
 @export var dash_duration: float = 0.2
@@ -30,7 +30,6 @@ func _physics_process(delta: float) -> void:
 		move_and_slide()
 		return
 
-	# Freeze while equipment menu is open
 	var equipment_menu = get_tree().root.find_child("EquipmentMenu", true, false)
 	if is_instance_valid(equipment_menu) and equipment_menu.visible:
 		velocity = Vector2.ZERO
@@ -47,7 +46,6 @@ func _physics_process(delta: float) -> void:
 		return
 
 	var input_dir = Input.get_vector("move_left", "move_right", "move_up", "move_down")
-
 	if input_dir != Vector2.ZERO:
 		last_input_dir = input_dir.normalized()
 
@@ -65,9 +63,15 @@ func _physics_process(delta: float) -> void:
 
 	move_and_slide()
 
+func face_up() -> void:
+	last_input_dir = Vector2.UP
+	sprite.flip_h = false
+	sprite.stop()
+	sprite.animation = "default"
+	sprite.frame = 0
+
 func _play_walk_animation(dir: Vector2) -> void:
 	if abs(dir.x) >= abs(dir.y):
-		# Horizontal movement — flip for left
 		sprite.flip_h = dir.x < 0
 		sprite.play("WalkSide")
 	elif dir.y < 0:
@@ -77,16 +81,54 @@ func _play_walk_animation(dir: Vector2) -> void:
 		sprite.flip_h = false
 		sprite.play("WalkDown")
 
-func play_attack_animation() -> void:
-	if abs(last_input_dir.x) >= abs(last_input_dir.y):
-		sprite.flip_h = last_input_dir.x < 0
-		sprite.play("AttackSide")
-	elif last_input_dir.y < 0:
-		sprite.flip_h = false
-		sprite.play("AttackUp")
-	else:
-		sprite.flip_h = false
-		sprite.play("AttackDown")
+# Called by CombatUI after confirm
+# enemy_node is passed so we can shake it too
+func do_attack_lunge(enemy_pos: Vector2, enemy_node: Node2D = null) -> void:
+	var start_pos = global_position
+	var lunge_target = start_pos.lerp(enemy_pos, 0.45)
+
+	# Face up and play attack animation once
+	sprite.flip_h = false
+	sprite.play("AttackUp")
+
+	# Lunge toward enemy
+	var tween = create_tween()
+	tween.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	tween.tween_property(self, "global_position", lunge_target, 0.18)
+	await tween.finished
+
+	# Shake player AND enemy simultaneously
+	var shake_time = 0.32
+	var elapsed = 0.0
+	var enemy_start_pos = enemy_node.global_position if is_instance_valid(enemy_node) else Vector2.ZERO
+	while elapsed < shake_time:
+		var offset = Vector2(randf_range(-5, 5), randf_range(-4, 4))
+		global_position = lunge_target + offset
+		if is_instance_valid(enemy_node):
+			enemy_node.global_position = enemy_start_pos + Vector2(randf_range(-4, 4), randf_range(-3, 3))
+		await get_tree().create_timer(0.04).timeout
+		elapsed += 0.04
+
+	# Snap both back to exact positions
+	global_position = lunge_target
+	if is_instance_valid(enemy_node):
+		enemy_node.global_position = enemy_start_pos
+
+	# Wait for rest of attack animation
+	await get_tree().create_timer(0.25).timeout
+
+	# Return to start — still facing up (WalkUp frame 0)
+	var tween2 = create_tween()
+	tween2.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+	tween2.tween_property(self, "global_position", start_pos, 0.15)
+	await tween2.finished
+
+	# Stay facing up after lunge completes
+	sprite.flip_h = false
+	sprite.stop()
+	sprite.animation = "default"
+	sprite.frame = 0
+	last_input_dir = Vector2.UP
 
 func execute_dash() -> void:
 	can_dash = false

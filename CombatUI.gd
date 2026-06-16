@@ -241,6 +241,10 @@ func _input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 		return
 
+	# Only process combat keybinds when actively in combat with a valid enemy
+	if not current_enemy or not QuestManager.is_in_combat:
+		return
+
 	if is_waiting_on_action:
 		if event is InputEventKey: get_viewport().set_input_as_handled()
 		return
@@ -349,13 +353,13 @@ func _refresh_ui_states() -> void:
 		var emax = current_enemy.enemy_max_health if "enemy_max_health" in current_enemy else 100
 		enemy_hp.text = "ENEMY LV.%d  " % current_enemy.enemy_level + _parse_hp_to_hearts(current_enemy.enemy_health, emax)
 
-	# --- Drop countdown: use current_items_per_deal which is already correct ---
+	# --- Drop countdown label — matches MobEnemy schedule exactly ---
 	if drop_countdown_label:
+		var next_item_count = min(current_enemy.drop_round_index + 1, 6)
 		if current_enemy.cycles_until_drop <= 1:
-			drop_countdown_label.text = "📦  Supply drop incoming next round!"
+			drop_countdown_label.text = "📦  Drop next round!  (+%d items)" % next_item_count
 		else:
-			var next_count = min(current_enemy.drop_round_index + 1, current_enemy.enemy_level)
-			drop_countdown_label.text = "📦  Drop in %d rounds  (+%d items each)" % [current_enemy.cycles_until_drop, next_count]
+			drop_countdown_label.text = "📦  Drop in %d rounds  (+%d items)" % [current_enemy.cycles_until_drop, next_item_count]
 
 	# --- Rebuild item buttons to reflect current inventory counts + equipped order ---
 	var slots = QuestManager.equipped_items
@@ -439,29 +443,22 @@ func _on_fight_pressed() -> void:
 	is_waiting_on_action = true
 	_lock_all_player_inputs()
 
-	# Play attack animation on player before popup
-	var player = get_tree().get_first_node_in_group("player")
-	if not is_instance_valid(player):
-		player = get_tree().root.find_child("mainplayer", true, false)
-	if is_instance_valid(player):
-		var sprite = player.get_node_or_null("AnimatedSprite2D") as AnimatedSprite2D
-		if is_instance_valid(sprite):
-			var dir = player.last_input_dir if "last_input_dir" in player else Vector2.DOWN
-			if abs(dir.x) >= abs(dir.y):
-				sprite.flip_h = dir.x < 0
-				sprite.play("AttackSide")
-			elif dir.y < 0:
-				sprite.play("AttackUp")
-			else:
-				sprite.play("AttackDown")
-			await get_tree().create_timer(0.35).timeout
-
+	# Step 1: Confirm first
 	var confirmed = await show_blocking_popup("⚔️  ATTACK", "Commit to your attack phase?", true)
 	if not confirmed:
 		is_waiting_on_action = false
 		_refresh_ui_states()
 		return
 
+	# Step 2: Player lunges toward enemy, plays AttackUp, shakes both, returns
+	var player = get_tree().get_first_node_in_group("player")
+	if not is_instance_valid(player):
+		player = get_tree().root.find_child("mainplayer", true, false)
+	if is_instance_valid(player) and player.has_method("do_attack_lunge"):
+		var enemy_pos = current_enemy.global_position if is_instance_valid(current_enemy) else player.global_position
+		await player.do_attack_lunge(enemy_pos, current_enemy)
+
+	# Step 3: Process the actual attack
 	if current_enemy.has_method("process_player_attack_phase"):
 		await current_enemy.process_player_attack_phase()
 
@@ -524,8 +521,6 @@ func show_blocking_popup(header_title: String, message: String, require_confirma
 	return user_choice
 
 func show_magnet_choice_popup(enemy_inv: Array) -> String:
-	popup_title_lbl.text = "🧲  MAGNET — Choose an item to steal"
-	popup_label.text = "Click an item or press [1–5], then Commit:"
 	popup_overlay.visible = true
 	magnet_currently_selected_item = ""
 
@@ -563,12 +558,22 @@ func show_magnet_choice_popup(enemy_inv: Array) -> String:
 		if item != "magnet" and not item in unique_items:
 			unique_items.append(item)
 
+	# ── Declare commit_btn FIRST so item button lambdas can close over it ──
+	var commit_btn := Button.new()
+	commit_btn.name = "CommitButton"
+	commit_btn.text = "✅  Commit  (Enter)"
+	commit_btn.focus_mode = Control.FOCUS_NONE
+	commit_btn.custom_minimum_size = Vector2(0, 44)
+	commit_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	commit_btn.disabled = true
+
+	# ── Now build the item choice buttons (they reference commit_btn safely) ──
 	var choice_btns: Array = []
 	for i in range(unique_items.size()):
 		var item = unique_items[i]
 		var meta = ITEM_META.get(item, {"emoji":"❓","label":item.capitalize(),"desc":""})
 		var btn = Button.new()
-		btn.text = "[%d]  %s  %s" % [i+1, meta["emoji"], meta["label"]]
+		btn.text = "[%d]  %s  %s" % [i + 1, meta["emoji"], meta["label"]]
 		btn.focus_mode = Control.FOCUS_NONE
 		btn.custom_minimum_size = Vector2(130, 44)
 		dynamic_grid.add_child(btn)
@@ -586,17 +591,10 @@ func show_magnet_choice_popup(enemy_inv: Array) -> String:
 		empty_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		dynamic_grid.add_child(empty_lbl)
 
+	# ── Action row: add commit + cancel ──
 	var action_hbox = HBoxContainer.new()
 	action_hbox.add_theme_constant_override("separation", 12)
 	magnet_vbox.add_child(action_hbox)
-
-	var commit_btn = Button.new()
-	commit_btn.name = "CommitButton"
-	commit_btn.text = "✅  Commit  (Enter)"
-	commit_btn.focus_mode = Control.FOCUS_NONE
-	commit_btn.custom_minimum_size = Vector2(0, 44)
-	commit_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	commit_btn.disabled = true
 	action_hbox.add_child(commit_btn)
 
 	var cancel_btn = Button.new()

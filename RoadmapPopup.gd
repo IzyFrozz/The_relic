@@ -3,12 +3,42 @@ extends CanvasLayer
 var rich_text: RichTextLabel = null
 var close_button: Button = null
 
+const COL_BG     := Color(0.09, 0.10, 0.15, 0.97)
+const COL_BORDER := Color(0.30, 0.35, 0.55, 1.0)
+const COL_GOLD   := Color(1.00, 0.85, 0.30, 1.0)
+
 func _ready() -> void:
 	visible = false
 	rich_text    = find_child("RichTextLabel", true, false) as RichTextLabel
 	close_button = find_child("CloseButton", true, false) as Button
+	var panel    = find_child("Panel", true, false) as Panel
+
+	if is_instance_valid(panel):
+		var s = StyleBoxFlat.new()
+		s.bg_color = COL_BG
+		s.set_corner_radius_all(10)
+		s.set_border_width_all(2)
+		s.border_color = COL_BORDER
+		s.content_margin_left = 18; s.content_margin_right = 18
+		s.content_margin_top = 16;  s.content_margin_bottom = 16
+		panel.add_theme_stylebox_override("panel", s)
+
+	if is_instance_valid(rich_text):
+		rich_text.add_theme_font_size_override("normal_font_size", 14)
+		rich_text.add_theme_color_override("default_color", Color(0.88, 0.88, 1.0))
+
 	if is_instance_valid(close_button):
-		close_button.text = "✖  Close"
+		close_button.text = "✖  Close  (Esc)"
+		close_button.focus_mode = Control.FOCUS_NONE
+		var bs = StyleBoxFlat.new()
+		bs.bg_color = Color(0.20, 0.08, 0.08)
+		bs.set_corner_radius_all(5); bs.set_border_width_all(1)
+		bs.border_color = Color(0.6, 0.2, 0.2)
+		close_button.add_theme_stylebox_override("normal", bs)
+		var bsh = bs.duplicate(); bsh.bg_color = Color(0.35, 0.12, 0.12)
+		close_button.add_theme_stylebox_override("hover", bsh)
+		close_button.add_theme_color_override("font_color", Color(1, 0.5, 0.5))
+		close_button.add_theme_font_size_override("font_size", 14)
 		close_button.pressed.connect(func(): visible = false)
 
 func _input(event: InputEvent) -> void:
@@ -32,14 +62,18 @@ func refresh_display() -> void:
 		var item = QuestManager.item_unlocks[lvl]
 		var is_unlocked = QuestManager.unlocked_items.has(item)
 		var is_equipped  = QuestManager.equipped_items.has(item)
+
+		if not is_unlocked:
+			# Locked — show nothing about the item
+			out += "[b]LEVEL %d[/b]  [color=#444444]🔒 ???[/color]\n" % lvl
+			out += "  [color=#333333]Reach level %d to unlock.[/color]\n\n" % lvl
+			continue
+
 		var status_tag = ""
-		if is_unlocked and is_equipped:
+		if is_equipped:
 			status_tag = "  [color=#44FF88]✓ Equipped[/color]"
-		elif is_unlocked:
-			status_tag = "  [color=#FFAA44]✓ Unlocked[/color]"
 		else:
-			var xp_needed = ""
-			status_tag = "  [color=#666666]🔒 Locked[/color]"
+			status_tag = "  [color=#FFAA44]✓ Unlocked[/color]"
 
 		var emoji = ""
 		var desc  = ""
