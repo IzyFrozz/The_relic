@@ -400,7 +400,7 @@ radius = 23.021729
 [node name="main" type="Node2D" unique_id=821692882]
 script = ExtResource("1_074og")
 metadata/_edit_vertical_guides_ = [398.0, 749.0]
-metadata/_edit_horizontal_guides_ = [305.0, 236.0]
+metadata/_edit_horizontal_guides_ = [150.0, 105.0, 311.0, 412.0]
 
 [node name="OverworldHUD" type="CanvasLayer" parent="." unique_id=426747284]
 script = ExtResource("2_d13ii")
@@ -471,33 +471,34 @@ offset_bottom = -13.0
 [node name="TitleLabel" type="Label" parent="EquipmentMenu/Panel" unique_id=1470423410]
 layout_mode = 0
 offset_left = -47.0
-offset_top = 67.0
+offset_top = 158.0
 offset_right = 86.0
-offset_bottom = 90.0
+offset_bottom = 181.0
 text = "Equipment Menu"
+horizontal_alignment = 1
 
 [node name="UnlockedGrid" type="GridContainer" parent="EquipmentMenu/Panel" unique_id=719893414]
 layout_mode = 0
 offset_left = -156.0
-offset_top = 108.0
+offset_top = 203.0
 offset_right = 196.0
-offset_bottom = 269.0
+offset_bottom = 364.0
 columns = 6
 
 [node name="EquippedGrid" type="GridContainer" parent="EquipmentMenu/Panel" unique_id=285528932]
 layout_mode = 0
 offset_left = -154.0
-offset_top = 298.0
+offset_top = 372.0
 offset_right = 195.0
-offset_bottom = 391.0
+offset_bottom = 465.0
 columns = 3
 
 [node name="CloseButton" type="Button" parent="EquipmentMenu/Panel" unique_id=166129530]
 layout_mode = 0
 offset_left = -153.0
-offset_top = 403.0
+offset_top = 483.0
 offset_right = 195.0
-offset_bottom = 434.0
+offset_bottom = 514.0
 text = "Save & Close"
 
 [node name="ui" parent="." unique_id=560062949 instance=ExtResource("2_ryguw")]

@@ -31,6 +31,7 @@ font = SubResource("FontFile_h8e4i")
 metadata/_edit_horizontal_guides_ = [302.0]
 
 [node name="LoseUI" type="CanvasLayer" parent="." unique_id=967082692]
+visible = false
 script = ExtResource("1_27fn8")
 
 [node name="Panel" type="Panel" parent="LoseUI" unique_id=1427044771]
