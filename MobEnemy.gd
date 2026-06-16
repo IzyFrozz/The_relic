@@ -85,19 +85,28 @@ func start_combat() -> void:
 	cycles_until_drop = 1
 
 	QuestManager.player_health = QuestManager.MAX_HEALTH
-
 	_apply_supply_drop_rewards()
 
+	# Step 1: Move player to battle marker (camera still enabled — it follows)
 	if is_instance_valid(player_ref):
 		QuestManager.player_overworld_position = player_ref.global_position
 		if is_instance_valid(battle_player_marker):
 			player_ref.global_position = battle_player_marker.global_position
-		# Always face player toward enemy (upward) on combat start
 		if player_ref.has_method("face_up"):
 			player_ref.face_up()
 
 	if is_instance_valid(battle_enemy_marker):
 		self.global_position = battle_enemy_marker.global_position
+
+	# Step 2: Wait one frame so camera catches up to the new position, then lock it
+	await get_tree().process_frame
+	await get_tree().process_frame
+	if is_instance_valid(player_ref):
+		var camera = player_ref.get_node_or_null("Camera2D") as Camera2D
+		if is_instance_valid(camera):
+			# Lock camera in place at current (combat) position
+			camera.position_smoothing_enabled = false
+			camera.enabled = false
 
 	if is_instance_valid(combat_ui):
 		combat_ui.open_combat_screen(self)
@@ -371,6 +380,12 @@ func _check_combat_end_conditions() -> bool:
 		self.global_position = enemy_overworld_position
 		is_in_combat = false
 		QuestManager.is_in_combat = false
+		# Re-enable camera on death too
+		if is_instance_valid(player_ref):
+			var camera = player_ref.get_node_or_null("Camera2D") as Camera2D
+			if is_instance_valid(camera):
+				camera.enabled = true
+				camera.position_smoothing_enabled = true
 		if is_instance_valid(lose_ui): lose_ui.show_death_screen()
 		return true
 
@@ -392,6 +407,11 @@ func _check_combat_end_conditions() -> bool:
 		if is_instance_valid(player_ref):
 			if "velocity" in player_ref: player_ref.velocity = Vector2.ZERO
 			player_ref.global_position = QuestManager.player_overworld_position
+			# Re-enable camera and restore smoothing
+			var camera = player_ref.get_node_or_null("Camera2D") as Camera2D
+			if is_instance_valid(camera):
+				camera.enabled = true
+				camera.position_smoothing_enabled = true
 
 		QuestManager.is_in_combat = false
 		queue_free()

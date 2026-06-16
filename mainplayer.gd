@@ -13,7 +13,7 @@ var is_knocked_back: bool = false
 
 var is_dashing: bool = false
 var can_dash: bool = true
-var last_input_dir: Vector2 = Vector2.UP  # Default facing UP (toward enemies)
+var last_input_dir: Vector2 = Vector2.UP
 
 @export var dash_speed: float = 400.0
 @export var dash_duration: float = 0.2
@@ -46,7 +46,6 @@ func _physics_process(delta: float) -> void:
 		return
 
 	var input_dir = Input.get_vector("move_left", "move_right", "move_up", "move_down")
-
 	if input_dir != Vector2.ZERO:
 		last_input_dir = input_dir.normalized()
 
@@ -65,11 +64,10 @@ func _physics_process(delta: float) -> void:
 	move_and_slide()
 
 func face_up() -> void:
-	# Force the sprite to face upward — called when entering combat
 	last_input_dir = Vector2.UP
 	sprite.flip_h = false
-	sprite.play("WalkUp")
 	sprite.stop()
+	sprite.animation = "default"
 	sprite.frame = 0
 
 func _play_walk_animation(dir: Vector2) -> void:
@@ -83,12 +81,13 @@ func _play_walk_animation(dir: Vector2) -> void:
 		sprite.flip_h = false
 		sprite.play("WalkDown")
 
-# Called by CombatUI after confirm — runs toward enemy, plays attack, shakes, returns
-func do_attack_lunge(enemy_pos: Vector2) -> void:
+# Called by CombatUI after confirm
+# enemy_node is passed so we can shake it too
+func do_attack_lunge(enemy_pos: Vector2, enemy_node: Node2D = null) -> void:
 	var start_pos = global_position
 	var lunge_target = start_pos.lerp(enemy_pos, 0.45)
 
-	# Always play AttackUp (enemy is always above player in combat layout)
+	# Face up and play attack animation once
 	sprite.flip_h = false
 	sprite.play("AttackUp")
 
@@ -98,23 +97,38 @@ func do_attack_lunge(enemy_pos: Vector2) -> void:
 	tween.tween_property(self, "global_position", lunge_target, 0.18)
 	await tween.finished
 
-	# Shake
-	for i in range(6):
-		var offset = Vector2(randf_range(-4, 4), randf_range(-4, 4))
-		global_position += offset
+	# Shake player AND enemy simultaneously
+	var shake_time = 0.32
+	var elapsed = 0.0
+	var enemy_start_pos = enemy_node.global_position if is_instance_valid(enemy_node) else Vector2.ZERO
+	while elapsed < shake_time:
+		var offset = Vector2(randf_range(-5, 5), randf_range(-4, 4))
+		global_position = lunge_target + offset
+		if is_instance_valid(enemy_node):
+			enemy_node.global_position = enemy_start_pos + Vector2(randf_range(-4, 4), randf_range(-3, 3))
 		await get_tree().create_timer(0.04).timeout
+		elapsed += 0.04
+
+	# Snap both back to exact positions
 	global_position = lunge_target
+	if is_instance_valid(enemy_node):
+		enemy_node.global_position = enemy_start_pos
 
-	# Wait for attack animation to finish
-	await sprite.animation_finished
+	# Wait for rest of attack animation
+	await get_tree().create_timer(0.25).timeout
 
-	# Return to start
+	# Return to start — still facing up (WalkUp frame 0)
 	var tween2 = create_tween()
 	tween2.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
 	tween2.tween_property(self, "global_position", start_pos, 0.15)
 	await tween2.finished
 
-	sprite.play("default")
+	# Stay facing up after lunge completes
+	sprite.flip_h = false
+	sprite.stop()
+	sprite.animation = "default"
+	sprite.frame = 0
+	last_input_dir = Vector2.UP
 
 func execute_dash() -> void:
 	can_dash = false

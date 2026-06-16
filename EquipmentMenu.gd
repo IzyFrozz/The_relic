@@ -57,7 +57,6 @@ func _ready() -> void:
 	close_button  = find_child("CloseButton",   true, false) as Button
 
 	# ── Inject a full-screen dim overlay behind everything ──
-	# (insert as first child of this CanvasLayer so it renders under Panel)
 	bg_overlay = ColorRect.new()
 	bg_overlay.color = Color(0, 0, 0, 0.60)
 	bg_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -65,9 +64,26 @@ func _ready() -> void:
 	add_child(bg_overlay)
 	move_child(bg_overlay, 0)
 
-	# ── Style the main panel ──
+	# ── Add dark background inside the panel ──
 	if is_instance_valid(panel):
-		panel.add_theme_stylebox_override("panel", _s(COL_PANEL, COL_BORDER, 12))
+		var panel_bg = ColorRect.new()
+		panel_bg.name = "DarkBG"
+		panel_bg.color = Color(0.07, 0.08, 0.12, 1.0)
+		panel_bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		panel_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		panel.add_child(panel_bg)
+		panel.move_child(panel_bg, 0)
+
+	# ── Style the main panel — solid dark with border ──
+	if is_instance_valid(panel):
+		var ps = StyleBoxFlat.new()
+		ps.bg_color = Color(0.07, 0.08, 0.12, 1.0)
+		ps.set_corner_radius_all(12)
+		ps.set_border_width_all(2)
+		ps.border_color = COL_BORDER
+		ps.content_margin_left = 16; ps.content_margin_right = 16
+		ps.content_margin_top = 14;  ps.content_margin_bottom = 14
+		panel.add_theme_stylebox_override("panel", ps)
 
 	# ── Title ──
 	if is_instance_valid(title_label):
