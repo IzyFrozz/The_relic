@@ -44,6 +44,11 @@ animations = [{
 "loop": true,
 "name": &"default",
 "speed": 5.0
+}, {
+"frames": [],
+"loop": true,
+"name": &"die",
+"speed": 5.0
 }]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_7tnxx"]
@@ -92,6 +97,11 @@ animations = [{
 "loop": true,
 "name": &"default",
 "speed": 5.0
+}, {
+"frames": [],
+"loop": true,
+"name": &"die",
+"speed": 5.0
 }]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_sm1rv"]
@@ -133,6 +143,11 @@ animations = [{
 }],
 "loop": true,
 "name": &"default",
+"speed": 5.0
+}, {
+"frames": [],
+"loop": true,
+"name": &"die",
 "speed": 5.0
 }]
 
@@ -177,6 +192,11 @@ animations = [{
 "loop": true,
 "name": &"default",
 "speed": 5.0
+}, {
+"frames": [],
+"loop": true,
+"name": &"die",
+"speed": 5.0
 }]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_3d8aq"]
@@ -217,6 +237,11 @@ animations = [{
 }],
 "loop": true,
 "name": &"default",
+"speed": 5.0
+}, {
+"frames": [],
+"loop": true,
+"name": &"die",
 "speed": 5.0
 }]
 
@@ -264,6 +289,7 @@ debug_color = Color(0.9823695, 0, 0.36699468, 0.41960785)
 position = Vector2(4.7683716e-07, 3.8146973e-06)
 scale = Vector2(0.8359378, 0.8359378)
 sprite_frames = SubResource("SpriteFrames_c1b4b")
+animation = &"die"
 autoplay = "default"
 flip_h = true
 
@@ -334,6 +360,7 @@ debug_color = Color(0.9823695, 0, 0.36699468, 0.41960785)
 position = Vector2(3.8146973e-06, -3.0000038)
 scale = Vector2(0.882813, 0.882813)
 sprite_frames = SubResource("SpriteFrames_x1sy7")
+animation = &"die"
 autoplay = "default"
 flip_h = true
 
@@ -358,6 +385,7 @@ debug_color = Color(0.9823695, 0, 0.36699468, 0.41960785)
 position = Vector2(-1.5258789e-05, 0)
 scale = Vector2(0.8124994, 0.8124994)
 sprite_frames = SubResource("SpriteFrames_lpiy1")
+animation = &"die"
 autoplay = "default"
 flip_h = true
 
@@ -382,6 +410,7 @@ debug_color = Color(0.9823695, 0, 0.36699468, 0.41960785)
 position = Vector2(-3.8146973e-06, 1.66893e-06)
 scale = Vector2(0.8593749, 0.8593749)
 sprite_frames = SubResource("SpriteFrames_kjduu")
+animation = &"die"
 autoplay = "default"
 flip_h = true
 
@@ -406,6 +435,7 @@ debug_color = Color(0.9823695, 0, 0.36699468, 0.41960785)
 position = Vector2(-3.8146973e-06, 1.66893e-06)
 scale = Vector2(0.8593749, 0.8593749)
 sprite_frames = SubResource("SpriteFrames_7tnxx")
+animation = &"die"
 autoplay = "default"
 flip_h = true
 
