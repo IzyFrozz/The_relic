@@ -488,9 +488,7 @@ debug_color = Color(0.9823695, 0, 0.36699468, 0.41960785)
 position = Vector2(4.7683716e-07, 3.8146973e-06)
 scale = Vector2(0.8359378, 0.8359378)
 sprite_frames = SubResource("SpriteFrames_c1b4b")
-animation = &"die"
-autoplay = "die"
-frame_progress = 0.24386464
+autoplay = "default"
 flip_h = true
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="mob1" unique_id=504588173]
@@ -513,7 +511,6 @@ debug_color = Color(0.9823695, 0, 0.36699468, 0.41960785)
 position = Vector2(4.7683716e-07, 3.8146973e-06)
 scale = Vector2(0.8359378, 0.8359378)
 sprite_frames = SubResource("SpriteFrames_c1b4b")
-animation = &"die"
 autoplay = "default"
 flip_h = true
 
@@ -587,8 +584,7 @@ debug_color = Color(0.9823695, 0, 0.36699468, 0.41960785)
 position = Vector2(3.8146973e-06, -3.0000038)
 scale = Vector2(0.882813, 0.882813)
 sprite_frames = SubResource("SpriteFrames_x1sy7")
-animation = &"die"
-autoplay = "die"
+autoplay = "default"
 flip_h = true
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="mob2" unique_id=222023925]
@@ -612,9 +608,7 @@ debug_color = Color(0.9823695, 0, 0.36699468, 0.41960785)
 position = Vector2(-1.5258789e-05, 0)
 scale = Vector2(0.8124994, 0.8124994)
 sprite_frames = SubResource("SpriteFrames_lpiy1")
-animation = &"die"
-autoplay = "die"
-frame_progress = 0.9425224
+autoplay = "default"
 flip_h = true
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="mob3" unique_id=617895707]
@@ -638,8 +632,7 @@ debug_color = Color(0.9823695, 0, 0.36699468, 0.41960785)
 position = Vector2(-3.8146973e-06, 1.66893e-06)
 scale = Vector2(0.8593749, 0.8593749)
 sprite_frames = SubResource("SpriteFrames_kjduu")
-animation = &"die"
-autoplay = "die"
+autoplay = "default"
 flip_h = true
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="mob4" unique_id=181016442]
@@ -663,7 +656,6 @@ debug_color = Color(0.9823695, 0, 0.36699468, 0.41960785)
 position = Vector2(-3.8146973e-06, 1.66893e-06)
 scale = Vector2(0.8593749, 0.8593749)
 sprite_frames = SubResource("SpriteFrames_7tnxx")
-animation = &"die"
 autoplay = "default"
 flip_h = true
 
