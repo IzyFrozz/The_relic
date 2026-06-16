@@ -10,7 +10,7 @@
 [ext_resource type="PackedScene" uid="uid://b5s0bfhkjp1hq" path="res://character.tscn" id="4_vivmo"]
 [ext_resource type="PackedScene" uid="uid://bthp4nwyq6ewh" path="res://quest.tscn" id="5_dg77c"]
 [ext_resource type="Script" uid="uid://ch7qn1m4lhwlc" path="res://ItemsStation.gd" id="9_lswn8"]
-[ext_resource type="PackedScene" uid="uid://byr7nn32v0q6g" path="res://foreground.tscn" id="15_074og"]
+[ext_resource type="PackedScene" uid="uid://dn2a5bka3ukty" path="res://foreground.tscn" id="15_074og"]
 [ext_resource type="Texture2D" uid="uid://b1ykf6xq4wg1u" path="res://Asset/Pixel Crawler - Free Pack/Environment/Structures/Stations/Anvil/Anvil only.png" id="18_074og"]
 [ext_resource type="Texture2D" uid="uid://d2b5gfvc577yl" path="res://Asset/sprites/characters/player.png" id="22_4lmeg"]
 [ext_resource type="Script" uid="uid://dn2n6hy830nqg" path="res://frog_npc.gd" id="23_1u8w0"]
@@ -342,8 +342,8 @@ animations = [{
 }]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_f6a44"]
-radius = 7.0
-height = 14.0
+radius = 6.0
+height = 16.0
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_0cp0l"]
 radius = 12.0
@@ -515,6 +515,9 @@ position = Vector2(-124, 353)
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
 
+[node name="AnimatedSprite2D" parent="Character/mob6" index="1" unique_id=97427122]
+animation = &"default"
+
 [node name="mob7" parent="Character" index="2" unique_id=465294187 node_paths=PackedStringArray("combat_ui", "lose_ui")]
 position = Vector2(-160, 327)
 combat_ui = NodePath("../../ui/CombatUI")
@@ -529,18 +532,30 @@ lose_ui = NodePath("../../ui/LoseUI")
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
 
+[node name="AnimatedSprite2D" parent="Character/mob2" index="1" unique_id=210967603]
+animation = &"default"
+
 [node name="mob3" parent="Character" index="5" unique_id=1476578817 node_paths=PackedStringArray("combat_ui", "lose_ui")]
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
+
+[node name="AnimatedSprite2D" parent="Character/mob3" index="1" unique_id=1819266513]
+animation = &"default"
 
 [node name="mob4" parent="Character" index="6" unique_id=262431056 node_paths=PackedStringArray("combat_ui", "lose_ui")]
 position = Vector2(-54, 240)
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
 
+[node name="AnimatedSprite2D" parent="Character/mob4" index="1" unique_id=1778358597]
+animation = &"default"
+
 [node name="mob5" parent="Character" index="7" unique_id=1899198502 node_paths=PackedStringArray("combat_ui", "lose_ui")]
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
+
+[node name="AnimatedSprite2D" parent="Character/mob5" index="1" unique_id=1173236044]
+animation = &"default"
 
 [node name="QuestSystem" parent="." unique_id=636915324 instance=ExtResource("5_dg77c")]
 
@@ -584,7 +599,7 @@ sprite_frames = SubResource("SpriteFrames_come4")
 animation = &"AttackDown"
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="mainplayer" unique_id=2000731134]
-position = Vector2(0, 4)
+position = Vector2(-1, 3)
 shape = SubResource("CapsuleShape2D_f6a44")
 
 [node name="FrogNPC" type="Area2D" parent="." unique_id=430870357]
