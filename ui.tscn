@@ -1,6 +1,7 @@
 [gd_scene format=3 uid="uid://kdxi5lf0kmey"]
 
 [ext_resource type="Script" uid="uid://cm02qgkexeu3h" path="res://LoseUI.gd" id="1_27fn8"]
+[ext_resource type="Script" uid="uid://blwtx4u7mqi7s" path="res://WinUI.gd" id="2_ibotj"]
 [ext_resource type="Script" uid="uid://c0i1ayu6cesit" path="res://CombatUI.gd" id="2_nltto"]
 [ext_resource type="Script" uid="uid://5fw3555pk2gh" path="res://life_label.gd" id="3_ibotj"]
 
@@ -27,9 +28,9 @@ cache/0/16/0/scale = 1.0
 font = SubResource("FontFile_h8e4i")
 
 [node name="UI" type="Node2D" unique_id=560062949]
+metadata/_edit_horizontal_guides_ = [302.0]
 
 [node name="LoseUI" type="CanvasLayer" parent="." unique_id=967082692]
-visible = false
 script = ExtResource("1_27fn8")
 
 [node name="Panel" type="Panel" parent="LoseUI" unique_id=1427044771]
@@ -51,14 +52,64 @@ offset_right = 592.0
 offset_bottom = 245.0
 scale = Vector2(2, 2)
 text = "You Die!"
+horizontal_alignment = 1
 
 [node name="RestartButton" type="Button" parent="LoseUI/Panel/ColorRect" unique_id=812930809]
+layout_mode = 0
+offset_left = 503.0
+offset_top = 302.0
+offset_right = 673.0
+offset_bottom = 350.0
+text = "Restart Game!"
+
+[node name="ExitButton" type="Button" parent="LoseUI/Panel/ColorRect" unique_id=2050805235]
 layout_mode = 0
 offset_left = 503.0
 offset_top = 370.0
 offset_right = 673.0
 offset_bottom = 418.0
+text = "Exit Game!"
+
+[node name="WinUI" type="CanvasLayer" parent="." unique_id=429278174]
+visible = false
+script = ExtResource("2_ibotj")
+
+[node name="Panel" type="Panel" parent="WinUI" unique_id=56816008]
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="ColorRect" type="ColorRect" parent="WinUI/Panel" unique_id=380564980]
+layout_mode = 0
+offset_right = 1162.0
+offset_bottom = 655.0
+color = Color(0, 0, 0, 1)
+
+[node name="Label" type="Label" parent="WinUI/Panel/ColorRect" unique_id=2042563145]
+modulate = Color(0.23262158, 0.6258512, 0, 1)
+layout_mode = 0
+offset_left = 524.0
+offset_top = 222.0
+offset_right = 592.0
+offset_bottom = 245.0
+scale = Vector2(2, 2)
+text = "You Win!"
+horizontal_alignment = 1
+
+[node name="RestartButton" type="Button" parent="WinUI/Panel/ColorRect" unique_id=1654243863]
+layout_mode = 0
+offset_left = 503.0
+offset_top = 304.0
+offset_right = 673.0
+offset_bottom = 352.0
 text = "Restart Game!"
+
+[node name="ExitButton" type="Button" parent="WinUI/Panel/ColorRect" unique_id=2137640044]
+layout_mode = 0
+offset_left = 503.0
+offset_top = 370.0
+offset_right = 673.0
+offset_bottom = 418.0
+text = "Exit Game!"
 
 [node name="CombatUI" type="CanvasLayer" parent="." unique_id=313349406]
 script = ExtResource("2_nltto")

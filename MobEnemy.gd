@@ -382,9 +382,12 @@ func _check_combat_end_conditions() -> bool:
 		return true
 
 	if enemy_health <= 0:
+		# Immediately block any further combat input
+		is_in_combat = false
+		QuestManager.is_in_combat = false
 		if is_instance_valid(combat_ui): combat_ui.visible = false
 
-		# XP reward scales with enemy level
+		# XP reward
 		var xp_reward := 25
 		match enemy_level:
 			1: xp_reward = 25
@@ -393,20 +396,27 @@ func _check_combat_end_conditions() -> bool:
 			4: xp_reward = 90
 			_: xp_reward = 90 + ((enemy_level - 4) * 30)
 		QuestManager.gain_xp(xp_reward)
-
 		QuestManager.player_health = QuestManager.MAX_HEALTH
 
-		# Play die animation once before removing enemy
+		# Play die animation — force stop after one fixed pause so loop doesn't trap us
 		var enemy_sprite = get_node_or_null("AnimatedSprite2D") as AnimatedSprite2D
-		if is_instance_valid(enemy_sprite) and enemy_sprite.sprite_frames and enemy_sprite.sprite_frames.has_animation("die"):
+		if is_instance_valid(enemy_sprite) and enemy_sprite.sprite_frames \
+				and enemy_sprite.sprite_frames.has_animation("die"):
+			enemy_sprite.stop()
 			enemy_sprite.play("die")
-			await enemy_sprite.animation_finished
 
+		# Fixed pause — adjust to match your die animation length
+		await get_tree().create_timer(1.0).timeout
+
+		# Stop the animation so it doesn't keep playing after we return
+		if is_instance_valid(enemy_sprite):
+			enemy_sprite.stop()
+
+		# Restore player position
 		if is_instance_valid(player_ref):
 			if "velocity" in player_ref: player_ref.velocity = Vector2.ZERO
 			player_ref.global_position = QuestManager.player_overworld_position
 
-		QuestManager.is_in_combat = false
 		queue_free()
 		return true
 	return false

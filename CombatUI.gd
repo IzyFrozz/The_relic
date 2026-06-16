@@ -439,7 +439,10 @@ func _lock_all_player_inputs() -> void:
 
 # ─── FIGHT BUTTON ─────────────────────────────────────────────────────────────
 func _on_fight_pressed() -> void:
-	if is_waiting_on_action or not current_enemy: return
+	if not visible: return
+	if not QuestManager.is_in_combat: return
+	if not is_instance_valid(current_enemy): return
+	if is_waiting_on_action: return
 	is_waiting_on_action = true
 	_lock_all_player_inputs()
 

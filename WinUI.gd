@@ -3,26 +3,24 @@ extends CanvasLayer
 func _ready() -> void:
 	visible = false
 
-	# Direct paths based on your scene tree:
-	# LoseUI > Panel > ColorRect > Label, RestartButton, ExitButton
 	var restart_btn = get_node_or_null("Panel/ColorRect/RestartButton") as Button
 	var exit_btn    = get_node_or_null("Panel/ColorRect/ExitButton") as Button
 	var title       = get_node_or_null("Panel/ColorRect/Label") as Label
 
 	if is_instance_valid(title):
 		title.add_theme_font_size_override("font_size", 24)
-		title.add_theme_color_override("font_color", Color(1.0, 0.25, 0.25))
+		title.add_theme_color_override("font_color", Color(0.49, 0.837, 0.0, 1.0))
 		title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		#title.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 
 	if is_instance_valid(restart_btn):
-		restart_btn.text = "🔄  Restart Fight"
-		_style_btn(restart_btn, Color(0.10, 0.22, 0.10), Color(0.25, 0.65, 0.25))
+		restart_btn.text = "🔄  Play Again"
+		_style_btn(restart_btn, Color(0.08, 0.18, 0.08), Color(0.20, 0.60, 0.20))
 		restart_btn.pressed.connect(_on_restart_pressed)
 
 	if is_instance_valid(exit_btn):
 		exit_btn.text = "🚪  Exit Game"
-		_style_btn(exit_btn, Color(0.22, 0.08, 0.08), Color(0.65, 0.20, 0.20))
+		_style_btn(exit_btn, Color(0.08, 0.12, 0.22), Color(0.20, 0.35, 0.65))
 		exit_btn.pressed.connect(_on_exit_pressed)
 
 func _style_btn(btn: Button, bg: Color, border: Color) -> void:
@@ -41,22 +39,10 @@ func _style_btn(btn: Button, bg: Color, border: Color) -> void:
 	btn.focus_mode = Control.FOCUS_NONE
 	btn.custom_minimum_size = Vector2(220, 52)
 
-func show_death_screen() -> void:
-	visible = true
-
 func _on_restart_pressed() -> void:
-	QuestManager.reset_player_health()
-	QuestManager.is_in_combat = false
-	var player = get_tree().root.find_child("mainplayer", true, false)
-	if is_instance_valid(player):
-		player.global_position = QuestManager.player_overworld_position
-		if "velocity" in player: player.velocity = Vector2.ZERO
-		var sprite = player.get_node_or_null("AnimatedSprite2D") as AnimatedSprite2D
-		if is_instance_valid(sprite):
-			sprite.stop()
-			sprite.animation = "default"
-			sprite.frame = 0
-	visible = false
+	Engine.time_scale = 1.0
+	get_tree().reload_current_scene()
 
 func _on_exit_pressed() -> void:
+	Engine.time_scale = 1.0
 	get_tree().quit()

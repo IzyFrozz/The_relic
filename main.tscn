@@ -510,52 +510,56 @@ text = "Save & Close"
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
 
+[node name="CollisionShape2D" parent="Character/mob1" index="2" unique_id=504588173]
+position = Vector2(0, 3)
+
 [node name="mob6" parent="Character" index="1" unique_id=1964334702 node_paths=PackedStringArray("combat_ui", "lose_ui")]
 position = Vector2(-124, 353)
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
 
-[node name="AnimatedSprite2D" parent="Character/mob6" index="1" unique_id=97427122]
-animation = &"default"
+[node name="CollisionShape2D" parent="Character/mob6" index="2" unique_id=1422953817]
+position = Vector2(0, 3)
 
 [node name="mob7" parent="Character" index="2" unique_id=465294187 node_paths=PackedStringArray("combat_ui", "lose_ui")]
-position = Vector2(-160, 327)
+visible = true
+position = Vector2(-175, 338)
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
+
+[node name="AnimatedSprite2D" parent="Character/mob7" index="1" unique_id=853222811]
+animation = &"default"
+
+[node name="CollisionShape2D" parent="Character/mob7" index="2" unique_id=1103006557]
+position = Vector2(0, 4)
 
 [node name="mob8" parent="Character" index="3" unique_id=1189837377 node_paths=PackedStringArray("combat_ui", "lose_ui")]
 position = Vector2(-105, 405)
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
 
+[node name="AnimatedSprite2D" parent="Character/mob8" index="1" unique_id=1570632944]
+animation = &"default"
+
+[node name="CollisionShape2D" parent="Character/mob8" index="2" unique_id=2012463128]
+position = Vector2(0, 3)
+
 [node name="mob2" parent="Character" index="4" unique_id=1081548398 node_paths=PackedStringArray("combat_ui", "lose_ui")]
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
 
-[node name="AnimatedSprite2D" parent="Character/mob2" index="1" unique_id=210967603]
-animation = &"default"
-
 [node name="mob3" parent="Character" index="5" unique_id=1476578817 node_paths=PackedStringArray("combat_ui", "lose_ui")]
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
-
-[node name="AnimatedSprite2D" parent="Character/mob3" index="1" unique_id=1819266513]
-animation = &"default"
 
 [node name="mob4" parent="Character" index="6" unique_id=262431056 node_paths=PackedStringArray("combat_ui", "lose_ui")]
 position = Vector2(-54, 240)
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
 
-[node name="AnimatedSprite2D" parent="Character/mob4" index="1" unique_id=1778358597]
-animation = &"default"
-
 [node name="mob5" parent="Character" index="7" unique_id=1899198502 node_paths=PackedStringArray("combat_ui", "lose_ui")]
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
-
-[node name="AnimatedSprite2D" parent="Character/mob5" index="1" unique_id=1173236044]
-animation = &"default"
 
 [node name="QuestSystem" parent="." unique_id=636915324 instance=ExtResource("5_dg77c")]
 
@@ -586,7 +590,7 @@ shape = SubResource("RectangleShape2D_82xsv")
 debug_color = Color(0.61802286, 0.35644442, 1, 0.41960785)
 
 [node name="mainplayer" type="CharacterBody2D" parent="." unique_id=1827658377]
-position = Vector2(-10, 327)
+position = Vector2(-268, 387)
 script = ExtResource("3_82xsv")
 
 [node name="Camera2D" type="Camera2D" parent="mainplayer" unique_id=1520419372]

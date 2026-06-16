@@ -1,15 +1,12 @@
 extends Area2D
 
 @onready var prompt_label: Label = get_node_or_null("InteractPrompt")
-@onready var win_ui: CanvasLayer = get_node_or_null("WinUI")
 
 var player_nearby: bool = false
 
 func _ready() -> void:
 	if is_instance_valid(prompt_label):
 		prompt_label.visible = false
-	if is_instance_valid(win_ui):
-		win_ui.visible = false
 
 	body_entered.connect(_on_body_entered)
 	body_exited.connect(_on_body_exited)
@@ -32,26 +29,24 @@ func _process(_delta: float) -> void:
 				prompt_label.text = "Heh BRO"
 
 func trigger_black_win_screen() -> void:
-	# Hide old overworld HP label
 	var life_label = get_tree().root.find_child("lifeLabel", true, false)
 	if is_instance_valid(life_label):
 		life_label.visible = false
 
-	# Hide original UI canvas
 	var overworld_ui = get_tree().root.find_child("UI", true, false)
 	if is_instance_valid(overworld_ui):
 		overworld_ui.visible = false
 
-	# Hide new OverworldHUD
 	var overworld_hud = get_tree().root.find_child("OverworldHUD", true, false)
 	if is_instance_valid(overworld_hud):
 		overworld_hud.visible = false
 
-	if is_instance_valid(win_ui):
-		win_ui.visible = true
+	var win_ui_node = get_tree().root.find_child("WinUI", true, false)
+	if is_instance_valid(win_ui_node):
+		win_ui_node.visible = true
 		Engine.time_scale = 0.0
 	else:
-		print("❌ WIN ERROR: WinUI CanvasLayer not found under Frog NPC.")
+		print("❌ WIN ERROR: WinUI CanvasLayer not found.")
 
 func _on_body_entered(body: Node2D) -> void:
 	if body.name == "mainplayer":
