@@ -777,6 +777,15 @@ animations = [{
 visible = false
 modulate = Color(1, 0, 0.50980395, 1)
 
+[node name="BattlePlayerMarker" type="Marker2D" parent="." unique_id=59159906]
+position = Vector2(-2906, -295)
+
+[node name="BattleEnemyMarker" type="Marker2D" parent="." unique_id=1168484741]
+position = Vector2(-2906, -357)
+
+[node name="GraveyardMarker" type="Marker2D" parent="." unique_id=1909701348]
+position = Vector2(-1632, -1010)
+
 [node name="mob1" type="CharacterBody2D" parent="." unique_id=8730518 node_paths=PackedStringArray("battle_player_marker", "battle_enemy_marker", "graveyard_marker")]
 position = Vector2(-53, 295)
 script = ExtResource("1_px5sl")
@@ -972,15 +981,6 @@ flip_h = true
 [node name="CollisionShape2D" type="CollisionShape2D" parent="mob5" unique_id=765242342]
 position = Vector2(0, 3)
 shape = SubResource("CapsuleShape2D_bwfjh")
-
-[node name="BattlePlayerMarker" type="Marker2D" parent="." unique_id=59159906]
-position = Vector2(-2906, -295)
-
-[node name="BattleEnemyMarker" type="Marker2D" parent="." unique_id=1168484741]
-position = Vector2(-2906, -357)
-
-[node name="GraveyardMarker" type="Marker2D" parent="." unique_id=1909701348]
-position = Vector2(-1632, -1010)
 
 [node name="mob6" type="CharacterBody2D" parent="." unique_id=2100000001 node_paths=PackedStringArray("battle_player_marker", "battle_enemy_marker", "graveyard_marker")]
 position = Vector2(287, 291)

@@ -554,16 +554,16 @@ text = "Save & Close"
 
 [node name="Character" parent="." unique_id=220561368 instance=ExtResource("4_vivmo")]
 
-[node name="mob1" parent="Character" index="0" unique_id=8730518 node_paths=PackedStringArray("combat_ui", "lose_ui")]
+[node name="mob1" parent="Character" index="4" unique_id=8730518 node_paths=PackedStringArray("combat_ui", "lose_ui")]
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
 
-[node name="mob1_2" parent="Character" index="1" unique_id=1964334702 node_paths=PackedStringArray("combat_ui", "lose_ui")]
+[node name="mob1_2" parent="Character" index="5" unique_id=1964334702 node_paths=PackedStringArray("combat_ui", "lose_ui")]
 position = Vector2(-124, 353)
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
 
-[node name="mob1_3" parent="Character" index="2" unique_id=465294187 node_paths=PackedStringArray("combat_ui", "lose_ui")]
+[node name="mob1_3" parent="Character" index="6" unique_id=465294187 node_paths=PackedStringArray("combat_ui", "lose_ui")]
 position = Vector2(-175, 338)
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
@@ -571,7 +571,7 @@ lose_ui = NodePath("../../ui/LoseUI")
 [node name="CollisionShape2D" parent="Character/mob1_3" index="2" unique_id=1103006557]
 position = Vector2(0, 4)
 
-[node name="mob1_4" parent="Character" index="3" unique_id=1189837377 node_paths=PackedStringArray("combat_ui", "lose_ui")]
+[node name="mob1_4" parent="Character" index="7" unique_id=1189837377 node_paths=PackedStringArray("combat_ui", "lose_ui")]
 position = Vector2(-105, 405)
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
@@ -579,60 +579,60 @@ lose_ui = NodePath("../../ui/LoseUI")
 [node name="CollisionShape2D" parent="Character/mob1_4" index="2" unique_id=2012463128]
 position = Vector2(0, 3)
 
-[node name="mob2" parent="Character" index="4" unique_id=1081548398 node_paths=PackedStringArray("combat_ui", "lose_ui")]
+[node name="mob2" parent="Character" index="8" unique_id=1081548398 node_paths=PackedStringArray("combat_ui", "lose_ui")]
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
 
-[node name="mob3" parent="Character" index="5" unique_id=1476578817 node_paths=PackedStringArray("combat_ui", "lose_ui")]
+[node name="mob3" parent="Character" index="9" unique_id=1476578817 node_paths=PackedStringArray("combat_ui", "lose_ui")]
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
 
-[node name="mob4" parent="Character" index="6" unique_id=262431056 node_paths=PackedStringArray("combat_ui", "lose_ui")]
+[node name="mob4" parent="Character" index="10" unique_id=262431056 node_paths=PackedStringArray("combat_ui", "lose_ui")]
 position = Vector2(-54, 240)
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
 
-[node name="mob5" parent="Character" index="7" unique_id=1899198502 node_paths=PackedStringArray("combat_ui", "lose_ui")]
+[node name="mob5" parent="Character" index="11" unique_id=1899198502 node_paths=PackedStringArray("combat_ui", "lose_ui")]
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
 
-[node name="mob6" parent="Character" index="11" unique_id=2100000001 node_paths=PackedStringArray("combat_ui", "lose_ui")]
+[node name="mob6" parent="Character" index="12" unique_id=2100000001 node_paths=PackedStringArray("combat_ui", "lose_ui")]
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
 
-[node name="mob7" parent="Character" index="12" unique_id=2100000006 node_paths=PackedStringArray("combat_ui", "lose_ui")]
+[node name="mob7" parent="Character" index="13" unique_id=2100000006 node_paths=PackedStringArray("combat_ui", "lose_ui")]
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
 
-[node name="mob8" parent="Character" index="13" unique_id=2100000011 node_paths=PackedStringArray("combat_ui", "lose_ui")]
+[node name="mob8" parent="Character" index="14" unique_id=2100000011 node_paths=PackedStringArray("combat_ui", "lose_ui")]
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
 
-[node name="mob9" parent="Character" index="14" unique_id=2100000016 node_paths=PackedStringArray("combat_ui", "lose_ui")]
+[node name="mob9" parent="Character" index="15" unique_id=2100000016 node_paths=PackedStringArray("combat_ui", "lose_ui")]
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
 
-[node name="mob10" parent="Character" index="15" unique_id=2100000021 node_paths=PackedStringArray("combat_ui", "lose_ui")]
+[node name="mob10" parent="Character" index="16" unique_id=2100000021 node_paths=PackedStringArray("combat_ui", "lose_ui")]
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
 
-[node name="mob11" parent="Character" index="16" unique_id=2100000026 node_paths=PackedStringArray("combat_ui", "lose_ui")]
+[node name="mob11" parent="Character" index="17" unique_id=2100000026 node_paths=PackedStringArray("combat_ui", "lose_ui")]
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
 
-[node name="mob12" parent="Character" index="17" unique_id=2100000031 node_paths=PackedStringArray("combat_ui", "lose_ui")]
+[node name="mob12" parent="Character" index="18" unique_id=2100000031 node_paths=PackedStringArray("combat_ui", "lose_ui")]
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
 
-[node name="mob13" parent="Character" index="18" unique_id=2100000036 node_paths=PackedStringArray("combat_ui", "lose_ui")]
+[node name="mob13" parent="Character" index="19" unique_id=2100000036 node_paths=PackedStringArray("combat_ui", "lose_ui")]
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
 
-[node name="mob14" parent="Character" index="19" unique_id=2100000041 node_paths=PackedStringArray("combat_ui", "lose_ui")]
+[node name="mob14" parent="Character" index="20" unique_id=2100000041 node_paths=PackedStringArray("combat_ui", "lose_ui")]
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
 
-[node name="mob15" parent="Character" index="20" unique_id=2100000046 node_paths=PackedStringArray("combat_ui", "lose_ui")]
+[node name="mob15" parent="Character" index="21" unique_id=2100000046 node_paths=PackedStringArray("combat_ui", "lose_ui")]
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
 
