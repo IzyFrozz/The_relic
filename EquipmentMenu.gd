@@ -8,14 +8,7 @@ var title_label: Label = null
 var bg_overlay: ColorRect = null   # dimmed background behind panel
 var panel: Panel = null
 
-const ITEM_META := {
-	"potion":     { "emoji": "🧪", "label": "Potion",     "desc": "Restores 20 HP instantly." },
-	"shield":     { "emoji": "🛡️", "label": "Shield",     "desc": "Blocks the next incoming hit." },
-	"grindstone": { "emoji": "🪨", "label": "Grindstone", "desc": "Next attack deals 2× damage." },
-	"whip":       { "emoji": "💥", "label": "Whip",       "desc": "Enemy skips their entire turn." },
-	"needle":     { "emoji": "📌", "label": "Needle",     "desc": "Next strike pierces enemy armor." },
-	"magnet":     { "emoji": "🧲", "label": "Magnet",     "desc": "Steal one item from the enemy." },
-}
+# Item metadata centralized in QuestManager.ITEM_META
 
 const COL_PANEL   := Color(0.09, 0.10, 0.15, 0.97)
 const COL_BORDER  := Color(0.30, 0.35, 0.55, 1.0)
@@ -92,33 +85,80 @@ func _ready() -> void:
 		title_label.add_theme_color_override("font_color", COL_GOLD)
 		title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 
-	# ── Close button ──
+	# ── Close button — now gated: only enabled once loadout is full for level ──
 	if is_instance_valid(close_button):
-		close_button.text = "✖  Close  (Esc)"
 		close_button.focus_mode = Control.FOCUS_NONE
-		close_button.add_theme_stylebox_override("normal", _btn_s(Color(0.22, 0.07, 0.07), Color(0.55, 0.18, 0.18)))
-		close_button.add_theme_stylebox_override("hover",  _btn_s(Color(0.38, 0.10, 0.10), Color(0.85, 0.28, 0.28)))
-		close_button.add_theme_color_override("font_color", Color(1.0, 0.50, 0.50))
-		close_button.add_theme_font_size_override("font_size", 14)
-		close_button.pressed.connect(func(): visible = false)
+		close_button.pressed.connect(_try_close)
 
 	# ── Style section containers if they exist ──
 	_style_section_container("UnlockedSection")
 	_style_section_container("EquippedSection")
 
 func _style_section_container(child_name: String) -> void:
-	var node = find_child(child_name, true, false) as Panel
+	var node = find_child(child_name, true, false) as PanelContainer
 	if is_instance_valid(node):
 		node.add_theme_stylebox_override("panel", _s(COL_SECTION, Color(0.22, 0.26, 0.42), 8))
 
+func _process(_delta: float) -> void:
+	# Safety net: if a Win/Lose screen pops up while this menu happens to be
+	# open, force it closed so it can never sit on top of an end screen.
+	if visible and _is_end_screen_active():
+		visible = false
+
+
+func _is_end_screen_active() -> bool:
+	for n in ["LoseUI", "WinUI"]:
+		var node = get_tree().root.find_child(n, true, false)
+		if is_instance_valid(node) and node.visible:
+			return true
+	return false
+
+
+func _try_close() -> void:
+	var max_slots = QuestManager.get_max_equip_slots()
+	var current = QuestManager.equipped_items.size()
+	if current == max_slots:
+		visible = false
+		return
+	# Not full — refuse to close, flash a warning on the button instead.
+	if is_instance_valid(close_button):
+		close_button.text = "⚠️  Fill all %d slots first!" % max_slots
+		await get_tree().create_timer(1.1).timeout
+		if is_instance_valid(close_button):
+			_update_close_button()
+
+
+func _update_close_button() -> void:
+	if not is_instance_valid(close_button): return
+	var max_slots = QuestManager.get_max_equip_slots()
+	var current = QuestManager.equipped_items.size()
+	var ready = current == max_slots
+	if ready:
+		close_button.text = "✓  Save & Exit  (Esc)"
+		close_button.disabled = false
+		close_button.modulate.a = 1.0
+		close_button.add_theme_stylebox_override("normal", _btn_s(Color(0.08, 0.20, 0.10), Color(0.25, 0.60, 0.30)))
+		close_button.add_theme_stylebox_override("hover",  _btn_s(Color(0.10, 0.30, 0.14), COL_GREEN))
+		close_button.add_theme_color_override("font_color", COL_GREEN)
+	else:
+		close_button.text = "🔒  Need %d more item%s to Save & Exit" % [max_slots - current, "" if max_slots - current == 1 else "s"]
+		close_button.disabled = false  # stays clickable so _try_close can show the warning flash
+		close_button.modulate.a = 0.85
+		close_button.add_theme_stylebox_override("normal", _btn_s(Color(0.22, 0.16, 0.06), Color(0.55, 0.40, 0.15)))
+		close_button.add_theme_stylebox_override("hover",  _btn_s(Color(0.30, 0.22, 0.08), COL_GOLD))
+		close_button.add_theme_color_override("font_color", COL_GOLD)
+	close_button.add_theme_font_size_override("font_size", 14)
+
+
 func _input(event: InputEvent) -> void:
 	if visible and event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
-		visible = false
+		_try_close()
 		get_viewport().set_input_as_handled()
 
 func refresh_display() -> void:
 	_build_unlocked_list()
 	_build_equipped_list()
+	_update_close_button()
 
 func _section_label(text: String) -> Label:
 	var lbl = Label.new()
@@ -136,9 +176,9 @@ func _build_unlocked_list() -> void:
 	_inject_header_above(unlocked_grid, "🔓  UNLOCKED ITEMS")
 
 	for item in QuestManager.unlocked_items:
-		var meta = ITEM_META.get(item, {"emoji":"❓","label":item.capitalize(),"desc":""})
+		var meta = QuestManager.ITEM_META.get(item, {"emoji":"❓","label":item.capitalize(),"desc":""})
 		var already = QuestManager.equipped_items.has(item)
-		var full    = QuestManager.equipped_items.size() >= 6
+		var full    = QuestManager.equipped_items.size() >= QuestManager.get_max_equip_slots()
 
 		var btn = Button.new()
 		btn.text = "%s  %s%s" % [meta["emoji"], meta["label"], "  ✓" if already else ""]
@@ -161,29 +201,40 @@ func _build_equipped_list() -> void:
 	if not is_instance_valid(equipped_grid): return
 	for child in equipped_grid.get_children(): child.queue_free()
 
-	_inject_header_above(equipped_grid, "⚔️  ACTIVE LOADOUT  (%d / 6)" % QuestManager.equipped_items.size())
+	var max_slots = QuestManager.get_max_equip_slots()
+	var current = QuestManager.equipped_items.size()
+	var header_color_hint = "✓" if current == max_slots else "…"
+	_inject_header_above(equipped_grid, "⚔️  ACTIVE LOADOUT  (%d / %d)  %s" % [current, max_slots, header_color_hint])
 
 	for i in range(QuestManager.equipped_items.size()):
 		var item   = QuestManager.equipped_items[i]
-		var meta   = ITEM_META.get(item, {"emoji":"❓","label":item.capitalize(),"desc":""})
-		var locked = QuestManager.equipped_items.size() <= 2
+		var meta   = QuestManager.ITEM_META.get(item, {"emoji":"❓","label":item.capitalize(),"desc":""})
 
 		var btn = Button.new()
-		btn.text = "[%d]  %s  %s%s" % [i + 1, meta["emoji"], meta["label"], "" if locked else "  ✕"]
-		btn.tooltip_text = "Slot %d — %s%s" % [i + 1, meta["desc"], "\n(Min 2 required)" if locked else "\nClick to remove"]
-		btn.disabled = locked
+		btn.text = "[%d]  %s  %s  ✕" % [i + 1, meta["emoji"], meta["label"]]
+		btn.tooltip_text = "Slot %d — %s\nClick to remove" % [i + 1, meta["desc"]]
 		btn.focus_mode = Control.FOCUS_NONE
 		btn.custom_minimum_size = Vector2(175, 50)
 		btn.add_theme_font_size_override("font_size", 14)
 		btn.add_theme_stylebox_override("normal",   _btn_s(COL_BTN_BG, COL_BORDER))
 		btn.add_theme_stylebox_override("hover",    _btn_s(Color(0.22, 0.09, 0.09), Color(0.80, 0.28, 0.28)))
-		btn.add_theme_stylebox_override("disabled", _btn_s(Color(0.10,0.11,0.15), Color(0.22,0.22,0.28)))
 		btn.add_theme_color_override("font_color", Color(0.92, 0.92, 1.0))
-		btn.add_theme_color_override("font_disabled_color", COL_DIM)
-		btn.modulate.a = 0.5 if locked else 1.0
 		var captured = item
 		btn.pressed.connect(func(): _unequip_item(captured))
 		equipped_grid.add_child(btn)
+
+	# Show empty placeholder slots for what's still needed to reach max
+	for i in range(current, max_slots):
+		var empty_btn = Button.new()
+		empty_btn.text = "[%d]  — empty slot —" % (i + 1)
+		empty_btn.tooltip_text = "Equip an item from the Unlocked list to fill this slot"
+		empty_btn.disabled = true
+		empty_btn.custom_minimum_size = Vector2(175, 50)
+		empty_btn.add_theme_font_size_override("font_size", 13)
+		empty_btn.add_theme_stylebox_override("disabled", _btn_s(Color(0.09,0.09,0.12), Color(0.45,0.35,0.15)))
+		empty_btn.add_theme_color_override("font_disabled_color", COL_GOLD)
+		empty_btn.modulate.a = 0.55
+		equipped_grid.add_child(empty_btn)
 
 func _inject_header_above(grid: GridContainer, header_text: String) -> void:
 	# Walk up to parent to insert a label sibling above the grid
@@ -206,11 +257,10 @@ func _inject_header_above(grid: GridContainer, header_text: String) -> void:
 
 func _equip_item(item: String) -> void:
 	if QuestManager.equipped_items.has(item): return
-	if QuestManager.equipped_items.size() >= 6: return
+	if QuestManager.equipped_items.size() >= QuestManager.get_max_equip_slots(): return
 	QuestManager.equipped_items.append(item)
 	refresh_display()
 
 func _unequip_item(item: String) -> void:
-	if QuestManager.equipped_items.size() <= 2: return
 	QuestManager.equipped_items.erase(item)
 	refresh_display()

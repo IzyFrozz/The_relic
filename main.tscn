@@ -343,7 +343,7 @@ animations = [{
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_f6a44"]
 radius = 6.0
-height = 18.0
+height = 16.0
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_0cp0l"]
 radius = 12.0
@@ -435,70 +435,117 @@ layout_mode = 2
 text = "                                                                "
 
 [node name="RoadmapPopup" type="CanvasLayer" parent="." unique_id=3717834]
+visible = false
 script = ExtResource("3_1u8w0")
 
 [node name="Panel" type="Panel" parent="RoadmapPopup" unique_id=1727531082]
-offset_left = 5.0
-offset_top = -50.0
-offset_right = 45.0
-offset_bottom = -10.0
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -576.0
+offset_top = -219.0
+offset_right = -311.0
+offset_bottom = 164.0
+grow_horizontal = 2
+grow_vertical = 2
 
-[node name="RichTextLabel" type="RichTextLabel" parent="RoadmapPopup/Panel" unique_id=19851805]
-layout_mode = 0
-offset_left = -4.0
-offset_top = 167.0
-offset_right = 259.0
-offset_bottom = 308.0
+[node name="RoadmapVBox" type="VBoxContainer" parent="RoadmapPopup/Panel" unique_id=3717835]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 18.0
+offset_top = 16.0
+offset_right = -18.0
+offset_bottom = -16.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 12
+
+[node name="RichTextLabel" type="RichTextLabel" parent="RoadmapPopup/Panel/RoadmapVBox" unique_id=19851805]
+layout_mode = 2
+size_flags_vertical = 3
 text = "Road Map"
 
-[node name="CloseButton" type="Button" parent="RoadmapPopup/Panel" unique_id=185379812]
-layout_mode = 0
-offset_left = -3.0
-offset_top = 324.0
-offset_right = 261.0
-offset_bottom = 355.0
+[node name="CloseButton" type="Button" parent="RoadmapPopup/Panel/RoadmapVBox" unique_id=185379812]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
 text = "Close Roadmap"
 
 [node name="EquipmentMenu" type="CanvasLayer" parent="." unique_id=2021918082]
+visible = false
 script = ExtResource("4_0odxb")
 
 [node name="Panel" type="Panel" parent="EquipmentMenu" unique_id=1422517685]
-offset_left = 552.0
-offset_top = -53.0
-offset_right = 592.0
-offset_bottom = -13.0
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -380.0
+offset_top = -290.0
+offset_right = 380.0
+offset_bottom = 290.0
+grow_horizontal = 2
+grow_vertical = 2
 
-[node name="TitleLabel" type="Label" parent="EquipmentMenu/Panel" unique_id=1470423410]
-layout_mode = 0
-offset_left = -47.0
-offset_top = 158.0
-offset_right = 86.0
-offset_bottom = 181.0
+[node name="MainVBox" type="VBoxContainer" parent="EquipmentMenu/Panel" unique_id=-2084928295]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 18.0
+offset_top = 16.0
+offset_right = -18.0
+offset_bottom = -16.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 14
+
+[node name="TitleLabel" type="Label" parent="EquipmentMenu/Panel/MainVBox" unique_id=1470423410]
+layout_mode = 2
+size_flags_horizontal = 3
 text = "Equipment Menu"
 horizontal_alignment = 1
 
-[node name="UnlockedGrid" type="GridContainer" parent="EquipmentMenu/Panel" unique_id=719893414]
-layout_mode = 0
-offset_left = -156.0
-offset_top = 203.0
-offset_right = 196.0
-offset_bottom = 364.0
-columns = 6
+[node name="ColumnsHBox" type="HBoxContainer" parent="EquipmentMenu/Panel/MainVBox" unique_id=-2084928294]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 14
 
-[node name="EquippedGrid" type="GridContainer" parent="EquipmentMenu/Panel" unique_id=285528932]
-layout_mode = 0
-offset_left = -154.0
-offset_top = 372.0
-offset_right = 195.0
-offset_bottom = 465.0
-columns = 3
+[node name="UnlockedSection" type="PanelContainer" parent="EquipmentMenu/Panel/MainVBox/ColumnsHBox" unique_id=-2084928293]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
 
-[node name="CloseButton" type="Button" parent="EquipmentMenu/Panel" unique_id=166129530]
-layout_mode = 0
-offset_left = -153.0
-offset_top = 483.0
-offset_right = 195.0
-offset_bottom = 514.0
+[node name="UnlockedVBox" type="VBoxContainer" parent="EquipmentMenu/Panel/MainVBox/ColumnsHBox/UnlockedSection" unique_id=-2084928292]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="UnlockedGrid" type="GridContainer" parent="EquipmentMenu/Panel/MainVBox/ColumnsHBox/UnlockedSection/UnlockedVBox" unique_id=719893414]
+layout_mode = 2
+size_flags_horizontal = 3
+columns = 2
+
+[node name="EquippedSection" type="PanelContainer" parent="EquipmentMenu/Panel/MainVBox/ColumnsHBox" unique_id=-2084928291]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="EquippedVBox" type="VBoxContainer" parent="EquipmentMenu/Panel/MainVBox/ColumnsHBox/EquippedSection" unique_id=-2084928290]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="EquippedGrid" type="GridContainer" parent="EquipmentMenu/Panel/MainVBox/ColumnsHBox/EquippedSection/EquippedVBox" unique_id=285528932]
+layout_mode = 2
+size_flags_horizontal = 3
+columns = 2
+
+[node name="CloseButton" type="Button" parent="EquipmentMenu/Panel/MainVBox" unique_id=166129530]
+custom_minimum_size = Vector2(0, 46)
+layout_mode = 2
 text = "Save & Close"
 
 [node name="ui" parent="." unique_id=560062949 instance=ExtResource("2_ryguw")]
@@ -507,16 +554,16 @@ text = "Save & Close"
 
 [node name="Character" parent="." unique_id=220561368 instance=ExtResource("4_vivmo")]
 
-[node name="mob1" parent="Character" index="1" unique_id=8730518 node_paths=PackedStringArray("combat_ui", "lose_ui")]
+[node name="mob1" parent="Character" index="0" unique_id=8730518 node_paths=PackedStringArray("combat_ui", "lose_ui")]
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
 
-[node name="mob1_2" parent="Character" index="2" unique_id=1964334702 node_paths=PackedStringArray("combat_ui", "lose_ui")]
+[node name="mob1_2" parent="Character" index="1" unique_id=1964334702 node_paths=PackedStringArray("combat_ui", "lose_ui")]
 position = Vector2(-124, 353)
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
 
-[node name="mob1_3" parent="Character" index="3" unique_id=465294187 node_paths=PackedStringArray("combat_ui", "lose_ui")]
+[node name="mob1_3" parent="Character" index="2" unique_id=465294187 node_paths=PackedStringArray("combat_ui", "lose_ui")]
 position = Vector2(-175, 338)
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
@@ -524,7 +571,7 @@ lose_ui = NodePath("../../ui/LoseUI")
 [node name="CollisionShape2D" parent="Character/mob1_3" index="2" unique_id=1103006557]
 position = Vector2(0, 4)
 
-[node name="mob1_4" parent="Character" index="4" unique_id=1189837377 node_paths=PackedStringArray("combat_ui", "lose_ui")]
+[node name="mob1_4" parent="Character" index="3" unique_id=1189837377 node_paths=PackedStringArray("combat_ui", "lose_ui")]
 position = Vector2(-105, 405)
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
@@ -532,28 +579,62 @@ lose_ui = NodePath("../../ui/LoseUI")
 [node name="CollisionShape2D" parent="Character/mob1_4" index="2" unique_id=2012463128]
 position = Vector2(0, 3)
 
-[node name="mob2" parent="Character" index="5" unique_id=1081548398 node_paths=PackedStringArray("combat_ui", "lose_ui")]
+[node name="mob2" parent="Character" index="4" unique_id=1081548398 node_paths=PackedStringArray("combat_ui", "lose_ui")]
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
 
-[node name="mob3" parent="Character" index="6" unique_id=1476578817 node_paths=PackedStringArray("combat_ui", "lose_ui")]
+[node name="mob3" parent="Character" index="5" unique_id=1476578817 node_paths=PackedStringArray("combat_ui", "lose_ui")]
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
 
-[node name="mob4" parent="Character" index="7" unique_id=262431056 node_paths=PackedStringArray("combat_ui", "lose_ui")]
+[node name="mob4" parent="Character" index="6" unique_id=262431056 node_paths=PackedStringArray("combat_ui", "lose_ui")]
 position = Vector2(-54, 240)
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
 
-[node name="mob5" parent="Character" index="8" unique_id=1899198502 node_paths=PackedStringArray("combat_ui", "lose_ui")]
+[node name="mob5" parent="Character" index="7" unique_id=1899198502 node_paths=PackedStringArray("combat_ui", "lose_ui")]
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
 
-[node name="BattlePlayerMarker" parent="Character" index="9" unique_id=59159906]
-position = Vector2(-2914, -283)
+[node name="mob6" parent="Character" index="11" unique_id=2100000001 node_paths=PackedStringArray("combat_ui", "lose_ui")]
+combat_ui = NodePath("../../ui/CombatUI")
+lose_ui = NodePath("../../ui/LoseUI")
 
-[node name="BattleEnemyMarker" parent="Character" index="10" unique_id=1168484741]
-position = Vector2(-2914, -345)
+[node name="mob7" parent="Character" index="12" unique_id=2100000006 node_paths=PackedStringArray("combat_ui", "lose_ui")]
+combat_ui = NodePath("../../ui/CombatUI")
+lose_ui = NodePath("../../ui/LoseUI")
+
+[node name="mob8" parent="Character" index="13" unique_id=2100000011 node_paths=PackedStringArray("combat_ui", "lose_ui")]
+combat_ui = NodePath("../../ui/CombatUI")
+lose_ui = NodePath("../../ui/LoseUI")
+
+[node name="mob9" parent="Character" index="14" unique_id=2100000016 node_paths=PackedStringArray("combat_ui", "lose_ui")]
+combat_ui = NodePath("../../ui/CombatUI")
+lose_ui = NodePath("../../ui/LoseUI")
+
+[node name="mob10" parent="Character" index="15" unique_id=2100000021 node_paths=PackedStringArray("combat_ui", "lose_ui")]
+combat_ui = NodePath("../../ui/CombatUI")
+lose_ui = NodePath("../../ui/LoseUI")
+
+[node name="mob11" parent="Character" index="16" unique_id=2100000026 node_paths=PackedStringArray("combat_ui", "lose_ui")]
+combat_ui = NodePath("../../ui/CombatUI")
+lose_ui = NodePath("../../ui/LoseUI")
+
+[node name="mob12" parent="Character" index="17" unique_id=2100000031 node_paths=PackedStringArray("combat_ui", "lose_ui")]
+combat_ui = NodePath("../../ui/CombatUI")
+lose_ui = NodePath("../../ui/LoseUI")
+
+[node name="mob13" parent="Character" index="18" unique_id=2100000036 node_paths=PackedStringArray("combat_ui", "lose_ui")]
+combat_ui = NodePath("../../ui/CombatUI")
+lose_ui = NodePath("../../ui/LoseUI")
+
+[node name="mob14" parent="Character" index="19" unique_id=2100000041 node_paths=PackedStringArray("combat_ui", "lose_ui")]
+combat_ui = NodePath("../../ui/CombatUI")
+lose_ui = NodePath("../../ui/LoseUI")
+
+[node name="mob15" parent="Character" index="20" unique_id=2100000046 node_paths=PackedStringArray("combat_ui", "lose_ui")]
+combat_ui = NodePath("../../ui/CombatUI")
+lose_ui = NodePath("../../ui/LoseUI")
 
 [node name="QuestSystem" parent="." unique_id=636915324 instance=ExtResource("5_dg77c")]
 
@@ -597,7 +678,7 @@ sprite_frames = SubResource("SpriteFrames_come4")
 animation = &"AttackDown"
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="mainplayer" unique_id=2000731134]
-position = Vector2(-1, 4)
+position = Vector2(-1, 3)
 shape = SubResource("CapsuleShape2D_f6a44")
 
 [node name="FrogNPC" type="Area2D" parent="." unique_id=430870357]

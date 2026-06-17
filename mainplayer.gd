@@ -67,14 +67,14 @@ func face_up() -> void:
 	last_input_dir = Vector2.UP
 	sprite.flip_h = false
 	sprite.stop()
-	sprite.animation = "default"
+	sprite.animation = "WalkUp"
 	sprite.frame = 0
 
 func _face_up_idle() -> void:
 	# Snap to upward idle without animation call — used after lunge returns
 	sprite.flip_h = false
 	sprite.stop()
-	sprite.animation = "default"
+	sprite.animation = "WalkUp"
 	sprite.frame = 0
 	last_input_dir = Vector2.UP
 
