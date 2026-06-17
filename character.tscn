@@ -499,75 +499,75 @@ flip_h = true
 position = Vector2(0, 3)
 shape = SubResource("CapsuleShape2D_7tnxx")
 
-[node name="mob6" type="CharacterBody2D" parent="." unique_id=1964334702 node_paths=PackedStringArray("battle_player_marker", "battle_enemy_marker", "graveyard_marker")]
+[node name="mob1_2" type="CharacterBody2D" parent="." unique_id=1964334702 node_paths=PackedStringArray("battle_player_marker", "battle_enemy_marker", "graveyard_marker")]
 position = Vector2(-201, 308)
 script = ExtResource("1_px5sl")
 battle_player_marker = NodePath("../BattlePlayerMarker")
 battle_enemy_marker = NodePath("../BattleEnemyMarker")
 graveyard_marker = NodePath("../GraveyardMarker")
 
-[node name="deadzone" type="Area2D" parent="mob6" unique_id=1764811406]
+[node name="deadzone" type="Area2D" parent="mob1_2" unique_id=1764811406]
 
-[node name="DZcollison" type="CollisionShape2D" parent="mob6/deadzone" unique_id=135791507]
+[node name="DZcollison" type="CollisionShape2D" parent="mob1_2/deadzone" unique_id=135791507]
 shape = SubResource("CircleShape2D_jb3kq")
 debug_color = Color(0.9823695, 0, 0.36699468, 0.41960785)
 
-[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="mob6" unique_id=97427122]
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="mob1_2" unique_id=97427122]
 position = Vector2(4.7683716e-07, 3.8146973e-06)
 scale = Vector2(0.8359378, 0.8359378)
 sprite_frames = SubResource("SpriteFrames_c1b4b")
 autoplay = "default"
 flip_h = true
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="mob6" unique_id=1422953817]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="mob1_2" unique_id=1422953817]
 position = Vector2(0, 3)
 shape = SubResource("CapsuleShape2D_7tnxx")
 
-[node name="mob7" type="CharacterBody2D" parent="." unique_id=465294187 node_paths=PackedStringArray("battle_player_marker", "battle_enemy_marker", "graveyard_marker")]
+[node name="mob1_3" type="CharacterBody2D" parent="." unique_id=465294187 node_paths=PackedStringArray("battle_player_marker", "battle_enemy_marker", "graveyard_marker")]
 position = Vector2(-161, 285)
 script = ExtResource("1_px5sl")
 battle_player_marker = NodePath("../BattlePlayerMarker")
 battle_enemy_marker = NodePath("../BattleEnemyMarker")
 graveyard_marker = NodePath("../GraveyardMarker")
 
-[node name="deadzone" type="Area2D" parent="mob7" unique_id=1893844301]
+[node name="deadzone" type="Area2D" parent="mob1_3" unique_id=1893844301]
 
-[node name="DZcollison" type="CollisionShape2D" parent="mob7/deadzone" unique_id=865114670]
+[node name="DZcollison" type="CollisionShape2D" parent="mob1_3/deadzone" unique_id=865114670]
 shape = SubResource("CircleShape2D_jb3kq")
 debug_color = Color(0.9823695, 0, 0.36699468, 0.41960785)
 
-[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="mob7" unique_id=853222811]
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="mob1_3" unique_id=853222811]
 position = Vector2(4.7683716e-07, 3.8146973e-06)
 scale = Vector2(0.8359378, 0.8359378)
 sprite_frames = SubResource("SpriteFrames_c1b4b")
 autoplay = "default"
 flip_h = true
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="mob7" unique_id=1103006557]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="mob1_3" unique_id=1103006557]
 position = Vector2(0, 3)
 shape = SubResource("CapsuleShape2D_7tnxx")
 
-[node name="mob8" type="CharacterBody2D" parent="." unique_id=1189837377 node_paths=PackedStringArray("battle_player_marker", "battle_enemy_marker", "graveyard_marker")]
+[node name="mob1_4" type="CharacterBody2D" parent="." unique_id=1189837377 node_paths=PackedStringArray("battle_player_marker", "battle_enemy_marker", "graveyard_marker")]
 position = Vector2(-108, 300)
 script = ExtResource("1_px5sl")
 battle_player_marker = NodePath("../BattlePlayerMarker")
 battle_enemy_marker = NodePath("../BattleEnemyMarker")
 graveyard_marker = NodePath("../GraveyardMarker")
 
-[node name="deadzone" type="Area2D" parent="mob8" unique_id=2084474382]
+[node name="deadzone" type="Area2D" parent="mob1_4" unique_id=2084474382]
 
-[node name="DZcollison" type="CollisionShape2D" parent="mob8/deadzone" unique_id=564253333]
+[node name="DZcollison" type="CollisionShape2D" parent="mob1_4/deadzone" unique_id=564253333]
 shape = SubResource("CircleShape2D_jb3kq")
 debug_color = Color(0.9823695, 0, 0.36699468, 0.41960785)
 
-[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="mob8" unique_id=1570632944]
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="mob1_4" unique_id=1570632944]
 position = Vector2(4.7683716e-07, 3.8146973e-06)
 scale = Vector2(0.8359378, 0.8359378)
 sprite_frames = SubResource("SpriteFrames_c1b4b")
 autoplay = "default"
 flip_h = true
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="mob8" unique_id=2012463128]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="mob1_4" unique_id=2012463128]
 position = Vector2(0, 5)
 shape = SubResource("CapsuleShape2D_7tnxx")
 
@@ -681,6 +681,6 @@ position = Vector2(1006, 224)
 position = Vector2(-1632, -1010)
 
 [connection signal="body_entered" from="mob1/deadzone" to="mob1" method="_on_deadzone_body_entered"]
-[connection signal="body_entered" from="mob6/deadzone" to="mob6" method="_on_deadzone_body_entered"]
-[connection signal="body_entered" from="mob7/deadzone" to="mob7" method="_on_deadzone_body_entered"]
-[connection signal="body_entered" from="mob8/deadzone" to="mob8" method="_on_deadzone_body_entered"]
+[connection signal="body_entered" from="mob1_2/deadzone" to="mob1_2" method="_on_deadzone_body_entered"]
+[connection signal="body_entered" from="mob1_3/deadzone" to="mob1_3" method="_on_deadzone_body_entered"]
+[connection signal="body_entered" from="mob1_4/deadzone" to="mob1_4" method="_on_deadzone_body_entered"]
