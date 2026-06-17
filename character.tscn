@@ -1,5 +1,6 @@
 [gd_scene format=3 uid="uid://b5s0bfhkjp1hq"]
 
+[ext_resource type="PackedScene" uid="uid://d4g0bdlo6sbss" path="res://map.tscn" id="1_7tnxx"]
 [ext_resource type="Script" uid="uid://bff64csp1dyxc" path="res://MobEnemy.gd" id="1_px5sl"]
 [ext_resource type="Texture2D" uid="uid://c6djafs2rafsh" path="res://Asset/Pixel Crawler - Free Pack/Entities/Mobs/Orc Crew/Orc - Rogue/Idle/Idle-Sheet.png" id="2_0qfo5"]
 [ext_resource type="Texture2D" uid="uid://cgjnncifdc3rm" path="res://Asset/Pixel Crawler - Free Pack/Entities/Mobs/Orc Crew/Orc - Rogue/Death/Death-Sheet.png" id="3_c1b4b"]
@@ -475,6 +476,10 @@ height = 24.0
 
 [node name="Character" type="Node2D" unique_id=220561368]
 
+[node name="Map" parent="." unique_id=1786850984 instance=ExtResource("1_7tnxx")]
+visible = false
+modulate = Color(1, 0, 0.50980395, 1)
+
 [node name="mob1" type="CharacterBody2D" parent="." unique_id=8730518 node_paths=PackedStringArray("battle_player_marker", "battle_enemy_marker", "graveyard_marker")]
 position = Vector2(-53, 295)
 script = ExtResource("1_px5sl")
@@ -672,10 +677,10 @@ position = Vector2(0, 3)
 shape = SubResource("CapsuleShape2D_bwfjh")
 
 [node name="BattlePlayerMarker" type="Marker2D" parent="." unique_id=59159906]
-position = Vector2(1006, 286)
+position = Vector2(-2906, -295)
 
 [node name="BattleEnemyMarker" type="Marker2D" parent="." unique_id=1168484741]
-position = Vector2(1006, 224)
+position = Vector2(-2906, -357)
 
 [node name="GraveyardMarker" type="Marker2D" parent="." unique_id=1909701348]
 position = Vector2(-1632, -1010)

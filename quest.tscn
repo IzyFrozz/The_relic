@@ -1,5 +1,6 @@
 [gd_scene format=3 uid="uid://bthp4nwyq6ewh"]
 
+[ext_resource type="PackedScene" uid="uid://d4g0bdlo6sbss" path="res://map.tscn" id="1_0m6oi"]
 [ext_resource type="Script" uid="uid://dsadsi3vkxgu7" path="res://quest_item.gd" id="1_k6fxs"]
 [ext_resource type="Texture2D" uid="uid://f55hikcsiv8g" path="res://Asset/Meta data assets files/Visuals/OBJECTS/coin/coin1.png" id="2_0m6oi"]
 [ext_resource type="Script" uid="uid://mmgbpo2ji13k" path="res://HealingItem.gd" id="3_mtwby"]
@@ -12,6 +13,10 @@ radius = 11.401754
 radius = 8.0
 
 [node name="QuestSystem" type="Node2D" unique_id=636915324]
+
+[node name="Map" parent="." unique_id=1786850984 instance=ExtResource("1_0m6oi")]
+visible = false
+modulate = Color(1, 0, 0.50980395, 1)
 
 [node name="QuestItem" type="Area2D" parent="." unique_id=686129129]
 position = Vector2(-170, 167)

@@ -507,16 +507,16 @@ text = "Save & Close"
 
 [node name="Character" parent="." unique_id=220561368 instance=ExtResource("4_vivmo")]
 
-[node name="mob1" parent="Character" index="0" unique_id=8730518 node_paths=PackedStringArray("combat_ui", "lose_ui")]
+[node name="mob1" parent="Character" index="1" unique_id=8730518 node_paths=PackedStringArray("combat_ui", "lose_ui")]
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
 
-[node name="mob1_2" parent="Character" index="1" unique_id=1964334702 node_paths=PackedStringArray("combat_ui", "lose_ui")]
+[node name="mob1_2" parent="Character" index="2" unique_id=1964334702 node_paths=PackedStringArray("combat_ui", "lose_ui")]
 position = Vector2(-124, 353)
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
 
-[node name="mob1_3" parent="Character" index="2" unique_id=465294187 node_paths=PackedStringArray("combat_ui", "lose_ui")]
+[node name="mob1_3" parent="Character" index="3" unique_id=465294187 node_paths=PackedStringArray("combat_ui", "lose_ui")]
 position = Vector2(-175, 338)
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
@@ -524,7 +524,7 @@ lose_ui = NodePath("../../ui/LoseUI")
 [node name="CollisionShape2D" parent="Character/mob1_3" index="2" unique_id=1103006557]
 position = Vector2(0, 4)
 
-[node name="mob1_4" parent="Character" index="3" unique_id=1189837377 node_paths=PackedStringArray("combat_ui", "lose_ui")]
+[node name="mob1_4" parent="Character" index="4" unique_id=1189837377 node_paths=PackedStringArray("combat_ui", "lose_ui")]
 position = Vector2(-105, 405)
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
@@ -532,28 +532,28 @@ lose_ui = NodePath("../../ui/LoseUI")
 [node name="CollisionShape2D" parent="Character/mob1_4" index="2" unique_id=2012463128]
 position = Vector2(0, 3)
 
-[node name="mob2" parent="Character" index="4" unique_id=1081548398 node_paths=PackedStringArray("combat_ui", "lose_ui")]
+[node name="mob2" parent="Character" index="5" unique_id=1081548398 node_paths=PackedStringArray("combat_ui", "lose_ui")]
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
 
-[node name="mob3" parent="Character" index="5" unique_id=1476578817 node_paths=PackedStringArray("combat_ui", "lose_ui")]
+[node name="mob3" parent="Character" index="6" unique_id=1476578817 node_paths=PackedStringArray("combat_ui", "lose_ui")]
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
 
-[node name="mob4" parent="Character" index="6" unique_id=262431056 node_paths=PackedStringArray("combat_ui", "lose_ui")]
+[node name="mob4" parent="Character" index="7" unique_id=262431056 node_paths=PackedStringArray("combat_ui", "lose_ui")]
 position = Vector2(-54, 240)
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
 
-[node name="mob5" parent="Character" index="7" unique_id=1899198502 node_paths=PackedStringArray("combat_ui", "lose_ui")]
+[node name="mob5" parent="Character" index="8" unique_id=1899198502 node_paths=PackedStringArray("combat_ui", "lose_ui")]
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
 
-[node name="BattlePlayerMarker" parent="Character" index="8" unique_id=59159906]
-position = Vector2(607, -128)
+[node name="BattlePlayerMarker" parent="Character" index="9" unique_id=59159906]
+position = Vector2(-2914, -283)
 
-[node name="BattleEnemyMarker" parent="Character" index="9" unique_id=1168484741]
-position = Vector2(607, -190)
+[node name="BattleEnemyMarker" parent="Character" index="10" unique_id=1168484741]
+position = Vector2(-2914, -345)
 
 [node name="QuestSystem" parent="." unique_id=636915324 instance=ExtResource("5_dg77c")]
 
