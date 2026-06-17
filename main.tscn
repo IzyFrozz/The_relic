@@ -549,6 +549,12 @@ lose_ui = NodePath("../../ui/LoseUI")
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
 
+[node name="BattlePlayerMarker" parent="Character" index="8" unique_id=59159906]
+position = Vector2(607, -128)
+
+[node name="BattleEnemyMarker" parent="Character" index="9" unique_id=1168484741]
+position = Vector2(607, -190)
+
 [node name="QuestSystem" parent="." unique_id=636915324 instance=ExtResource("5_dg77c")]
 
 [node name="ItemsStation" type="CharacterBody2D" parent="." unique_id=1343851479]
