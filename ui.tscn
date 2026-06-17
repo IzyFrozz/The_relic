@@ -198,30 +198,6 @@ layout_mode = 2
 size_flags_vertical = 3
 columns = 3
 
-[node name="EnemyPotionLabel" type="Label" parent="CombatUI/CombatPanel/MainLayout/CombatantsSplit/EnemySection/EnemyItemsGrid" unique_id=606937046]
-layout_mode = 2
-text = "Potion (x0)"
-
-[node name="EnemyShieldLabel" type="Label" parent="CombatUI/CombatPanel/MainLayout/CombatantsSplit/EnemySection/EnemyItemsGrid" unique_id=1588630898]
-layout_mode = 2
-text = "Shield (x0)"
-
-[node name="EnemyGrindstoneLabel" type="Label" parent="CombatUI/CombatPanel/MainLayout/CombatantsSplit/EnemySection/EnemyItemsGrid" unique_id=1054034887]
-layout_mode = 2
-text = "Grindstone (x0)"
-
-[node name="EnemyWhipLabel" type="Label" parent="CombatUI/CombatPanel/MainLayout/CombatantsSplit/EnemySection/EnemyItemsGrid" unique_id=1169042677]
-layout_mode = 2
-text = "Whip (x0)"
-
-[node name="EnemyNeedleLabel" type="Label" parent="CombatUI/CombatPanel/MainLayout/CombatantsSplit/EnemySection/EnemyItemsGrid" unique_id=2044051927]
-layout_mode = 2
-text = "Needle (x0)"
-
-[node name="EnemyMagnetLabel" type="Label" parent="CombatUI/CombatPanel/MainLayout/CombatantsSplit/EnemySection/EnemyItemsGrid" unique_id=1095650732]
-layout_mode = 2
-text = "Lens (x0)"
-
 [node name="fight_button" type="Button" parent="CombatUI/CombatPanel" unique_id=741457388]
 layout_mode = 0
 offset_top = 200.0

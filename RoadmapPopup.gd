@@ -41,6 +41,21 @@ func _ready() -> void:
 		close_button.add_theme_font_size_override("font_size", 14)
 		close_button.pressed.connect(func(): visible = false)
 
+func _process(_delta: float) -> void:
+	# Safety net: if a Win/Lose screen pops up while this popup happens to be
+	# open, force it closed so it can never sit on top of an end screen.
+	if visible and _is_end_screen_active():
+		visible = false
+
+
+func _is_end_screen_active() -> bool:
+	for n in ["LoseUI", "WinUI"]:
+		var node = get_tree().root.find_child(n, true, false)
+		if is_instance_valid(node) and node.visible:
+			return true
+	return false
+
+
 func _input(event: InputEvent) -> void:
 	if visible and event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
 		visible = false
@@ -75,13 +90,9 @@ func refresh_display() -> void:
 		else:
 			status_tag = "  [color=#FFAA44]✓ Unlocked[/color]"
 
-		var emoji = ""
-		var desc  = ""
-		match item:
-			"grindstone": emoji = "🪨"; desc = "2× damage next attack"
-			"whip":       emoji = "💥"; desc = "Enemy skips their turn"
-			"needle":     emoji = "📌"; desc = "Pierce enemy armor"
-			"magnet":     emoji = "🧲"; desc = "Steal an enemy item"
+		var meta = QuestManager.ITEM_META.get(item, {"emoji": "❓", "desc": ""})
+		var emoji = meta["emoji"]
+		var desc  = meta["desc"]
 
 		out += "[b]LEVEL %d[/b]%s\n" % [lvl, status_tag]
 		out += "  %s  %s  —  %s\n\n" % [emoji, item.capitalize(), desc]

@@ -20,12 +20,8 @@ var combined_history_text: String = ""
 var item_buttons: Array = []
 
 var enemy_inventory_container: GridContainer
-var enemy_potion_lbl: Label
-var enemy_shield_lbl: Label
-var enemy_grindstone_lbl: Label
-var enemy_whip_lbl: Label
-var enemy_needle_lbl: Label
-var enemy_magnet_lbl: Label
+var enemy_item_labels: Array = []
+var enemy_item_labels_pool_ref: Array = []
 
 var popup_overlay: ColorRect
 var popup_panel: Panel
@@ -40,14 +36,8 @@ signal popup_resolved(confirmed: bool)
 signal magnet_choice_resolved(chosen_item_id: String)
 
 # ─── ITEM META ────────────────────────────────────────────────────────────────
-const ITEM_META := {
-	"potion":     { "emoji": "🧪", "label": "Potion",     "desc": "Restores 20 HP instantly." },
-	"shield":     { "emoji": "🛡️", "label": "Shield",     "desc": "Blocks the next incoming hit completely." },
-	"grindstone": { "emoji": "🪨", "label": "Grindstone", "desc": "Next attack deals 2× damage." },
-	"whip":       { "emoji": "💥", "label": "Whip",       "desc": "Enemy skips their entire next turn." },
-	"needle":     { "emoji": "📌", "label": "Needle",     "desc": "Next strike pierces enemy armor." },
-	"magnet":     { "emoji": "🧲", "label": "Magnet",     "desc": "Steal one chosen item from the enemy." },
-}
+# Centralized in QuestManager.ITEM_META — see that file for the single source
+# of truth on every item's emoji/label/description.
 
 const SLOT_KEYS := ["1","2","3","4","5","6"]
 
@@ -77,13 +67,7 @@ func _find_nodes_automatically() -> void:
 		if p is ScrollContainer:
 			history_scroll = p as ScrollContainer
 
-	enemy_inventory_container = find_child("EnemyInventoryGrid") as GridContainer
-	enemy_potion_lbl      = find_child("EnemyPotionLabel") as Label
-	enemy_shield_lbl      = find_child("EnemyShieldLabel") as Label
-	enemy_grindstone_lbl  = find_child("EnemyGrindstoneLabel") as Label
-	enemy_whip_lbl        = find_child("EnemyWhipLabel") as Label
-	enemy_needle_lbl      = find_child("EnemyNeedleLabel") as Label
-	enemy_magnet_lbl      = find_child("EnemyMagnetLabel") as Label
+	enemy_inventory_container = find_child("EnemyItemsGrid") as GridContainer
 
 func _connect_fight_button() -> void:
 	if fight_button:
@@ -111,7 +95,7 @@ func _build_item_buttons() -> void:
 	var slots = QuestManager.equipped_items
 	for i in range(slots.size()):
 		var item_id = slots[i]
-		var meta = ITEM_META.get(item_id, {"emoji":"❓","label":item_id.capitalize(),"desc":""})
+		var meta = QuestManager.ITEM_META.get(item_id, {"emoji":"❓","label":item_id.capitalize(),"desc":""})
 
 		var btn = Button.new()
 		btn.name = "ItemBtn_%d" % i
@@ -336,6 +320,12 @@ func _refresh_ui_states() -> void:
 		if current_enemy.player_sharpened:    s += "🪨 SHARP  "
 		if current_enemy.player_piercing:     s += "📌 PIERCE  "
 		if is_disarmed:                       s += "❌ DISARMED  "
+		if "player_regen_rounds" in current_enemy and current_enemy.player_regen_rounds > 0: s += "🩹 REGEN×%d  " % current_enemy.player_regen_rounds
+		if "player_horn_charges" in current_enemy and current_enemy.player_horn_charges > 0: s += "📯 HORN×%d  " % current_enemy.player_horn_charges
+		if "player_reflect_active" in current_enemy and current_enemy.player_reflect_active: s += "🪞 REFLECT  "
+		if "player_dodge_active" in current_enemy and current_enemy.player_dodge_active: s += "💨 DODGE  "
+		if "player_weakened" in current_enemy and current_enemy.player_weakened: s += "🗿 WEAKENED  "
+		if "player_counter_active" in current_enemy and current_enemy.player_counter_active: s += "⚡ COUNTER  "
 		player_buffs_lbl.text = s if s != "" else "● Normal"
 
 	if enemy_buffs_lbl:
@@ -344,6 +334,13 @@ func _refresh_ui_states() -> void:
 		if current_enemy.enemy_sharpened:     s += "🪨 SHARP  "
 		if current_enemy.enemy_piercing:      s += "📌 PIERCE  "
 		if current_enemy.enemy_is_disarmed:   s += "❌ DISARMED  "
+		if "enemy_regen_rounds" in current_enemy and current_enemy.enemy_regen_rounds > 0: s += "🩹 REGEN×%d  " % current_enemy.enemy_regen_rounds
+		if "enemy_poison_rounds" in current_enemy and current_enemy.enemy_poison_rounds > 0: s += "☠️ POISON×%d  " % current_enemy.enemy_poison_rounds
+		if "enemy_horn_charges" in current_enemy and current_enemy.enemy_horn_charges > 0: s += "📯 HORN×%d  " % current_enemy.enemy_horn_charges
+		if "enemy_reflect_active" in current_enemy and current_enemy.enemy_reflect_active: s += "🪞 REFLECT  "
+		if "enemy_dodge_active" in current_enemy and current_enemy.enemy_dodge_active: s += "💨 DODGE  "
+		if "enemy_weakened" in current_enemy and current_enemy.enemy_weakened: s += "🗿 WEAKENED  "
+		if "enemy_counter_active" in current_enemy and current_enemy.enemy_counter_active: s += "⚡ COUNTER  "
 		enemy_buffs_lbl.text = s if s != "" else "● Normal"
 
 	if player_hp:
@@ -373,7 +370,7 @@ func _refresh_ui_states() -> void:
 			continue
 
 		btn.visible = true
-		var meta = ITEM_META.get(item_id, {"emoji":"❓","label":item_id.capitalize(),"desc":""})
+		var meta = QuestManager.ITEM_META.get(item_id, {"emoji":"❓","label":item_id.capitalize(),"desc":""})
 		var count = current_enemy.player_inventory.count(item_id)
 		var slot_key = SLOT_KEYS[i] if i < SLOT_KEYS.size() else ""
 
@@ -392,6 +389,20 @@ func _refresh_ui_states() -> void:
 			is_usable = false
 		if item_id == "needle" and current_enemy.player_piercing:
 			is_usable = false
+		if item_id == "bandage" and current_enemy.player_regen_rounds > 0:
+			is_usable = false
+		if item_id == "poison_dart" and current_enemy.enemy_poison_rounds > 0:
+			is_usable = false
+		if item_id == "battle_horn" and current_enemy.player_horn_charges > 0:
+			is_usable = false
+		if item_id == "mirror_ward" and current_enemy.player_reflect_active:
+			is_usable = false
+		if item_id == "smoke_bomb" and current_enemy.player_dodge_active:
+			is_usable = false
+		if item_id == "weaken_totem" and current_enemy.enemy_weakened:
+			is_usable = false
+		if item_id == "static_field" and current_enemy.player_counter_active:
+			is_usable = false
 
 		btn.disabled = not is_usable
 		btn.modulate.a = 1.0 if is_usable else 0.38
@@ -403,33 +414,31 @@ func _update_enemy_inventory_grid() -> void:
 	if not current_enemy: return
 	var pool = current_enemy.enemy_item_pool if "enemy_item_pool" in current_enemy else []
 
-	var all_labels := {
-		"potion":     enemy_potion_lbl,
-		"shield":     enemy_shield_lbl,
-		"grindstone": enemy_grindstone_lbl,
-		"whip":       enemy_whip_lbl,
-		"needle":     enemy_needle_lbl,
-		"magnet":     enemy_magnet_lbl,
-	}
-	var prefixes := {
-		"potion":     "🧪 Potion",
-		"shield":     "🛡️ Shield",
-		"grindstone": "🪨 Grindstone",
-		"whip":       "💥 Whip",
-		"needle":     "📌 Needle",
-		"magnet":     "🧲 Magnet",
-	}
+	if not is_instance_valid(enemy_inventory_container):
+		enemy_inventory_container = find_child("EnemyItemsGrid") as GridContainer
+	if not is_instance_valid(enemy_inventory_container): return
 
-	for id in all_labels:
-		var lbl = all_labels[id]
+	# Rebuild dynamic labels to exactly match the enemy's pool, in pool order.
+	# (Scales to any number of items without needing fixed scene nodes.)
+	if enemy_item_labels.size() != pool.size() or enemy_item_labels_pool_ref != pool:
+		for lbl in enemy_item_labels:
+			if is_instance_valid(lbl): lbl.queue_free()
+		enemy_item_labels.clear()
+		for id in pool:
+			var lbl = Label.new()
+			lbl.name = "EnemyItemLabel_%s" % id
+			lbl.add_theme_font_size_override("font_size", 13)
+			enemy_inventory_container.add_child(lbl)
+			enemy_item_labels.append(lbl)
+		enemy_item_labels_pool_ref = pool.duplicate()
+
+	for i in range(pool.size()):
+		var id = pool[i]
+		var lbl = enemy_item_labels[i]
 		if not is_instance_valid(lbl): continue
-		# Hide label entirely if enemy can never have this item
-		if not pool.has(id):
-			lbl.visible = false
-			continue
-		lbl.visible = true
+		var meta = QuestManager.ITEM_META.get(id, {"emoji":"❓","label":id.capitalize()})
 		var count = current_enemy.enemy_inventory.count(id)
-		lbl.text = "%s  ×%d" % [prefixes[id], count]
+		lbl.text = "%s %s  ×%d" % [meta["emoji"], meta["label"], count]
 		lbl.modulate.a = 1.0 if count > 0 else 0.32
 
 func _lock_all_player_inputs() -> void:
@@ -485,7 +494,7 @@ func _on_item_used(item_type: String) -> void:
 			_refresh_ui_states()
 		return
 
-	var meta = ITEM_META.get(item_type, {"emoji":"❓","label":item_type.capitalize(),"desc":""})
+	var meta = QuestManager.ITEM_META.get(item_type, {"emoji":"❓","label":item_type.capitalize(),"desc":""})
 	var confirmed = await show_blocking_popup(
 		"%s  USE ITEM" % meta["emoji"],
 		"Activate  [%s]?\n\n%s" % [meta["label"].to_upper(), meta["desc"]],
@@ -575,7 +584,7 @@ func show_magnet_choice_popup(enemy_inv: Array) -> String:
 	var choice_btns: Array = []
 	for i in range(unique_items.size()):
 		var item = unique_items[i]
-		var meta = ITEM_META.get(item, {"emoji":"❓","label":item.capitalize(),"desc":""})
+		var meta = QuestManager.ITEM_META.get(item, {"emoji":"❓","label":item.capitalize(),"desc":""})
 		var btn = Button.new()
 		btn.text = "[%d]  %s  %s" % [i + 1, meta["emoji"], meta["label"]]
 		btn.focus_mode = Control.FOCUS_NONE

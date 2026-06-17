@@ -11,6 +11,12 @@
 [ext_resource type="Texture2D" uid="uid://bwqhstthe6ntb" path="res://Asset/Pixel Crawler - Free Pack/Entities/Mobs/Orc Crew/Orc - Warrior/Death/Death-Sheet.png" id="7_bwfjh"]
 [ext_resource type="Texture2D" uid="uid://jy0g6hn4e01" path="res://Asset/Pixel Crawler - Free Pack/Entities/Mobs/Skeleton Crew/Skeleton - Mage/Death/Death-Sheet.png" id="9_x1sy7"]
 [ext_resource type="Texture2D" uid="uid://u1p7talf1ko1" path="res://Asset/Pixel Crawler - Free Pack/Entities/Mobs/Skeleton Crew/Skeleton - Warrior/Death/Death-Sheet.png" id="11_sm1rv"]
+[ext_resource type="Texture2D" uid="uid://r7hyuenkahb8" path="res://Asset/Pixel Crawler - Free Pack/Entities/Mobs/Orc Crew/Orc/Death/Death-Sheet.png" id="orc_death_tex"]
+[ext_resource type="Texture2D" uid="uid://dkaigb3vprmfw" path="res://Asset/Pixel Crawler - Free Pack/Entities/Mobs/Orc Crew/Orc/Idle/Idle-Sheet.png" id="orc_idle_tex"]
+[ext_resource type="Texture2D" uid="uid://h1gs32lccyru" path="res://Asset/Pixel Crawler - Free Pack/Entities/Mobs/Skeleton Crew/Skeleton - Base/Death/Death-Sheet.png" id="skel_base_death_tex"]
+[ext_resource type="Texture2D" uid="uid://wauu2ghex6m5" path="res://Asset/Pixel Crawler - Free Pack/Entities/Mobs/Skeleton Crew/Skeleton - Base/Idle/Idle-Sheet.png" id="skel_base_idle_tex"]
+[ext_resource type="Texture2D" uid="uid://dbmyqk54db6a8" path="res://Asset/Pixel Crawler - Free Pack/Entities/Mobs/Skeleton Crew/Skeleton - Rogue/Death/Death-Sheet.png" id="skel_rogue_death_tex"]
+[ext_resource type="Texture2D" uid="uid://e404nytcf1y2" path="res://Asset/Pixel Crawler - Free Pack/Entities/Mobs/Skeleton Crew/Skeleton - Rogue/Idle/Idle-Sheet.png" id="skel_rogue_idle_tex"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_jb3kq"]
 radius = 21.023796
@@ -473,6 +479,297 @@ animations = [{
 radius = 9.0
 height = 24.0
 
+[sub_resource type="AtlasTexture" id="orc_idle_atlas_0"]
+atlas = ExtResource("orc_idle_tex")
+region = Rect2(0, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="orc_idle_atlas_1"]
+atlas = ExtResource("orc_idle_tex")
+region = Rect2(32, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="orc_idle_atlas_2"]
+atlas = ExtResource("orc_idle_tex")
+region = Rect2(64, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="orc_idle_atlas_3"]
+atlas = ExtResource("orc_idle_tex")
+region = Rect2(96, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="orc_death_atlas_0"]
+atlas = ExtResource("orc_death_tex")
+region = Rect2(0, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="orc_death_atlas_1"]
+atlas = ExtResource("orc_death_tex")
+region = Rect2(64, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="orc_death_atlas_2"]
+atlas = ExtResource("orc_death_tex")
+region = Rect2(128, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="orc_death_atlas_3"]
+atlas = ExtResource("orc_death_tex")
+region = Rect2(192, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="orc_death_atlas_4"]
+atlas = ExtResource("orc_death_tex")
+region = Rect2(256, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="orc_death_atlas_5"]
+atlas = ExtResource("orc_death_tex")
+region = Rect2(320, 0, 64, 64)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_orc"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("orc_idle_atlas_0")
+}, {
+"duration": 1.0,
+"texture": SubResource("orc_idle_atlas_1")
+}, {
+"duration": 1.0,
+"texture": SubResource("orc_idle_atlas_2")
+}, {
+"duration": 1.0,
+"texture": SubResource("orc_idle_atlas_3")
+}],
+"loop": true,
+"name": &"default",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("orc_death_atlas_0")
+}, {
+"duration": 1.0,
+"texture": SubResource("orc_death_atlas_1")
+}, {
+"duration": 1.0,
+"texture": SubResource("orc_death_atlas_2")
+}, {
+"duration": 1.0,
+"texture": SubResource("orc_death_atlas_3")
+}, {
+"duration": 1.0,
+"texture": SubResource("orc_death_atlas_4")
+}, {
+"duration": 1.0,
+"texture": SubResource("orc_death_atlas_5")
+}],
+"loop": true,
+"name": &"die",
+"speed": 5.0
+}]
+
+[sub_resource type="AtlasTexture" id="skel_base_idle_atlas_0"]
+atlas = ExtResource("skel_base_idle_tex")
+region = Rect2(0, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="skel_base_idle_atlas_1"]
+atlas = ExtResource("skel_base_idle_tex")
+region = Rect2(32, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="skel_base_idle_atlas_2"]
+atlas = ExtResource("skel_base_idle_tex")
+region = Rect2(64, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="skel_base_idle_atlas_3"]
+atlas = ExtResource("skel_base_idle_tex")
+region = Rect2(96, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="skel_base_death_atlas_0"]
+atlas = ExtResource("skel_base_death_tex")
+region = Rect2(0, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="skel_base_death_atlas_1"]
+atlas = ExtResource("skel_base_death_tex")
+region = Rect2(64, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="skel_base_death_atlas_2"]
+atlas = ExtResource("skel_base_death_tex")
+region = Rect2(128, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="skel_base_death_atlas_3"]
+atlas = ExtResource("skel_base_death_tex")
+region = Rect2(192, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="skel_base_death_atlas_4"]
+atlas = ExtResource("skel_base_death_tex")
+region = Rect2(256, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="skel_base_death_atlas_5"]
+atlas = ExtResource("skel_base_death_tex")
+region = Rect2(320, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="skel_base_death_atlas_6"]
+atlas = ExtResource("skel_base_death_tex")
+region = Rect2(384, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="skel_base_death_atlas_7"]
+atlas = ExtResource("skel_base_death_tex")
+region = Rect2(448, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="skel_base_death_atlas_8"]
+atlas = ExtResource("skel_base_death_tex")
+region = Rect2(512, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="skel_base_death_atlas_9"]
+atlas = ExtResource("skel_base_death_tex")
+region = Rect2(576, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="skel_base_death_atlas_10"]
+atlas = ExtResource("skel_base_death_tex")
+region = Rect2(640, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="skel_base_death_atlas_11"]
+atlas = ExtResource("skel_base_death_tex")
+region = Rect2(704, 0, 64, 64)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_skel_base"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("skel_base_idle_atlas_0")
+}, {
+"duration": 1.0,
+"texture": SubResource("skel_base_idle_atlas_1")
+}, {
+"duration": 1.0,
+"texture": SubResource("skel_base_idle_atlas_2")
+}, {
+"duration": 1.0,
+"texture": SubResource("skel_base_idle_atlas_3")
+}],
+"loop": true,
+"name": &"default",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("skel_base_death_atlas_0")
+}, {
+"duration": 1.0,
+"texture": SubResource("skel_base_death_atlas_1")
+}, {
+"duration": 1.0,
+"texture": SubResource("skel_base_death_atlas_2")
+}, {
+"duration": 1.0,
+"texture": SubResource("skel_base_death_atlas_3")
+}, {
+"duration": 1.0,
+"texture": SubResource("skel_base_death_atlas_4")
+}, {
+"duration": 1.0,
+"texture": SubResource("skel_base_death_atlas_5")
+}, {
+"duration": 1.0,
+"texture": SubResource("skel_base_death_atlas_6")
+}, {
+"duration": 1.0,
+"texture": SubResource("skel_base_death_atlas_7")
+}, {
+"duration": 1.0,
+"texture": SubResource("skel_base_death_atlas_8")
+}, {
+"duration": 1.0,
+"texture": SubResource("skel_base_death_atlas_9")
+}, {
+"duration": 1.0,
+"texture": SubResource("skel_base_death_atlas_10")
+}, {
+"duration": 1.0,
+"texture": SubResource("skel_base_death_atlas_11")
+}],
+"loop": true,
+"name": &"die",
+"speed": 5.0
+}]
+
+[sub_resource type="AtlasTexture" id="skel_rogue_idle_atlas_0"]
+atlas = ExtResource("skel_rogue_idle_tex")
+region = Rect2(0, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="skel_rogue_idle_atlas_1"]
+atlas = ExtResource("skel_rogue_idle_tex")
+region = Rect2(32, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="skel_rogue_idle_atlas_2"]
+atlas = ExtResource("skel_rogue_idle_tex")
+region = Rect2(64, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="skel_rogue_idle_atlas_3"]
+atlas = ExtResource("skel_rogue_idle_tex")
+region = Rect2(96, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="skel_rogue_death_atlas_0"]
+atlas = ExtResource("skel_rogue_death_tex")
+region = Rect2(0, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="skel_rogue_death_atlas_1"]
+atlas = ExtResource("skel_rogue_death_tex")
+region = Rect2(64, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="skel_rogue_death_atlas_2"]
+atlas = ExtResource("skel_rogue_death_tex")
+region = Rect2(128, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="skel_rogue_death_atlas_3"]
+atlas = ExtResource("skel_rogue_death_tex")
+region = Rect2(192, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="skel_rogue_death_atlas_4"]
+atlas = ExtResource("skel_rogue_death_tex")
+region = Rect2(256, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="skel_rogue_death_atlas_5"]
+atlas = ExtResource("skel_rogue_death_tex")
+region = Rect2(320, 0, 64, 64)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_skel_rogue"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("skel_rogue_idle_atlas_0")
+}, {
+"duration": 1.0,
+"texture": SubResource("skel_rogue_idle_atlas_1")
+}, {
+"duration": 1.0,
+"texture": SubResource("skel_rogue_idle_atlas_2")
+}, {
+"duration": 1.0,
+"texture": SubResource("skel_rogue_idle_atlas_3")
+}],
+"loop": true,
+"name": &"default",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("skel_rogue_death_atlas_0")
+}, {
+"duration": 1.0,
+"texture": SubResource("skel_rogue_death_atlas_1")
+}, {
+"duration": 1.0,
+"texture": SubResource("skel_rogue_death_atlas_2")
+}, {
+"duration": 1.0,
+"texture": SubResource("skel_rogue_death_atlas_3")
+}, {
+"duration": 1.0,
+"texture": SubResource("skel_rogue_death_atlas_4")
+}, {
+"duration": 1.0,
+"texture": SubResource("skel_rogue_death_atlas_5")
+}],
+"loop": true,
+"name": &"die",
+"speed": 5.0
+}]
+
 [node name="Character" type="Node2D" unique_id=220561368]
 
 [node name="mob1" type="CharacterBody2D" parent="." unique_id=8730518 node_paths=PackedStringArray("battle_player_marker", "battle_enemy_marker", "graveyard_marker")]
@@ -680,7 +977,274 @@ position = Vector2(1006, 224)
 [node name="GraveyardMarker" type="Marker2D" parent="." unique_id=1909701348]
 position = Vector2(-1632, -1010)
 
+[node name="mob6" type="CharacterBody2D" parent="." unique_id=2100000001 node_paths=PackedStringArray("battle_player_marker", "battle_enemy_marker", "graveyard_marker")]
+position = Vector2(287, 291)
+script = ExtResource("1_px5sl")
+enemy_level = 6
+battle_player_marker = NodePath("../BattlePlayerMarker")
+battle_enemy_marker = NodePath("../BattleEnemyMarker")
+graveyard_marker = NodePath("../GraveyardMarker")
+
+[node name="deadzone" type="Area2D" parent="mob6" unique_id=2100000002]
+
+[node name="DZcollison" type="CollisionShape2D" parent="mob6/deadzone" unique_id=2100000003]
+shape = SubResource("CircleShape2D_jb3kq")
+debug_color = Color(0.9823695, 0, 0.36699468, 0.41960785)
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="mob6" unique_id=2100000004]
+position = Vector2(4.7683716e-07, 3.8146973e-06)
+scale = Vector2(0.8359378, 0.8359378)
+sprite_frames = SubResource("SpriteFrames_orc")
+autoplay = "default"
+flip_h = true
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="mob6" unique_id=2100000005]
+position = Vector2(0, 3)
+shape = SubResource("CapsuleShape2D_7tnxx")
+
+[node name="mob7" type="CharacterBody2D" parent="." unique_id=2100000006 node_paths=PackedStringArray("battle_player_marker", "battle_enemy_marker", "graveyard_marker")]
+position = Vector2(333, 336)
+script = ExtResource("1_px5sl")
+enemy_level = 7
+battle_player_marker = NodePath("../BattlePlayerMarker")
+battle_enemy_marker = NodePath("../BattleEnemyMarker")
+graveyard_marker = NodePath("../GraveyardMarker")
+
+[node name="deadzone" type="Area2D" parent="mob7" unique_id=2100000007]
+
+[node name="DZcollison" type="CollisionShape2D" parent="mob7/deadzone" unique_id=2100000008]
+shape = SubResource("CircleShape2D_jb3kq")
+debug_color = Color(0.9823695, 0, 0.36699468, 0.41960785)
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="mob7" unique_id=2100000009]
+position = Vector2(4.7683716e-07, 3.8146973e-06)
+scale = Vector2(0.8359378, 0.8359378)
+sprite_frames = SubResource("SpriteFrames_skel_base")
+autoplay = "default"
+flip_h = true
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="mob7" unique_id=2100000010]
+position = Vector2(0, 3)
+shape = SubResource("CapsuleShape2D_7tnxx")
+
+[node name="mob8" type="CharacterBody2D" parent="." unique_id=2100000011 node_paths=PackedStringArray("battle_player_marker", "battle_enemy_marker", "graveyard_marker")]
+position = Vector2(389, 373)
+script = ExtResource("1_px5sl")
+enemy_level = 8
+battle_player_marker = NodePath("../BattlePlayerMarker")
+battle_enemy_marker = NodePath("../BattleEnemyMarker")
+graveyard_marker = NodePath("../GraveyardMarker")
+
+[node name="deadzone" type="Area2D" parent="mob8" unique_id=2100000012]
+
+[node name="DZcollison" type="CollisionShape2D" parent="mob8/deadzone" unique_id=2100000013]
+shape = SubResource("CircleShape2D_jb3kq")
+debug_color = Color(0.9823695, 0, 0.36699468, 0.41960785)
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="mob8" unique_id=2100000014]
+position = Vector2(4.7683716e-07, 3.8146973e-06)
+scale = Vector2(0.8359378, 0.8359378)
+sprite_frames = SubResource("SpriteFrames_skel_rogue")
+autoplay = "default"
+flip_h = true
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="mob8" unique_id=2100000015]
+position = Vector2(0, 3)
+shape = SubResource("CapsuleShape2D_7tnxx")
+
+[node name="mob9" type="CharacterBody2D" parent="." unique_id=2100000016 node_paths=PackedStringArray("battle_player_marker", "battle_enemy_marker", "graveyard_marker")]
+position = Vector2(449, 397)
+script = ExtResource("1_px5sl")
+enemy_level = 9
+battle_player_marker = NodePath("../BattlePlayerMarker")
+battle_enemy_marker = NodePath("../BattleEnemyMarker")
+graveyard_marker = NodePath("../GraveyardMarker")
+
+[node name="deadzone" type="Area2D" parent="mob9" unique_id=2100000017]
+
+[node name="DZcollison" type="CollisionShape2D" parent="mob9/deadzone" unique_id=2100000018]
+shape = SubResource("CircleShape2D_jb3kq")
+debug_color = Color(0.9823695, 0, 0.36699468, 0.41960785)
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="mob9" unique_id=2100000019]
+modulate = Color(1.15, 0.85, 0.85, 1)
+position = Vector2(4.7683716e-07, 3.8146973e-06)
+scale = Vector2(0.8359378, 0.8359378)
+sprite_frames = SubResource("SpriteFrames_orc")
+autoplay = "default"
+flip_h = true
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="mob9" unique_id=2100000020]
+position = Vector2(0, 3)
+shape = SubResource("CapsuleShape2D_7tnxx")
+
+[node name="mob10" type="CharacterBody2D" parent="." unique_id=2100000021 node_paths=PackedStringArray("battle_player_marker", "battle_enemy_marker", "graveyard_marker")]
+position = Vector2(532, 412)
+script = ExtResource("1_px5sl")
+enemy_level = 10
+battle_player_marker = NodePath("../BattlePlayerMarker")
+battle_enemy_marker = NodePath("../BattleEnemyMarker")
+graveyard_marker = NodePath("../GraveyardMarker")
+
+[node name="deadzone" type="Area2D" parent="mob10" unique_id=2100000022]
+
+[node name="DZcollison" type="CollisionShape2D" parent="mob10/deadzone" unique_id=2100000023]
+shape = SubResource("CircleShape2D_jb3kq")
+debug_color = Color(0.9823695, 0, 0.36699468, 0.41960785)
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="mob10" unique_id=2100000024]
+modulate = Color(1.15, 0.85, 0.85, 1)
+position = Vector2(4.7683716e-07, 3.8146973e-06)
+scale = Vector2(0.8359378, 0.8359378)
+sprite_frames = SubResource("SpriteFrames_skel_base")
+autoplay = "default"
+flip_h = true
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="mob10" unique_id=2100000025]
+position = Vector2(0, 3)
+shape = SubResource("CapsuleShape2D_7tnxx")
+
+[node name="mob11" type="CharacterBody2D" parent="." unique_id=2100000026 node_paths=PackedStringArray("battle_player_marker", "battle_enemy_marker", "graveyard_marker")]
+position = Vector2(625, 410)
+script = ExtResource("1_px5sl")
+enemy_level = 11
+battle_player_marker = NodePath("../BattlePlayerMarker")
+battle_enemy_marker = NodePath("../BattleEnemyMarker")
+graveyard_marker = NodePath("../GraveyardMarker")
+
+[node name="deadzone" type="Area2D" parent="mob11" unique_id=2100000027]
+
+[node name="DZcollison" type="CollisionShape2D" parent="mob11/deadzone" unique_id=2100000028]
+shape = SubResource("CircleShape2D_jb3kq")
+debug_color = Color(0.9823695, 0, 0.36699468, 0.41960785)
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="mob11" unique_id=2100000029]
+modulate = Color(1.15, 0.85, 0.85, 1)
+position = Vector2(4.7683716e-07, 3.8146973e-06)
+scale = Vector2(0.8359378, 0.8359378)
+sprite_frames = SubResource("SpriteFrames_skel_rogue")
+autoplay = "default"
+flip_h = true
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="mob11" unique_id=2100000030]
+position = Vector2(0, 3)
+shape = SubResource("CapsuleShape2D_7tnxx")
+
+[node name="mob12" type="CharacterBody2D" parent="." unique_id=2100000031 node_paths=PackedStringArray("battle_player_marker", "battle_enemy_marker", "graveyard_marker")]
+position = Vector2(704, 414)
+script = ExtResource("1_px5sl")
+enemy_level = 12
+battle_player_marker = NodePath("../BattlePlayerMarker")
+battle_enemy_marker = NodePath("../BattleEnemyMarker")
+graveyard_marker = NodePath("../GraveyardMarker")
+
+[node name="deadzone" type="Area2D" parent="mob12" unique_id=2100000032]
+
+[node name="DZcollison" type="CollisionShape2D" parent="mob12/deadzone" unique_id=2100000033]
+shape = SubResource("CircleShape2D_jb3kq")
+debug_color = Color(0.9823695, 0, 0.36699468, 0.41960785)
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="mob12" unique_id=2100000034]
+modulate = Color(1.3, 0.65, 0.9, 1)
+position = Vector2(4.7683716e-07, 3.8146973e-06)
+scale = Vector2(0.8359378, 0.8359378)
+sprite_frames = SubResource("SpriteFrames_orc")
+autoplay = "default"
+flip_h = true
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="mob12" unique_id=2100000035]
+position = Vector2(0, 3)
+shape = SubResource("CapsuleShape2D_7tnxx")
+
+[node name="mob13" type="CharacterBody2D" parent="." unique_id=2100000036 node_paths=PackedStringArray("battle_player_marker", "battle_enemy_marker", "graveyard_marker")]
+position = Vector2(765, 414)
+script = ExtResource("1_px5sl")
+enemy_level = 13
+battle_player_marker = NodePath("../BattlePlayerMarker")
+battle_enemy_marker = NodePath("../BattleEnemyMarker")
+graveyard_marker = NodePath("../GraveyardMarker")
+
+[node name="deadzone" type="Area2D" parent="mob13" unique_id=2100000037]
+
+[node name="DZcollison" type="CollisionShape2D" parent="mob13/deadzone" unique_id=2100000038]
+shape = SubResource("CircleShape2D_jb3kq")
+debug_color = Color(0.9823695, 0, 0.36699468, 0.41960785)
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="mob13" unique_id=2100000039]
+modulate = Color(1.3, 0.65, 0.9, 1)
+position = Vector2(4.7683716e-07, 3.8146973e-06)
+scale = Vector2(0.8359378, 0.8359378)
+sprite_frames = SubResource("SpriteFrames_skel_base")
+autoplay = "default"
+flip_h = true
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="mob13" unique_id=2100000040]
+position = Vector2(0, 3)
+shape = SubResource("CapsuleShape2D_7tnxx")
+
+[node name="mob14" type="CharacterBody2D" parent="." unique_id=2100000041 node_paths=PackedStringArray("battle_player_marker", "battle_enemy_marker", "graveyard_marker")]
+position = Vector2(338, 435)
+script = ExtResource("1_px5sl")
+enemy_level = 14
+battle_player_marker = NodePath("../BattlePlayerMarker")
+battle_enemy_marker = NodePath("../BattleEnemyMarker")
+graveyard_marker = NodePath("../GraveyardMarker")
+
+[node name="deadzone" type="Area2D" parent="mob14" unique_id=2100000042]
+
+[node name="DZcollison" type="CollisionShape2D" parent="mob14/deadzone" unique_id=2100000043]
+shape = SubResource("CircleShape2D_jb3kq")
+debug_color = Color(0.9823695, 0, 0.36699468, 0.41960785)
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="mob14" unique_id=2100000044]
+modulate = Color(1.3, 0.65, 0.9, 1)
+position = Vector2(4.7683716e-07, 3.8146973e-06)
+scale = Vector2(0.8359378, 0.8359378)
+sprite_frames = SubResource("SpriteFrames_skel_rogue")
+autoplay = "default"
+flip_h = true
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="mob14" unique_id=2100000045]
+position = Vector2(0, 3)
+shape = SubResource("CapsuleShape2D_7tnxx")
+
+[node name="mob15" type="CharacterBody2D" parent="." unique_id=2100000046 node_paths=PackedStringArray("battle_player_marker", "battle_enemy_marker", "graveyard_marker")]
+position = Vector2(430, 460)
+script = ExtResource("1_px5sl")
+enemy_level = 15
+battle_player_marker = NodePath("../BattlePlayerMarker")
+battle_enemy_marker = NodePath("../BattleEnemyMarker")
+graveyard_marker = NodePath("../GraveyardMarker")
+
+[node name="deadzone" type="Area2D" parent="mob15" unique_id=2100000047]
+
+[node name="DZcollison" type="CollisionShape2D" parent="mob15/deadzone" unique_id=2100000048]
+shape = SubResource("CircleShape2D_jb3kq")
+debug_color = Color(0.9823695, 0, 0.36699468, 0.41960785)
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="mob15" unique_id=2100000049]
+modulate = Color(1.6, 1.15, 0.3, 1)
+position = Vector2(4.7683716e-07, 3.8146973e-06)
+scale = Vector2(0.8359378, 0.8359378)
+sprite_frames = SubResource("SpriteFrames_orc")
+autoplay = "default"
+flip_h = true
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="mob15" unique_id=2100000050]
+position = Vector2(0, 3)
+shape = SubResource("CapsuleShape2D_7tnxx")
+
 [connection signal="body_entered" from="mob1/deadzone" to="mob1" method="_on_deadzone_body_entered"]
 [connection signal="body_entered" from="mob1_2/deadzone" to="mob1_2" method="_on_deadzone_body_entered"]
 [connection signal="body_entered" from="mob1_3/deadzone" to="mob1_3" method="_on_deadzone_body_entered"]
 [connection signal="body_entered" from="mob1_4/deadzone" to="mob1_4" method="_on_deadzone_body_entered"]
+[connection signal="body_entered" from="mob6/deadzone" to="mob6" method="_on_deadzone_body_entered"]
+[connection signal="body_entered" from="mob7/deadzone" to="mob7" method="_on_deadzone_body_entered"]
+[connection signal="body_entered" from="mob8/deadzone" to="mob8" method="_on_deadzone_body_entered"]
+[connection signal="body_entered" from="mob9/deadzone" to="mob9" method="_on_deadzone_body_entered"]
+[connection signal="body_entered" from="mob10/deadzone" to="mob10" method="_on_deadzone_body_entered"]
+[connection signal="body_entered" from="mob11/deadzone" to="mob11" method="_on_deadzone_body_entered"]
+[connection signal="body_entered" from="mob12/deadzone" to="mob12" method="_on_deadzone_body_entered"]
+[connection signal="body_entered" from="mob13/deadzone" to="mob13" method="_on_deadzone_body_entered"]
+[connection signal="body_entered" from="mob14/deadzone" to="mob14" method="_on_deadzone_body_entered"]
+[connection signal="body_entered" from="mob15/deadzone" to="mob15" method="_on_deadzone_body_entered"]
