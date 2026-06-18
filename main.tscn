@@ -18,8 +18,8 @@
 [ext_resource type="Script" uid="uid://iujueewjbunt" path="res://delivery_point.gd" id="28_kq58d"]
 [ext_resource type="Script" uid="uid://c0yq6db10h3yi" path="res://Doorway.gd" id="30_kq58d"]
 [ext_resource type="Texture2D" uid="uid://v6sfe4o7cjl4" path="res://Asset/Pixel Crawler - Free Pack/Entities/Npc's/Knight/Idle/Idle-Sheet.png" id="34_4lmeg"]
-[ext_resource type="Script" path="res://SavePopup.gd" id="40_savepop"]
-[ext_resource type="Script" path="res://PauseMenu.gd" id="41_pausemenu"]
+[ext_resource type="Script" uid="uid://bq0f4qkpk56wi" path="res://SavePopup.gd" id="40_savepop"]
+[ext_resource type="Script" uid="uid://bc5k6lhc85jyl" path="res://PauseMenu.gd" id="41_pausemenu"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_cegan"]
 size = Vector2(48, 29)
@@ -437,6 +437,7 @@ layout_mode = 2
 text = "                                                                "
 
 [node name="RoadmapPopup" type="CanvasLayer" parent="." unique_id=3717834]
+visible = false
 script = ExtResource("3_1u8w0")
 
 [node name="Panel" type="Panel" parent="RoadmapPopup" unique_id=1727531082]
@@ -476,6 +477,7 @@ layout_mode = 2
 text = "Close Roadmap"
 
 [node name="EquipmentMenu" type="CanvasLayer" parent="." unique_id=2021918082]
+visible = false
 script = ExtResource("4_0odxb")
 
 [node name="Panel" type="Panel" parent="EquipmentMenu" unique_id=1422517685]
@@ -549,6 +551,7 @@ layout_mode = 2
 text = "Save & Close"
 
 [node name="SavePopup" type="CanvasLayer" parent="." unique_id=-1894967295]
+visible = false
 script = ExtResource("40_savepop")
 
 [node name="Panel" type="Panel" parent="SavePopup" unique_id=-1894967294]
@@ -608,6 +611,7 @@ size_flags_horizontal = 3
 text = "Back Out"
 
 [node name="PauseMenu" type="CanvasLayer" parent="." unique_id=-1894967195]
+visible = false
 script = ExtResource("41_pausemenu")
 
 [node name="Panel" type="Panel" parent="PauseMenu" unique_id=-1894967194]
