@@ -36,6 +36,18 @@ func _physics_process(delta: float) -> void:
 		move_and_slide()
 		return
 
+	var save_popup = get_tree().root.find_child("SavePopup", true, false)
+	if is_instance_valid(save_popup) and save_popup.visible:
+		velocity = Vector2.ZERO
+		move_and_slide()
+		return
+
+	var pause_menu = get_tree().root.find_child("PauseMenu", true, false)
+	if is_instance_valid(pause_menu) and pause_menu.visible:
+		velocity = Vector2.ZERO
+		move_and_slide()
+		return
+
 	if is_dashing:
 		move_and_slide()
 		return

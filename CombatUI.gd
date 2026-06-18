@@ -289,18 +289,7 @@ func _auto_scroll_to_latest_log() -> void:
 # ─── HP HEARTS ────────────────────────────────────────────────────────────────
 func _parse_hp_to_hearts(hp: int, max_hp: int) -> String:
 	if hp <= 0: return "💀 DEAD"
-	var hp_per_heart = 20
-	var total_slots = int(ceil(float(max_hp) / float(hp_per_heart)))
-	if total_slots <= 0: total_slots = 1
-	var full_count = int(hp / hp_per_heart)
-	var remainder = hp % hp_per_heart
-	if full_count > total_slots: full_count = total_slots; remainder = 0
-	var s = ""
-	for i in range(full_count): s += "❤️"
-	var used = full_count
-	if remainder > 0 and used < total_slots: s += "💔"; used += 1
-	while used < total_slots: s += "🖤"; used += 1
-	return s + "  %d / %d HP" % [hp, max_hp]
+	return QuestManager.hp_to_hearts(hp, max_hp) + "  %d / %d HP" % [hp, max_hp]
 
 # ─── MAIN UI REFRESH ──────────────────────────────────────────────────────────
 func _refresh_ui_states() -> void:
@@ -325,7 +314,8 @@ func _refresh_ui_states() -> void:
 		if "player_reflect_active" in current_enemy and current_enemy.player_reflect_active: s += "🪞 REFLECT  "
 		if "player_dodge_active" in current_enemy and current_enemy.player_dodge_active: s += "💨 DODGE  "
 		if "player_weakened" in current_enemy and current_enemy.player_weakened: s += "🗿 WEAKENED  "
-		if "player_counter_active" in current_enemy and current_enemy.player_counter_active: s += "⚡ COUNTER  "
+		if "player_cursed" in current_enemy and current_enemy.player_cursed: s += "🗿 CURSED  "
+		if "player_items_locked" in current_enemy and current_enemy.player_items_locked: s += "⚡ ITEMS LOCKED  "
 		player_buffs_lbl.text = s if s != "" else "● Normal"
 
 	if enemy_buffs_lbl:
@@ -340,7 +330,8 @@ func _refresh_ui_states() -> void:
 		if "enemy_reflect_active" in current_enemy and current_enemy.enemy_reflect_active: s += "🪞 REFLECT  "
 		if "enemy_dodge_active" in current_enemy and current_enemy.enemy_dodge_active: s += "💨 DODGE  "
 		if "enemy_weakened" in current_enemy and current_enemy.enemy_weakened: s += "🗿 WEAKENED  "
-		if "enemy_counter_active" in current_enemy and current_enemy.enemy_counter_active: s += "⚡ COUNTER  "
+		if "enemy_cursed" in current_enemy and current_enemy.enemy_cursed: s += "🗿 CURSED  "
+		if "enemy_items_locked" in current_enemy and current_enemy.enemy_items_locked: s += "⚡ ITEMS LOCKED  "
 		enemy_buffs_lbl.text = s if s != "" else "● Normal"
 
 	if player_hp:
@@ -378,6 +369,8 @@ func _refresh_ui_states() -> void:
 		btn.tooltip_text = "%s %s\n%s" % [meta["emoji"], meta["label"], meta["desc"]]
 
 		var is_usable = count > 0 and not is_disarmed
+		if "player_items_locked" in current_enemy and current_enemy.player_items_locked:
+			is_usable = false
 		# Per-item extra disable conditions
 		if item_id == "potion" and QuestManager.player_health >= QuestManager.MAX_HEALTH:
 			is_usable = false
@@ -399,9 +392,9 @@ func _refresh_ui_states() -> void:
 			is_usable = false
 		if item_id == "smoke_bomb" and current_enemy.player_dodge_active:
 			is_usable = false
-		if item_id == "weaken_totem" and current_enemy.enemy_weakened:
+		if item_id == "weaken_totem" and current_enemy.enemy_cursed:
 			is_usable = false
-		if item_id == "static_field" and current_enemy.player_counter_active:
+		if item_id == "static_field" and current_enemy.enemy_items_locked:
 			is_usable = false
 
 		btn.disabled = not is_usable

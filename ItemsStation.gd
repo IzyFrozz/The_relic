@@ -21,6 +21,9 @@ func _ready() -> void:
 
 func _process(_delta: float) -> void:
 	if player_nearby and Input.is_action_just_pressed("interact"):
+		var pause_menu = get_tree().root.find_child("PauseMenu", true, false)
+		if is_instance_valid(pause_menu) and pause_menu.visible:
+			return
 		_open_equipment_menu()
 
 func _open_equipment_menu() -> void:

@@ -45,18 +45,11 @@ func show_death_screen() -> void:
 	visible = true
 
 func _on_restart_pressed() -> void:
-	QuestManager.reset_player_health()
+	Engine.time_scale = 1.0
 	QuestManager.is_in_combat = false
-	var player = get_tree().root.find_child("mainplayer", true, false)
-	if is_instance_valid(player):
-		player.global_position = QuestManager.player_overworld_position
-		if "velocity" in player: player.velocity = Vector2.ZERO
-		var sprite = player.get_node_or_null("AnimatedSprite2D") as AnimatedSprite2D
-		if is_instance_valid(sprite):
-			sprite.stop()
-			sprite.animation = "default"
-			sprite.frame = 0
-	visible = false
+	if not QuestManager.load_game():
+		QuestManager.reset_to_defaults()
+	get_tree().reload_current_scene()
 
 func _on_exit_pressed() -> void:
 	get_tree().quit()

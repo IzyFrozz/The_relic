@@ -259,8 +259,10 @@ func _equip_item(item: String) -> void:
 	if QuestManager.equipped_items.has(item): return
 	if QuestManager.equipped_items.size() >= QuestManager.get_max_equip_slots(): return
 	QuestManager.equipped_items.append(item)
+	QuestManager.has_unsaved_progress = true
 	refresh_display()
 
 func _unequip_item(item: String) -> void:
 	QuestManager.equipped_items.erase(item)
+	QuestManager.has_unsaved_progress = true
 	refresh_display()

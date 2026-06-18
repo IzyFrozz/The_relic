@@ -32,37 +32,5 @@ func _is_end_screen_active() -> bool:
 func _update_hp_display() -> void:
 	var hp: int = QuestManager.player_health
 	var max_hp: int = QuestManager.MAX_HEALTH
-	
-	var full_heart = "❤️"
-	var broken_heart = "💔"
-	var empty_heart = "🖤"
-	var heart_string = ""
-	var hp_per_heart = 20
-	
-	# Calculate total heart slots based on maximum health
-	var total_slots = int(ceil(float(max_hp) / float(hp_per_heart)))
-	if total_slots <= 0: 
-		total_slots = 1
-	
-	var full_count = int(hp / hp_per_heart)
-	var remainder = hp % hp_per_heart
-	
-	if full_count > total_slots:
-		full_count = total_slots
-		remainder = 0
-		
-	# Build the heart visuals
-	for i in range(full_count):
-		heart_string += full_heart + " "
-		
-	var slots_used = full_count
-	if remainder > 0 and slots_used < total_slots:
-		heart_string += broken_heart + " "
-		slots_used += 1
-		
-	while slots_used < total_slots:
-		heart_string += empty_heart + " "
-		slots_used += 1
-		
-	# Render layout format: HP: ❤️ ❤️ ❤️ ❤️ ❤️ (100 HP/ 100 MaxHP)
+	var heart_string = QuestManager.hp_to_hearts(hp, max_hp)
 	text = "HP: " + heart_string + "(%d HP/ %d MaxHP)" % [hp, max_hp]

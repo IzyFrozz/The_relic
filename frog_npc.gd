@@ -13,6 +13,10 @@ func _ready() -> void:
 
 func _process(_delta: float) -> void:
 	if player_nearby and Input.is_action_just_pressed("interact"):
+		var pause_menu = get_tree().root.find_child("PauseMenu", true, false)
+		if is_instance_valid(pause_menu) and pause_menu.visible:
+			return
+
 		if QuestManager.game_won:
 			return
 
@@ -25,7 +29,10 @@ func _process(_delta: float) -> void:
 
 			trigger_black_win_screen()
 		else:
-			if is_instance_valid(prompt_label):
+			var save_popup = get_tree().root.find_child("SavePopup", true, false)
+			if is_instance_valid(save_popup) and save_popup.has_method("open_popup"):
+				save_popup.open_popup()
+			elif is_instance_valid(prompt_label):
 				prompt_label.text = "Heh BRO"
 
 func trigger_black_win_screen() -> void:
@@ -57,7 +64,7 @@ func _on_body_entered(body: Node2D) -> void:
 			elif QuestManager.has_relic:
 				prompt_label.text = "[E]  Give Ancient Relic"
 			else:
-				prompt_label.text = "[E]  Talk to Frog NPC"
+				prompt_label.text = "[E]  Save Game"
 			prompt_label.visible = true
 
 func _on_body_exited(body: Node2D) -> void:

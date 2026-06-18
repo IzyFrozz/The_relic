@@ -41,8 +41,10 @@ var player_dodge_active: bool = false
 var enemy_dodge_active: bool = false
 var player_weakened: bool = false
 var enemy_weakened: bool = false
-var player_counter_active: bool = false
-var enemy_counter_active: bool = false
+var player_cursed: bool = false
+var enemy_cursed: bool = false
+var player_items_locked: bool = false
+var enemy_items_locked: bool = false
 var player_stun_extra_turns: int = 0
 var enemy_stun_extra_turns: int = 0
 
@@ -64,20 +66,22 @@ func _auto_wire_overworld_signals() -> void:
 		deadzone_node.body_entered.connect(_on_deadzone_body_entered)
 
 
-# Curated item pools for tiers 6-15. Each pool is a deliberately different
-# combo (not just cumulative) — the strategy each tier teaches changes as
-# levels go up, escalating toward more complex, punishing combos by tier 15.
+# Curated item pools for tiers 6-15. Every pool uses exactly 6 items so
+# higher-level enemies always bring a full loadout. Each pool deliberately
+# mixes mechanics (heal/defense/control/aggression/utility) rather than
+# stacking pure damage buffs, and only ever includes items already unlocked
+# by the player at that level (see QuestManager.item_unlocks).
 const TIER_POOLS_LV6_PLUS := {
-	6:  ["potion", "shield", "grindstone", "bandage"],
-	7:  ["shield", "whip", "needle", "poison_dart"],
-	8:  ["grindstone", "battle_horn", "needle", "magnet"],
-	9:  ["shield", "smoke_bomb", "poison_dart", "whip"],
-	10: ["mirror_ward", "grindstone", "battle_horn", "needle"],
-	11: ["weaken_totem", "shield", "poison_dart", "bandage"],
-	12: ["chain_hook", "magnet", "needle", "smoke_bomb"],
-	13: ["static_field", "mirror_ward", "weaken_totem", "battle_horn"],
-	14: ["time_warp", "chain_hook", "poison_dart", "needle"],
-	15: ["overcharge", "time_warp", "static_field", "mirror_ward", "chain_hook"],
+	6:  ["potion", "shield", "grindstone", "needle", "magnet", "poison_dart"],
+	7:  ["shield", "whip", "poison_dart", "bandage", "needle", "magnet"],
+	8:  ["grindstone", "battle_horn", "needle", "magnet", "potion", "shield"],
+	9:  ["shield", "smoke_bomb", "poison_dart", "whip", "bandage", "needle"],
+	10: ["mirror_ward", "grindstone", "battle_horn", "needle", "potion", "magnet"],
+	11: ["weaken_totem", "shield", "poison_dart", "bandage", "smoke_bomb", "needle"],
+	12: ["chain_hook", "magnet", "needle", "smoke_bomb", "battle_horn", "potion"],
+	13: ["static_field", "mirror_ward", "weaken_totem", "battle_horn", "bandage", "needle"],
+	14: ["time_warp", "chain_hook", "poison_dart", "needle", "shield", "potion"],
+	15: ["overcharge", "time_warp", "static_field", "mirror_ward", "chain_hook", "bandage"],
 }
 
 func _initialize_mob_stats_by_character_tier() -> void:
@@ -199,8 +203,8 @@ func use_player_item(item_type: String) -> void:
 			player_regen_rounds = 2
 			if combat_ui: combat_ui.display_round_history("🩹 Applied a Bandage (+10 HP now, +10 HP for 2 more rounds)", true)
 		"poison_dart":
-			enemy_poison_rounds = 3
-			if combat_ui: combat_ui.display_round_history("☠️ Threw a Poison Dart at the Enemy (8 dmg/round for 3 rounds)", true)
+			enemy_poison_rounds = 4
+			if combat_ui: combat_ui.display_round_history("☠️ Threw a Poison Dart at the Enemy (10 dmg/round for 4 rounds)", true)
 		"battle_horn":
 			player_horn_charges = 2
 			if combat_ui: combat_ui.display_round_history("📯 Sounded the Battle Horn (Next 2 attacks +50% damage)", true)
@@ -211,11 +215,11 @@ func use_player_item(item_type: String) -> void:
 			player_dodge_active = true
 			if combat_ui: combat_ui.display_round_history("💨 Threw a Smoke Bomb (Next attack against you will miss)", true)
 		"weaken_totem":
-			enemy_weakened = true
-			if combat_ui: combat_ui.display_round_history("🗿 Planted a Weaken Totem (Enemy's next attack -50% damage)", true)
+			enemy_cursed = true
+			if combat_ui: combat_ui.display_round_history("🗿 Cursed the Enemy! (Their next attack deals 0 damage — you heal 20 HP)", true)
 		"static_field":
-			player_counter_active = true
-			if combat_ui: combat_ui.display_round_history("⚡ Charged a Static Field (Next attacker takes 15 counter damage)", true)
+			enemy_items_locked = true
+			if combat_ui: combat_ui.display_round_history("⚡ Charged a Static Field (Enemy can't use items next turn — forced basic attack)", true)
 		"time_warp":
 			enemy_is_disarmed = true
 			enemy_stun_extra_turns += 1
@@ -229,6 +233,9 @@ func use_player_item(item_type: String) -> void:
 
 
 func process_player_attack_phase() -> void:
+	if player_items_locked:
+		player_items_locked = false
+
 	if player_is_disarmed:
 		player_is_disarmed = false
 		if player_stun_extra_turns > 0:
@@ -258,7 +265,16 @@ func process_player_attack_phase() -> void:
 		damage_output = int(damage_output * 0.5)
 		player_weakened = false
 
-	if enemy_dodge_active:
+	var was_cursed = false
+	if player_cursed:
+		player_cursed = false
+		was_cursed = true
+		damage_output = 0
+		enemy_health = clampi(enemy_health + 20, 0, enemy_max_health)
+
+	if was_cursed:
+		if combat_ui: combat_ui.display_round_history("🗿 You were CURSED! Your attack dealt 0 damage and the enemy healed 20 HP!", true)
+	elif enemy_dodge_active:
 		enemy_dodge_active = false
 		if combat_ui: combat_ui.display_round_history("💨 The enemy vanished in smoke — your attack missed completely!", true)
 	elif enemy_reflect_active:
@@ -274,10 +290,6 @@ func process_player_attack_phase() -> void:
 			player_piercing = false
 		enemy_health = clampi(enemy_health - damage_output, 0, enemy_max_health)
 		if combat_ui: combat_ui.display_round_history("⚔️ You attacked for %d damage!" % damage_output, true)
-		if enemy_counter_active and damage_output > 0:
-			enemy_counter_active = false
-			QuestManager.player_health = clampi(QuestManager.player_health - 15, 0, QuestManager.MAX_HEALTH)
-			if combat_ui: combat_ui.display_round_history("⚡ The enemy's Static Field shocked you for 15 counter damage!", true)
 
 	if combat_ui: combat_ui._refresh_ui_states()
 
@@ -313,54 +325,60 @@ func _execute_enemy_turn_ai() -> void:
 	}
 	var shield_grindstone_evaluated: bool = false
 
-	var processing_combat_actions = true
-	while processing_combat_actions:
-		var item_to_play = ""
+	if enemy_items_locked:
+		enemy_items_locked = false
+		if combat_ui:
+			combat_ui.display_round_history("⚡ Enemy's items are LOCKED this turn — forced basic attack only!", false)
+			await combat_ui.show_blocking_popup("⚡ ITEMS LOCKED", "Your Static Field denies the enemy's items this turn — they can only basic attack!", false)
+	else:
+		var processing_combat_actions = true
+		while processing_combat_actions:
+			var item_to_play = ""
 
-		if enemy_health <= (enemy_max_health - 20) and enemy_inventory.has("potion") and items_played_tracking["potion"] < 1:
-			item_to_play = "potion"
-		elif enemy_health <= (enemy_max_health - 20) and enemy_inventory.has("bandage") and items_played_tracking["bandage"] < 1:
-			item_to_play = "bandage"
-		elif not player_is_disarmed and enemy_health <= enemy_max_health * 0.4 and enemy_inventory.has("time_warp") and items_played_tracking["time_warp"] < 1:
-			item_to_play = "time_warp"
-		elif not player_is_disarmed and enemy_inventory.has("whip") and items_played_tracking["whip"] < 1:
-			item_to_play = "whip"
-		elif not enemy_dodge_active and enemy_inventory.has("smoke_bomb") and items_played_tracking["smoke_bomb"] < 1 and randf() < 0.35:
-			item_to_play = "smoke_bomb"
-		elif not enemy_reflect_active and not enemy_dodge_active and enemy_inventory.has("mirror_ward") and items_played_tracking["mirror_ward"] < 1 and randf() < 0.35:
-			item_to_play = "mirror_ward"
-		elif player_active_armor and enemy_inventory.has("grindstone") and items_played_tracking["grindstone"] < 1 and not shield_grindstone_evaluated:
-			shield_grindstone_evaluated = true
-			if randf() < 0.50:
+			if enemy_health <= (enemy_max_health - 20) and enemy_inventory.has("potion") and items_played_tracking["potion"] < 1:
+				item_to_play = "potion"
+			elif enemy_health <= (enemy_max_health - 20) and enemy_inventory.has("bandage") and items_played_tracking["bandage"] < 1:
+				item_to_play = "bandage"
+			elif not player_is_disarmed and enemy_health <= enemy_max_health * 0.4 and enemy_inventory.has("time_warp") and items_played_tracking["time_warp"] < 1:
+				item_to_play = "time_warp"
+			elif not player_is_disarmed and enemy_inventory.has("whip") and items_played_tracking["whip"] < 1:
+				item_to_play = "whip"
+			elif not enemy_dodge_active and enemy_inventory.has("smoke_bomb") and items_played_tracking["smoke_bomb"] < 1 and randf() < 0.35:
+				item_to_play = "smoke_bomb"
+			elif not enemy_reflect_active and not enemy_dodge_active and enemy_inventory.has("mirror_ward") and items_played_tracking["mirror_ward"] < 1 and randf() < 0.35:
+				item_to_play = "mirror_ward"
+			elif player_active_armor and enemy_inventory.has("grindstone") and items_played_tracking["grindstone"] < 1 and not shield_grindstone_evaluated:
+				shield_grindstone_evaluated = true
+				if randf() < 0.50:
+					item_to_play = "grindstone"
+				else:
+					items_played_tracking["grindstone"] = 1
+			elif player_active_armor and enemy_inventory.has("needle") and items_played_tracking["needle"] < 1 and not enemy_piercing:
+				item_to_play = "needle"
+			elif not enemy_active_armor and enemy_inventory.has("shield") and items_played_tracking["shield"] < 1:
+				item_to_play = "shield"
+			elif not enemy_sharpened and enemy_inventory.has("grindstone") and items_played_tracking["grindstone"] < 1:
 				item_to_play = "grindstone"
-			else:
-				items_played_tracking["grindstone"] = 1
-		elif player_active_armor and enemy_inventory.has("needle") and items_played_tracking["needle"] < 1 and not enemy_piercing:
-			item_to_play = "needle"
-		elif not enemy_active_armor and enemy_inventory.has("shield") and items_played_tracking["shield"] < 1:
-			item_to_play = "shield"
-		elif not enemy_sharpened and enemy_inventory.has("grindstone") and items_played_tracking["grindstone"] < 1:
-			item_to_play = "grindstone"
-		elif enemy_horn_charges <= 0 and enemy_inventory.has("battle_horn") and items_played_tracking["battle_horn"] < 1:
-			item_to_play = "battle_horn"
-		elif player_poison_rounds <= 0 and enemy_inventory.has("poison_dart") and items_played_tracking["poison_dart"] < 1:
-			item_to_play = "poison_dart"
-		elif not player_weakened and enemy_inventory.has("weaken_totem") and items_played_tracking["weaken_totem"] < 1 and randf() < 0.6:
-			item_to_play = "weaken_totem"
-		elif not enemy_counter_active and enemy_inventory.has("static_field") and items_played_tracking["static_field"] < 1 and randf() < 0.45:
-			item_to_play = "static_field"
-		elif player_inventory.size() >= 2 and enemy_inventory.has("chain_hook") and items_played_tracking["chain_hook"] < 1:
-			item_to_play = "chain_hook"
-		elif player_inventory.size() > 0 and enemy_inventory.has("magnet") and items_played_tracking["magnet"] < 1:
-			item_to_play = "magnet"
-		elif enemy_health <= enemy_max_health * 0.3 and enemy_inventory.has("overcharge") and items_played_tracking["overcharge"] < 1:
-			item_to_play = "overcharge"
+			elif enemy_horn_charges <= 0 and enemy_inventory.has("battle_horn") and items_played_tracking["battle_horn"] < 1:
+				item_to_play = "battle_horn"
+			elif player_poison_rounds <= 0 and enemy_inventory.has("poison_dart") and items_played_tracking["poison_dart"] < 1:
+				item_to_play = "poison_dart"
+			elif not player_cursed and enemy_inventory.has("weaken_totem") and items_played_tracking["weaken_totem"] < 1 and randf() < 0.6:
+				item_to_play = "weaken_totem"
+			elif not player_items_locked and enemy_inventory.has("static_field") and items_played_tracking["static_field"] < 1 and randf() < 0.45:
+				item_to_play = "static_field"
+			elif player_inventory.size() >= 2 and enemy_inventory.has("chain_hook") and items_played_tracking["chain_hook"] < 1:
+				item_to_play = "chain_hook"
+			elif player_inventory.size() > 0 and enemy_inventory.has("magnet") and items_played_tracking["magnet"] < 1:
+				item_to_play = "magnet"
+			elif enemy_health <= enemy_max_health * 0.3 and enemy_inventory.has("overcharge") and items_played_tracking["overcharge"] < 1:
+				item_to_play = "overcharge"
 
-		if item_to_play != "":
-			await _enemy_execute_item(item_to_play, items_played_tracking)
-			if not is_in_combat: return
-		else:
-			processing_combat_actions = false
+			if item_to_play != "":
+				await _enemy_execute_item(item_to_play, items_played_tracking)
+				if not is_in_combat: return
+			else:
+				processing_combat_actions = false
 
 	if not is_in_combat: return
 
@@ -375,9 +393,19 @@ func _execute_enemy_turn_ai() -> void:
 		raw_dmg = int(raw_dmg * 0.5)
 		enemy_weakened = false
 
+	var enemy_was_cursed = false
+	if enemy_cursed:
+		enemy_cursed = false
+		enemy_was_cursed = true
+		raw_dmg = 0
+		QuestManager.player_health = clampi(QuestManager.player_health + 20, 0, QuestManager.MAX_HEALTH)
+
 	var attack_log = ""
 
-	if player_dodge_active:
+	if enemy_was_cursed:
+		attack_log = "🗿 The enemy was CURSED! Their attack dealt 0 damage and YOU healed 20 HP!"
+		if combat_ui: combat_ui.display_round_history("🗿 Your Weaken Totem curse triggered — enemy dealt 0 damage, you healed 20 HP!", false)
+	elif player_dodge_active:
 		player_dodge_active = false
 		attack_log = "💨 DODGED! You vanished in smoke and the enemy's attack missed completely!"
 		if combat_ui: combat_ui.display_round_history("💨 Your Smoke Bomb caused the enemy's attack to miss entirely!", false)
@@ -396,9 +424,6 @@ func _execute_enemy_turn_ai() -> void:
 		enemy_piercing = false
 		var had_armor = player_active_armor
 		QuestManager.player_health = clampi(QuestManager.player_health - raw_dmg, 0, QuestManager.MAX_HEALTH)
-		if player_counter_active:
-			player_counter_active = false
-			enemy_health = clampi(enemy_health - 15, 0, enemy_max_health)
 		if had_armor:
 			attack_log = "🪡 PIERCED! Needle bypassed your shield for %d damage! (Shield still active)" % raw_dmg
 			if combat_ui: combat_ui.display_round_history("🪡 Enemy Needle bypassed your shield for %d dmg — shield intact!" % raw_dmg, false)
@@ -408,14 +433,8 @@ func _execute_enemy_turn_ai() -> void:
 	else:
 		# No armor, no needle — straight hit
 		QuestManager.player_health = clampi(QuestManager.player_health - raw_dmg, 0, QuestManager.MAX_HEALTH)
-		if player_counter_active:
-			player_counter_active = false
-			enemy_health = clampi(enemy_health - 15, 0, enemy_max_health)
-			attack_log = "❌ OUCH! Enemy struck for %d damage! ⚡ Your Static Field zapped them back for 15!" % raw_dmg
-			if combat_ui: combat_ui.display_round_history("⚔️ Enemy dealt %d damage — your Static Field shocked them for 15 in return!" % raw_dmg, false)
-		else:
-			attack_log = "❌ OUCH! Enemy struck for %d damage!" % raw_dmg
-			if combat_ui: combat_ui.display_round_history("⚔️ Enemy dealt %d damage to you!" % raw_dmg, false)
+		attack_log = "❌ OUCH! Enemy struck for %d damage!" % raw_dmg
+		if combat_ui: combat_ui.display_round_history("⚔️ Enemy dealt %d damage to you!" % raw_dmg, false)
 
 	if combat_ui:
 		combat_ui._refresh_ui_states()
@@ -467,8 +486,8 @@ func _enemy_execute_item(item_type: String, tracking: Dictionary) -> void:
 			outcome_text = "🩹 The enemy applied a Bandage! +10 HP now, +10 HP for 2 more rounds!"
 			if combat_ui: combat_ui.display_round_history("🩹 Enemy used a Bandage.", false)
 		"poison_dart":
-			player_poison_rounds = 3
-			outcome_text = "☠️ The enemy threw a Poison Dart at YOU! 8 damage per round for 3 rounds!"
+			player_poison_rounds = 4
+			outcome_text = "☠️ The enemy threw a Poison Dart at YOU! 10 damage per round for 4 rounds!"
 			if combat_ui: combat_ui.display_round_history("☠️ Enemy poisoned you!", false)
 		"battle_horn":
 			enemy_horn_charges = 2
@@ -483,13 +502,13 @@ func _enemy_execute_item(item_type: String, tracking: Dictionary) -> void:
 			outcome_text = "💨 The enemy threw a Smoke Bomb! Your next attack against them will miss!"
 			if combat_ui: combat_ui.display_round_history("💨 Enemy used a Smoke Bomb.", false)
 		"weaken_totem":
-			player_weakened = true
-			outcome_text = "🗿 The enemy planted a Weaken Totem! YOUR next attack deals 50% less damage!"
-			if combat_ui: combat_ui.display_round_history("🗿 Enemy weakened your next attack.", false)
+			player_cursed = true
+			outcome_text = "🗿 The enemy cursed YOU! Your next attack will deal 0 damage and heal the enemy 20 HP!"
+			if combat_ui: combat_ui.display_round_history("🗿 Enemy cursed your next attack.", false)
 		"static_field":
-			enemy_counter_active = true
-			outcome_text = "⚡ The enemy charged a Static Field! If you land a hit, YOU take 15 counter damage!"
-			if combat_ui: combat_ui.display_round_history("⚡ Enemy charged a Static Field.", false)
+			player_items_locked = true
+			outcome_text = "⚡ The enemy charged a Static Field! YOU can't use items next turn — forced basic attack!"
+			if combat_ui: combat_ui.display_round_history("⚡ Enemy locked your items for next turn.", false)
 		"time_warp":
 			player_is_disarmed = true
 			player_stun_extra_turns += 1
@@ -554,12 +573,12 @@ func _process_dot_hot_ticks() -> void:
 	var tick_log := ""
 	if player_poison_rounds > 0:
 		player_poison_rounds -= 1
-		QuestManager.player_health = clampi(QuestManager.player_health - 8, 0, QuestManager.MAX_HEALTH)
-		tick_log += "☠️ Poison ticked — you took 8 damage! (%d round%s left)\n" % [player_poison_rounds, "" if player_poison_rounds == 1 else "s"]
+		QuestManager.player_health = clampi(QuestManager.player_health - 10, 0, QuestManager.MAX_HEALTH)
+		tick_log += "☠️ Poison ticked — you took 10 damage! (%d round%s left)\n" % [player_poison_rounds, "" if player_poison_rounds == 1 else "s"]
 	if enemy_poison_rounds > 0:
 		enemy_poison_rounds -= 1
-		enemy_health = clampi(enemy_health - 8, 0, enemy_max_health)
-		tick_log += "☠️ Your Poison Dart ticked on the enemy — 8 damage! (%d round%s left)\n" % [enemy_poison_rounds, "" if enemy_poison_rounds == 1 else "s"]
+		enemy_health = clampi(enemy_health - 10, 0, enemy_max_health)
+		tick_log += "☠️ Your Poison Dart ticked on the enemy — 10 damage! (%d round%s left)\n" % [enemy_poison_rounds, "" if enemy_poison_rounds == 1 else "s"]
 	if player_regen_rounds > 0:
 		player_regen_rounds -= 1
 		QuestManager.player_health = clampi(QuestManager.player_health + 10, 0, QuestManager.MAX_HEALTH)
@@ -614,8 +633,10 @@ func _reset_all_combat_modifiers() -> void:
 	enemy_dodge_active = false
 	player_weakened = false
 	enemy_weakened = false
-	player_counter_active = false
-	enemy_counter_active = false
+	player_cursed = false
+	enemy_cursed = false
+	player_items_locked = false
+	enemy_items_locked = false
 	player_stun_extra_turns = 0
 	enemy_stun_extra_turns = 0
 

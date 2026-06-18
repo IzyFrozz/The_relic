@@ -41,6 +41,9 @@ func _style_btn(btn: Button, bg: Color, border: Color) -> void:
 
 func _on_restart_pressed() -> void:
 	Engine.time_scale = 1.0
+	QuestManager.is_in_combat = false
+	if not QuestManager.load_game():
+		QuestManager.reset_to_defaults()
 	get_tree().reload_current_scene()
 
 func _on_exit_pressed() -> void:
