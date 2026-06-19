@@ -18,8 +18,8 @@
 [ext_resource type="Script" uid="uid://iujueewjbunt" path="res://delivery_point.gd" id="28_kq58d"]
 [ext_resource type="Script" uid="uid://c0yq6db10h3yi" path="res://Doorway.gd" id="30_kq58d"]
 [ext_resource type="Texture2D" uid="uid://v6sfe4o7cjl4" path="res://Asset/Pixel Crawler - Free Pack/Entities/Npc's/Knight/Idle/Idle-Sheet.png" id="34_4lmeg"]
-[ext_resource type="Script" path="res://SavePopup.gd" id="40_savepop"]
-[ext_resource type="Script" path="res://PauseMenu.gd" id="41_pausemenu"]
+[ext_resource type="Script" uid="uid://bq0f4qkpk56wi" path="res://SavePopup.gd" id="40_savepop"]
+[ext_resource type="Script" uid="uid://bc5k6lhc85jyl" path="res://PauseMenu.gd" id="41_pausemenu"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_cegan"]
 size = Vector2(48, 29)
