@@ -140,6 +140,8 @@ func start_combat() -> void:
 	if is_instance_valid(battle_enemy_marker):
 		self.global_position = battle_enemy_marker.global_position
 
+	_switch_to_combat_camera()
+
 	if is_instance_valid(combat_ui):
 		combat_ui.open_combat_screen(self)
 		combat_ui.start_player_turn()
@@ -641,12 +643,31 @@ func _reset_all_combat_modifiers() -> void:
 	enemy_stun_extra_turns = 0
 
 
+func _switch_to_combat_camera() -> void:
+	var arena_cam = get_parent().get_node_or_null("CombatArenaCamera") as Camera2D
+	if is_instance_valid(arena_cam):
+		arena_cam.enabled = true
+		arena_cam.make_current()
+
+
+func _switch_to_overworld_camera() -> void:
+	var arena_cam = get_parent().get_node_or_null("CombatArenaCamera") as Camera2D
+	if is_instance_valid(arena_cam):
+		arena_cam.enabled = false
+	if is_instance_valid(player_ref):
+		var player_cam = player_ref.get_node_or_null("Camera2D") as Camera2D
+		if is_instance_valid(player_cam):
+			player_cam.enabled = true
+			player_cam.make_current()
+
+
 func _check_combat_end_conditions() -> bool:
 	if QuestManager.player_health <= 0:
 		if is_instance_valid(combat_ui): combat_ui.visible = false
 		self.global_position = enemy_overworld_position
 		is_in_combat = false
 		QuestManager.is_in_combat = false
+		_switch_to_overworld_camera()
 		if is_instance_valid(lose_ui): lose_ui.show_death_screen()
 		return true
 
@@ -685,6 +706,8 @@ func _check_combat_end_conditions() -> bool:
 		if is_instance_valid(player_ref):
 			if "velocity" in player_ref: player_ref.velocity = Vector2.ZERO
 			player_ref.global_position = QuestManager.player_overworld_position
+
+		_switch_to_overworld_camera()
 
 		queue_free()
 		return true

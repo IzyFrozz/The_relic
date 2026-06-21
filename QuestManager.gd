@@ -70,68 +70,62 @@ func collect_coin() -> void:
 	has_unsaved_progress = true
 
 # ── Centralized heart-bar renderer ──────────────────────────────────────────
-# 1 heart = 20 HP. Caps display at 15 hearts (300 HP) per "lap" so high-HP
-# bosses don't spam the screen with dozens of hearts — once HP climbs past
-# 300, the SAME 15 slots start refilling from heart #1 again, but in gold,
-# representing the next 300-HP block. A third lap (600+) would just repeat
-# the gold coloring rather than introduce a new color, which is fine since
-# nothing in the game currently has HP anywhere near that high.
+# 1 heart = 20 HP. The base pool is always exactly 15 hearts (300 HP), shown
+# in red, using standard full/half/empty states. Any HP beyond 300 is shown
+# as a SEPARATE gold/orange segment layered on top (an "overshield"), which
+# depletes FIRST when taking damage — once it's fully gone, the gold segment
+# disappears entirely and you're just looking at the normal 15-heart bar.
 const HP_PER_HEART := 20
 const HEARTS_PER_LAP := 15
-const HP_PER_LAP := HEARTS_PER_LAP * HP_PER_HEART  # 300
+const HP_PER_LAP := HEARTS_PER_LAP * HP_PER_HEART  # 300 — size of the base pool
 
 func hp_to_hearts(hp: int, max_hp: int) -> String:
 	hp = clampi(hp, 0, max_hp)
 
-	var lap = hp / HP_PER_LAP
-	if hp > 0 and hp % HP_PER_LAP == 0:
-		lap -= 1  # treat exact lap boundaries as "end of previous lap, fully full"
+	var base_max = mini(max_hp, HP_PER_LAP)
+	var base_current = mini(hp, HP_PER_LAP)
+	var base_slots = int(ceil(float(base_max) / float(HP_PER_HEART)))
+	if base_slots <= 0: base_slots = 1
 
-	var max_lap = max_hp / HP_PER_LAP
-	if max_hp > 0 and max_hp % HP_PER_LAP == 0:
-		max_lap -= 1
+	var overflow_current = maxi(0, hp - HP_PER_LAP)
+	var overflow_slots = int(ceil(float(overflow_current) / float(HP_PER_HEART)))
 
-	var hp_in_lap = hp - (lap * HP_PER_LAP)
+	var result = _render_heart_segment(base_current, base_slots, "❤️", "💔", "🖤")
+	if overflow_slots > 0:
+		result += _render_heart_segment(overflow_current, overflow_slots, "💛", "🧡", "🖤")
+	return result
 
-	var total_slots: int
-	if lap < max_lap:
-		total_slots = HEARTS_PER_LAP
-	else:
-		var max_hp_in_lap = max_hp - (lap * HP_PER_LAP)
-		total_slots = int(ceil(float(max_hp_in_lap) / float(HP_PER_HEART)))
-	if total_slots <= 0: total_slots = 1
-	if total_slots > HEARTS_PER_LAP: total_slots = HEARTS_PER_LAP
-
-	var full_heart = "💛" if lap >= 1 else "❤️"
-	var broken_heart = "💔"
-	var empty_heart = "🖤"
-
-	var full_count = hp_in_lap / HP_PER_HEART
-	var remainder = hp_in_lap % HP_PER_HEART
-	if full_count > total_slots:
-		full_count = total_slots
+func _render_heart_segment(current: int, slots: int, full_sym: String, half_sym: String, empty_sym: String) -> String:
+	var full_count = current / HP_PER_HEART
+	var remainder = current % HP_PER_HEART
+	if full_count > slots:
+		full_count = slots
 		remainder = 0
-
-	var heart_string = ""
+	var s = ""
 	for i in range(full_count):
-		heart_string += full_heart + " "
-	var slots_used = full_count
-	if remainder > 0 and slots_used < total_slots:
-		heart_string += broken_heart + " "
-		slots_used += 1
-	while slots_used < total_slots:
-		heart_string += empty_heart + " "
-		slots_used += 1
-	return heart_string
+		s += full_sym + " "
+	var used = full_count
+	if remainder > 0 and used < slots:
+		s += half_sym + " "
+		used += 1
+	while used < slots:
+		s += empty_sym + " "
+		used += 1
+	return s
 
 # ── Save / Load ──────────────────────────────────────────────────────────
 # Core data persistence. The NPC save-point UI (coming in a later pass) will
 # call save_game() when the player chooses to save. Restart-on-death and
 # restart-on-win both call load_game() so progress reflects your last save,
 # not whatever happened to be in memory when you died/won.
-const SAVE_PATH := "user://savegame.save"
+const SAVE_PATH_PREFIX := "user://savegame_slot"
+var last_used_slot: int = 1
 
-func save_game() -> void:
+func _slot_path(slot: int) -> String:
+	return "%s%d.save" % [SAVE_PATH_PREFIX, slot]
+
+func save_game(slot: int = 1) -> void:
+	last_used_slot = slot
 	var data = {
 		"player_level": player_level,
 		"current_xp": current_xp,
@@ -144,16 +138,16 @@ func save_game() -> void:
 		"has_relic": has_relic,
 		"game_won": game_won,
 	}
-	var f = FileAccess.open(SAVE_PATH, FileAccess.WRITE)
+	var f = FileAccess.open(_slot_path(slot), FileAccess.WRITE)
 	if f:
 		f.store_string(JSON.stringify(data))
 		f.close()
 		has_unsaved_progress = false
 
-func load_game() -> bool:
-	if not FileAccess.file_exists(SAVE_PATH):
+func load_game(slot: int = 1) -> bool:
+	if not FileAccess.file_exists(_slot_path(slot)):
 		return false
-	var f = FileAccess.open(SAVE_PATH, FileAccess.READ)
+	var f = FileAccess.open(_slot_path(slot), FileAccess.READ)
 	if not f:
 		return false
 	var parsed = JSON.parse_string(f.get_as_text())
@@ -161,6 +155,7 @@ func load_game() -> bool:
 	if typeof(parsed) != TYPE_DICTIONARY:
 		return false
 
+	last_used_slot = slot
 	player_level     = parsed.get("player_level", 1)
 	current_xp       = parsed.get("current_xp", 0)
 	xp_required      = parsed.get("xp_required", 100)
@@ -175,6 +170,20 @@ func load_game() -> bool:
 	player_shield    = MAX_SHIELD
 	has_unsaved_progress = false
 	return true
+
+# Peek at a slot's contents without applying them — used by the Save/Load
+# UI to show "Slot 2: Level 7" instead of just "Slot 2".
+func get_slot_info(slot: int) -> Dictionary:
+	if not FileAccess.file_exists(_slot_path(slot)):
+		return {"exists": false}
+	var f = FileAccess.open(_slot_path(slot), FileAccess.READ)
+	if not f:
+		return {"exists": false}
+	var parsed = JSON.parse_string(f.get_as_text())
+	f.close()
+	if typeof(parsed) != TYPE_DICTIONARY:
+		return {"exists": false}
+	return {"exists": true, "level": parsed.get("player_level", 1)}
 
 func reset_to_defaults() -> void:
 	player_level = 1

@@ -43,7 +43,7 @@ func _physics_process(delta: float) -> void:
 		return
 
 	var pause_menu = get_tree().root.find_child("PauseMenu", true, false)
-	if is_instance_valid(pause_menu) and pause_menu.visible:
+	if is_instance_valid(pause_menu) and pause_menu.has_method("is_open") and pause_menu.is_open():
 		velocity = Vector2.ZERO
 		move_and_slide()
 		return

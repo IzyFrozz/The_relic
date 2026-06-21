@@ -47,7 +47,7 @@ func show_death_screen() -> void:
 func _on_restart_pressed() -> void:
 	Engine.time_scale = 1.0
 	QuestManager.is_in_combat = false
-	if not QuestManager.load_game():
+	if not QuestManager.load_game(QuestManager.last_used_slot):
 		QuestManager.reset_to_defaults()
 	get_tree().reload_current_scene()
 
