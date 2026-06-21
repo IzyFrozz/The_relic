@@ -437,7 +437,6 @@ layout_mode = 2
 text = "                                                                "
 
 [node name="RoadmapPopup" type="CanvasLayer" parent="." unique_id=3717834]
-visible = false
 script = ExtResource("3_1u8w0")
 
 [node name="Panel" type="Panel" parent="RoadmapPopup" unique_id=1727531082]
@@ -477,7 +476,6 @@ layout_mode = 2
 text = "Close Roadmap"
 
 [node name="EquipmentMenu" type="CanvasLayer" parent="." unique_id=2021918082]
-visible = false
 script = ExtResource("4_0odxb")
 
 [node name="Panel" type="Panel" parent="EquipmentMenu" unique_id=1422517685]
@@ -551,7 +549,6 @@ layout_mode = 2
 text = "Save & Close"
 
 [node name="SavePopup" type="CanvasLayer" parent="." unique_id=-1894967295]
-visible = false
 script = ExtResource("40_savepop")
 
 [node name="Panel" type="Panel" parent="SavePopup" unique_id=-1894967294]
@@ -611,7 +608,6 @@ size_flags_horizontal = 3
 text = "Back Out"
 
 [node name="PauseMenu" type="CanvasLayer" parent="." unique_id=-1894967195]
-visible = false
 script = ExtResource("41_pausemenu")
 
 [node name="Panel" type="Panel" parent="PauseMenu" unique_id=-1894967194]
