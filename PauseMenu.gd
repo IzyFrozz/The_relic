@@ -108,12 +108,11 @@ func _build_combat_overlay() -> void:
 	s.set_border_width_all(2)
 	s.border_color = Color(0.55, 0.25, 0.25)
 	combat_panel.add_theme_stylebox_override("panel", s)
-	combat_panel.custom_minimum_size = Vector2(360, 240)
+	combat_panel.custom_minimum_size = Vector2(420, 280)
 	add_child(combat_panel)
-	combat_panel.set_anchors_preset(Control.PRESET_CENTER)
-	combat_panel.set_offsets_preset(Control.PRESET_CENTER)
-	combat_panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	combat_panel.grow_vertical = Control.GROW_DIRECTION_BOTH
+	# Defer positioning so the panel has a layout size before we center it
+	combat_panel.call_deferred("_notification", NOTIFICATION_RESIZED)
+	get_tree().process_frame.connect(_center_combat_panel, CONNECT_ONE_SHOT)
 
 	var vbox = VBoxContainer.new()
 	vbox.add_theme_constant_override("separation", 14)
@@ -194,8 +193,19 @@ func _build_combat_overlay() -> void:
 	btn_hbox.add_child(flee_button)
 
 
+func _center_combat_panel() -> void:
+	if not is_instance_valid(combat_panel): return
+	var vp = get_viewport()
+	if not is_instance_valid(vp): return
+	var vp_size = vp.get_visible_rect().size
+	var panel_size = combat_panel.get_combined_minimum_size()
+	combat_panel.set_position((vp_size - panel_size) * 0.5)
+	combat_panel.set_size(panel_size)
+
 func _open_combat_menu() -> void:
 	if is_instance_valid(combat_panel):
+		# Re-center every time in case window was resized
+		_center_combat_panel()
 		combat_panel.visible = true
 
 
