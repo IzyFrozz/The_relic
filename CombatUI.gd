@@ -35,10 +35,6 @@ var magnet_currently_selected_item: String = ""
 signal popup_resolved(confirmed: bool)
 signal magnet_choice_resolved(chosen_item_id: String)
 
-# ─── ITEM META ────────────────────────────────────────────────────────────────
-# Centralized in QuestManager.ITEM_META — see that file for the single source
-# of truth on every item's emoji/label/description.
-
 const SLOT_KEYS := ["1","2","3","4","5","6"]
 
 # ─── READY ────────────────────────────────────────────────────────────────────
@@ -81,14 +77,11 @@ func _disable_engine_focus_modes() -> void:
 		if is_instance_valid(btn): btn.focus_mode = Control.FOCUS_NONE
 
 # ─── DYNAMIC ITEM BUTTONS ─────────────────────────────────────────────────────
-# Called each time combat opens — rebuilds slot buttons to match equipped_items order
 func _build_item_buttons() -> void:
-	# Remove old buttons
 	for btn in item_buttons:
 		if is_instance_valid(btn): btn.queue_free()
 	item_buttons.clear()
 
-	# Find the container (a GridContainer or HBoxContainer named "PlayerItemsGrid")
 	var grid = find_child("PlayerItemsGrid") as Control
 	if not is_instance_valid(grid): return
 
@@ -103,7 +96,6 @@ func _build_item_buttons() -> void:
 		btn.custom_minimum_size = Vector2(110, 60)
 		btn.tooltip_text = "%s %s\n%s\n[%s]" % [meta["emoji"], meta["label"], meta["desc"], SLOT_KEYS[i] if i < SLOT_KEYS.size() else ""]
 
-		# Style
 		var style = StyleBoxFlat.new()
 		style.bg_color = Color(0.13, 0.14, 0.18, 0.95)
 		style.set_corner_radius_all(6)
@@ -225,7 +217,6 @@ func _input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 		return
 
-	# Only process combat keybinds when actively in combat with a valid enemy
 	if not current_enemy or not QuestManager.is_in_combat:
 		return
 
@@ -291,6 +282,79 @@ func _parse_hp_to_hearts(hp: int, max_hp: int) -> String:
 	if hp <= 0: return "💀 DEAD"
 	return QuestManager.hp_to_hearts(hp, max_hp) + "  %d / %d HP" % [hp, max_hp]
 
+# ─── MODULATE VISUAL EFFECTS ──────────────────────────────────────────────────
+func flash_sprite(target: String, color: Color, duration: float = 0.6) -> void:
+	var sprite: AnimatedSprite2D = _get_sprite(target)
+	if not is_instance_valid(sprite): return
+	var original = sprite.modulate
+	var elapsed := 0.0
+	var interval := 0.12
+	var on := true
+	while elapsed < duration:
+		sprite.modulate = color if on else original
+		on = not on
+		await get_tree().create_timer(interval).timeout
+		elapsed += interval
+	sprite.modulate = original
+
+func set_status_tint(target: String, color: Color) -> void:
+	var sprite: AnimatedSprite2D = _get_sprite(target)
+	if is_instance_valid(sprite):
+		sprite.modulate = color
+
+func _get_sprite(target: String) -> AnimatedSprite2D:
+	if target == "player":
+		var player_node = get_tree().get_first_node_in_group("player")
+		if not is_instance_valid(player_node):
+			player_node = get_tree().root.find_child("mainplayer", true, false)
+		if is_instance_valid(player_node):
+			return player_node.get_node_or_null("AnimatedSprite2D") as AnimatedSprite2D
+	elif target == "enemy":
+		if is_instance_valid(current_enemy):
+			return current_enemy.get_node_or_null("AnimatedSprite2D") as AnimatedSprite2D
+	return null
+
+# Persistent tint synced to current status each refresh
+func _apply_status_tints() -> void:
+	if not current_enemy: return
+
+	# ── Player tint: poison > regen > cursed > normal ──
+	var p_poison = "player_poison_rounds" in current_enemy and current_enemy.player_poison_rounds > 0
+	var p_regen  = "player_regen_rounds"  in current_enemy and current_enemy.player_regen_rounds > 0
+	var p_cursed = "player_cursed"        in current_enemy and current_enemy.player_cursed
+	if p_poison:
+		set_status_tint("player", Color(0.30, 0.75, 0.30, 1.0))   # dark green — poisoned
+	elif p_regen:
+		set_status_tint("player", Color(0.55, 1.00, 0.55, 1.0))   # bright green — regen
+	elif p_cursed:
+		set_status_tint("player", Color(0.65, 0.30, 0.80, 1.0))   # purple — cursed
+	else:
+		set_status_tint("player", Color.WHITE)
+
+	# ── Enemy tint: poison > regen > cursed > normal ──
+	var e_poison = "enemy_poison_rounds" in current_enemy and current_enemy.enemy_poison_rounds > 0
+	var e_regen  = "enemy_regen_rounds"  in current_enemy and current_enemy.enemy_regen_rounds > 0
+	var e_cursed = "enemy_cursed"        in current_enemy and current_enemy.enemy_cursed
+	if e_poison:
+		set_status_tint("enemy", Color(0.30, 0.75, 0.30, 1.0))
+	elif e_regen:
+		set_status_tint("enemy", Color(0.55, 1.00, 0.55, 1.0))
+	elif e_cursed:
+		set_status_tint("enemy", Color(0.65, 0.30, 0.80, 1.0))
+	else:
+		set_status_tint("enemy", Color.WHITE)
+
+# Event-based flash — call from MobEnemy after applying an effect
+func trigger_event_flash(target: String, event: String) -> void:
+	match event:
+		"heal":           flash_sprite(target, Color(0.4, 1.0, 0.4, 1.0), 0.8)
+		"poison_applied": flash_sprite(target, Color(0.1, 0.6, 0.1, 1.0), 0.5)
+		"shield":         flash_sprite(target, Color(0.6, 0.8, 1.0, 1.0), 0.5)
+		"damage":         flash_sprite(target, Color(1.0, 0.2, 0.2, 1.0), 0.4)
+		"curse":          flash_sprite(target, Color(0.7, 0.2, 1.0, 1.0), 0.5)
+		"reflect":        flash_sprite(target, Color(1.0, 0.9, 0.2, 1.0), 0.5)
+		"dodge":          flash_sprite(target, Color(0.3, 0.9, 1.0, 1.0), 0.5)
+
 # ─── MAIN UI REFRESH ──────────────────────────────────────────────────────────
 func _refresh_ui_states() -> void:
 	if not current_enemy: return
@@ -302,36 +366,40 @@ func _refresh_ui_states() -> void:
 
 	var is_disarmed: bool = current_enemy.player_is_disarmed if "player_is_disarmed" in current_enemy else false
 
-	# --- Status bars ---
+	# --- Player buff label (now includes poison) ---
 	if player_buffs_lbl:
 		var s = ""
 		if current_enemy.player_active_armor: s += "🛡️ ARMOR  "
 		if current_enemy.player_sharpened:    s += "🪨 SHARP  "
 		if current_enemy.player_piercing:     s += "📌 PIERCE  "
 		if is_disarmed:                       s += "❌ DISARMED  "
-		if "player_regen_rounds" in current_enemy and current_enemy.player_regen_rounds > 0: s += "🩹 REGEN×%d  " % current_enemy.player_regen_rounds
-		if "player_horn_charges" in current_enemy and current_enemy.player_horn_charges > 0: s += "📯 HORN×%d  " % current_enemy.player_horn_charges
-		if "player_reflect_active" in current_enemy and current_enemy.player_reflect_active: s += "🪞 REFLECT  "
-		if "player_dodge_active" in current_enemy and current_enemy.player_dodge_active: s += "💨 DODGE  "
-		if "player_weakened" in current_enemy and current_enemy.player_weakened: s += "🗿 WEAKENED  "
-		if "player_cursed" in current_enemy and current_enemy.player_cursed: s += "🗿 CURSED  "
-		if "player_items_locked" in current_enemy and current_enemy.player_items_locked: s += "⚡ ITEMS LOCKED  "
+		if "player_regen_rounds"     in current_enemy and current_enemy.player_regen_rounds > 0:     s += "🩹 REGEN×%d  "    % current_enemy.player_regen_rounds
+		if "player_poison_rounds"    in current_enemy and current_enemy.player_poison_rounds > 0:    s += "☠️ POISON×%d  "   % current_enemy.player_poison_rounds
+		if "player_horn_charges"     in current_enemy and current_enemy.player_horn_charges > 0:     s += "📯 HORN×%d  "     % current_enemy.player_horn_charges
+		if "player_reflect_active"   in current_enemy and current_enemy.player_reflect_active:       s += "🪞 REFLECT  "
+		if "player_dodge_active"     in current_enemy and current_enemy.player_dodge_active:         s += "💨 DODGE  "
+		if "player_weakened"         in current_enemy and current_enemy.player_weakened:             s += "🗿 WEAKENED  "
+		if "player_cursed"           in current_enemy and current_enemy.player_cursed:               s += "🗿 CURSED  "
+		if "player_items_locked"     in current_enemy and current_enemy.player_items_locked:         s += "⚡ ITEMS LOCKED  "
+		if "player_stun_extra_turns" in current_enemy and current_enemy.player_stun_extra_turns > 0: s += "⏳ STUNNED×%d  " % current_enemy.player_stun_extra_turns
 		player_buffs_lbl.text = s if s != "" else "● Normal"
 
+	# --- Enemy buff label ---
 	if enemy_buffs_lbl:
 		var s = ""
 		if current_enemy.enemy_active_armor:  s += "🛡️ ARMOR  "
 		if current_enemy.enemy_sharpened:     s += "🪨 SHARP  "
 		if current_enemy.enemy_piercing:      s += "📌 PIERCE  "
 		if current_enemy.enemy_is_disarmed:   s += "❌ DISARMED  "
-		if "enemy_regen_rounds" in current_enemy and current_enemy.enemy_regen_rounds > 0: s += "🩹 REGEN×%d  " % current_enemy.enemy_regen_rounds
-		if "enemy_poison_rounds" in current_enemy and current_enemy.enemy_poison_rounds > 0: s += "☠️ POISON×%d  " % current_enemy.enemy_poison_rounds
-		if "enemy_horn_charges" in current_enemy and current_enemy.enemy_horn_charges > 0: s += "📯 HORN×%d  " % current_enemy.enemy_horn_charges
-		if "enemy_reflect_active" in current_enemy and current_enemy.enemy_reflect_active: s += "🪞 REFLECT  "
-		if "enemy_dodge_active" in current_enemy and current_enemy.enemy_dodge_active: s += "💨 DODGE  "
-		if "enemy_weakened" in current_enemy and current_enemy.enemy_weakened: s += "🗿 WEAKENED  "
-		if "enemy_cursed" in current_enemy and current_enemy.enemy_cursed: s += "🗿 CURSED  "
-		if "enemy_items_locked" in current_enemy and current_enemy.enemy_items_locked: s += "⚡ ITEMS LOCKED  "
+		if "enemy_regen_rounds"     in current_enemy and current_enemy.enemy_regen_rounds > 0:     s += "🩹 REGEN×%d  "   % current_enemy.enemy_regen_rounds
+		if "enemy_poison_rounds"    in current_enemy and current_enemy.enemy_poison_rounds > 0:    s += "☠️ POISON×%d  "  % current_enemy.enemy_poison_rounds
+		if "enemy_horn_charges"     in current_enemy and current_enemy.enemy_horn_charges > 0:     s += "📯 HORN×%d  "    % current_enemy.enemy_horn_charges
+		if "enemy_reflect_active"   in current_enemy and current_enemy.enemy_reflect_active:       s += "🪞 REFLECT  "
+		if "enemy_dodge_active"     in current_enemy and current_enemy.enemy_dodge_active:         s += "💨 DODGE  "
+		if "enemy_weakened"         in current_enemy and current_enemy.enemy_weakened:             s += "🗿 WEAKENED  "
+		if "enemy_cursed"           in current_enemy and current_enemy.enemy_cursed:               s += "🗿 CURSED  "
+		if "enemy_items_locked"     in current_enemy and current_enemy.enemy_items_locked:         s += "⚡ ITEMS LOCKED  "
+		if "enemy_stun_extra_turns" in current_enemy and current_enemy.enemy_stun_extra_turns > 0: s += "⏳ STUNNED×%d  " % current_enemy.enemy_stun_extra_turns
 		enemy_buffs_lbl.text = s if s != "" else "● Normal"
 
 	if player_hp:
@@ -341,7 +409,6 @@ func _refresh_ui_states() -> void:
 		var emax = current_enemy.enemy_max_health if "enemy_max_health" in current_enemy else 100
 		enemy_hp.text = "ENEMY LV.%d  " % current_enemy.enemy_level + _parse_hp_to_hearts(current_enemy.enemy_health, emax)
 
-	# --- Drop countdown label — matches MobEnemy schedule exactly ---
 	if drop_countdown_label:
 		var next_item_count = min(current_enemy.drop_round_index + 1, 6)
 		if current_enemy.cycles_until_drop <= 1:
@@ -349,7 +416,6 @@ func _refresh_ui_states() -> void:
 		else:
 			drop_countdown_label.text = "📦  Drop in %d rounds  (+%d items)" % [current_enemy.cycles_until_drop, next_item_count]
 
-	# --- Rebuild item buttons to reflect current inventory counts + equipped order ---
 	var slots = QuestManager.equipped_items
 	for i in range(item_buttons.size()):
 		var btn = item_buttons[i] as Button
@@ -369,39 +435,25 @@ func _refresh_ui_states() -> void:
 		btn.tooltip_text = "%s %s\n%s" % [meta["emoji"], meta["label"], meta["desc"]]
 
 		var is_usable = count > 0 and not is_disarmed
-		if "player_items_locked" in current_enemy and current_enemy.player_items_locked:
-			is_usable = false
-		# Per-item extra disable conditions
-		if item_id == "potion" and QuestManager.player_health >= QuestManager.MAX_HEALTH:
-			is_usable = false
-		if item_id == "shield" and current_enemy.player_active_armor:
-			is_usable = false
-		if item_id == "grindstone" and current_enemy.player_sharpened:
-			is_usable = false
-		if item_id == "whip" and current_enemy.enemy_is_disarmed:
-			is_usable = false
-		if item_id == "needle" and current_enemy.player_piercing:
-			is_usable = false
-		if item_id == "bandage" and current_enemy.player_regen_rounds > 0:
-			is_usable = false
-		if item_id == "poison_dart" and current_enemy.enemy_poison_rounds > 0:
-			is_usable = false
-		if item_id == "battle_horn" and current_enemy.player_horn_charges > 0:
-			is_usable = false
-		if item_id == "mirror_ward" and current_enemy.player_reflect_active:
-			is_usable = false
-		if item_id == "smoke_bomb" and current_enemy.player_dodge_active:
-			is_usable = false
-		if item_id == "weaken_totem" and current_enemy.enemy_cursed:
-			is_usable = false
-		if item_id == "static_field" and current_enemy.enemy_items_locked:
-			is_usable = false
+		if "player_items_locked" in current_enemy and current_enemy.player_items_locked: is_usable = false
+		if item_id == "potion"       and QuestManager.player_health >= QuestManager.MAX_HEALTH: is_usable = false
+		if item_id == "shield"       and current_enemy.player_active_armor:    is_usable = false
+		if item_id == "grindstone"   and current_enemy.player_sharpened:       is_usable = false
+		if item_id == "whip"         and current_enemy.enemy_is_disarmed:      is_usable = false
+		if item_id == "needle"       and current_enemy.player_piercing:        is_usable = false
+		if item_id == "bandage"      and current_enemy.player_regen_rounds > 0: is_usable = false
+		if item_id == "poison_dart"  and current_enemy.enemy_poison_rounds > 0: is_usable = false
+		if item_id == "battle_horn"  and current_enemy.player_horn_charges > 0: is_usable = false
+		if item_id == "mirror_ward"  and current_enemy.player_reflect_active:  is_usable = false
+		if item_id == "smoke_bomb"   and current_enemy.player_dodge_active:    is_usable = false
+		if item_id == "weaken_totem" and current_enemy.enemy_cursed:           is_usable = false
+		if item_id == "static_field" and current_enemy.enemy_items_locked:     is_usable = false
 
 		btn.disabled = not is_usable
 		btn.modulate.a = 1.0 if is_usable else 0.38
 
-	# --- Enemy inventory labels: hide items enemy can't have at their level ---
 	_update_enemy_inventory_grid()
+	_apply_status_tints()
 
 func _update_enemy_inventory_grid() -> void:
 	if not current_enemy: return
@@ -411,8 +463,6 @@ func _update_enemy_inventory_grid() -> void:
 		enemy_inventory_container = find_child("EnemyItemsGrid") as GridContainer
 	if not is_instance_valid(enemy_inventory_container): return
 
-	# Rebuild dynamic labels to exactly match the enemy's pool, in pool order.
-	# (Scales to any number of items without needing fixed scene nodes.)
 	if enemy_item_labels.size() != pool.size() or enemy_item_labels_pool_ref != pool:
 		for lbl in enemy_item_labels:
 			if is_instance_valid(lbl): lbl.queue_free()
@@ -448,14 +498,12 @@ func _on_fight_pressed() -> void:
 	is_waiting_on_action = true
 	_lock_all_player_inputs()
 
-	# Step 1: Confirm first
 	var confirmed = await show_blocking_popup("⚔️  ATTACK", "Commit to your attack phase?", true)
 	if not confirmed:
 		is_waiting_on_action = false
 		_refresh_ui_states()
 		return
 
-	# Step 2: Player lunges — skip attack anim if disarmed
 	var player = get_tree().get_first_node_in_group("player")
 	if not is_instance_valid(player):
 		player = get_tree().root.find_child("mainplayer", true, false)
@@ -464,7 +512,6 @@ func _on_fight_pressed() -> void:
 		var is_disarmed = current_enemy.player_is_disarmed if "player_is_disarmed" in current_enemy else false
 		await player.do_attack_lunge(enemy_pos, current_enemy, is_disarmed)
 
-	# Step 3: Process the actual attack
 	if current_enemy.has_method("process_player_attack_phase"):
 		await current_enemy.process_player_attack_phase()
 
@@ -509,7 +556,6 @@ func show_blocking_popup(header_title: String, message: String, require_confirma
 	popup_label.text = message
 	popup_overlay.visible = true
 
-	# Clean any leftover magnet layout
 	for child in popup_panel.get_children():
 		if child.name == "MagnetLayoutVBox": child.queue_free()
 	popup_panel.get_child(0).visible = true
@@ -564,7 +610,6 @@ func show_magnet_choice_popup(enemy_inv: Array) -> String:
 		if item != "magnet" and not item in unique_items:
 			unique_items.append(item)
 
-	# ── Declare commit_btn FIRST so item button lambdas can close over it ──
 	var commit_btn := Button.new()
 	commit_btn.name = "CommitButton"
 	commit_btn.text = "✅  Commit  (Enter)"
@@ -573,7 +618,6 @@ func show_magnet_choice_popup(enemy_inv: Array) -> String:
 	commit_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	commit_btn.disabled = true
 
-	# ── Now build the item choice buttons (they reference commit_btn safely) ──
 	var choice_btns: Array = []
 	for i in range(unique_items.size()):
 		var item = unique_items[i]
@@ -597,7 +641,6 @@ func show_magnet_choice_popup(enemy_inv: Array) -> String:
 		empty_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		dynamic_grid.add_child(empty_lbl)
 
-	# ── Action row: add commit + cancel ──
 	var action_hbox = HBoxContainer.new()
 	action_hbox.add_theme_constant_override("separation", 12)
 	magnet_vbox.add_child(action_hbox)

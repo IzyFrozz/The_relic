@@ -29,6 +29,11 @@ const COL_BG := Color(0.06, 0.07, 0.11, 0.97)
 const COL_BORDER := Color(0.35, 0.40, 0.55)
 const MASTER_BUS := 0
 
+# ── In-combat mini overlay ──
+var combat_panel: Panel = null
+var flee_button: Button = null
+var combat_resume_button: Button = null
+
 
 func _ready() -> void:
 	if is_instance_valid(panel):
@@ -36,6 +41,7 @@ func _ready() -> void:
 	_style_panel()
 	_style_buttons()
 	_style_menu_button()
+	_build_combat_overlay()
 
 	if is_instance_valid(volume_slider):
 		volume_slider.min_value = 0.0
@@ -90,6 +96,129 @@ func _ready() -> void:
 		menu_button.pressed.connect(_on_menu_button_pressed)
 
 
+func _build_combat_overlay() -> void:
+	combat_panel = Panel.new()
+	combat_panel.name = "CombatMenuPanel"
+	combat_panel.visible = false
+	combat_panel.z_index = 200
+
+	var s = StyleBoxFlat.new()
+	s.bg_color = Color(0.06, 0.07, 0.13, 0.97)
+	s.set_corner_radius_all(12)
+	s.set_border_width_all(2)
+	s.border_color = Color(0.55, 0.25, 0.25)
+	combat_panel.add_theme_stylebox_override("panel", s)
+	combat_panel.custom_minimum_size = Vector2(360, 240)
+	add_child(combat_panel)
+	combat_panel.set_anchors_preset(Control.PRESET_CENTER)
+	combat_panel.set_offsets_preset(Control.PRESET_CENTER)
+	combat_panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	combat_panel.grow_vertical = Control.GROW_DIRECTION_BOTH
+
+	var vbox = VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 14)
+	combat_panel.add_child(vbox)
+	vbox.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT, Control.PRESET_MODE_MINSIZE, 22)
+
+	var title = Label.new()
+	title.text = "☰  COMBAT MENU"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 20)
+	title.add_theme_color_override("font_color", Color(1.0, 0.85, 0.3))
+	vbox.add_child(title)
+
+	vbox.add_child(HSeparator.new())
+
+	var hint = Label.new()
+	hint.text = "You are in combat.\nToggle audio/display below.\nFlee to abandon this fight and reload."
+	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	hint.add_theme_font_size_override("font_size", 13)
+	hint.add_theme_color_override("font_color", Color(0.75, 0.75, 0.82))
+	hint.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	vbox.add_child(hint)
+
+	var audio_hbox = HBoxContainer.new()
+	audio_hbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	audio_hbox.add_theme_constant_override("separation", 12)
+	vbox.add_child(audio_hbox)
+
+	var mute_btn = Button.new()
+	mute_btn.text = "🔇  Toggle Mute"
+	mute_btn.focus_mode = Control.FOCUS_NONE
+	mute_btn.custom_minimum_size = Vector2(140, 38)
+	mute_btn.pressed.connect(func():
+		var muted = not AudioServer.is_bus_mute(MASTER_BUS)
+		AudioServer.set_bus_mute(MASTER_BUS, muted)
+		mute_btn.text = "🔊  Unmute" if muted else "🔇  Toggle Mute"
+	)
+	audio_hbox.add_child(mute_btn)
+
+	var fs_btn = Button.new()
+	fs_btn.text = "🖥️  Fullscreen"
+	fs_btn.focus_mode = Control.FOCUS_NONE
+	fs_btn.custom_minimum_size = Vector2(140, 38)
+	fs_btn.pressed.connect(func():
+		var is_fs = DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN
+		DisplayServer.window_set_mode(
+			DisplayServer.WINDOW_MODE_WINDOWED if is_fs else DisplayServer.WINDOW_MODE_FULLSCREEN
+		)
+	)
+	audio_hbox.add_child(fs_btn)
+
+	var btn_hbox = HBoxContainer.new()
+	btn_hbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	btn_hbox.add_theme_constant_override("separation", 16)
+	vbox.add_child(btn_hbox)
+
+	combat_resume_button = Button.new()
+	combat_resume_button.text = "▶  Keep Fighting"
+	combat_resume_button.focus_mode = Control.FOCUS_NONE
+	combat_resume_button.custom_minimum_size = Vector2(150, 44)
+	combat_resume_button.add_theme_font_size_override("font_size", 14)
+	combat_resume_button.pressed.connect(_close_combat_menu)
+	btn_hbox.add_child(combat_resume_button)
+
+	flee_button = Button.new()
+	flee_button.text = "🏃  Flee & Restart"
+	flee_button.focus_mode = Control.FOCUS_NONE
+	flee_button.custom_minimum_size = Vector2(150, 44)
+	flee_button.add_theme_font_size_override("font_size", 14)
+	var flee_style = StyleBoxFlat.new()
+	flee_style.bg_color = Color(0.28, 0.10, 0.10)
+	flee_style.set_corner_radius_all(6)
+	flee_style.set_border_width_all(1)
+	flee_style.border_color = Color(0.70, 0.25, 0.25)
+	flee_button.add_theme_stylebox_override("normal", flee_style)
+	flee_button.pressed.connect(_on_flee_pressed)
+	btn_hbox.add_child(flee_button)
+
+
+func _open_combat_menu() -> void:
+	if is_instance_valid(combat_panel):
+		combat_panel.visible = true
+
+
+func _close_combat_menu() -> void:
+	if is_instance_valid(combat_panel):
+		combat_panel.visible = false
+
+
+func _on_flee_pressed() -> void:
+	_close_combat_menu()
+	var combat_ui = get_tree().root.find_child("CombatUI", true, false)
+	if is_instance_valid(combat_ui):
+		if is_instance_valid(combat_ui.current_enemy):
+			combat_ui.current_enemy.is_in_combat = false
+		combat_ui.visible = false
+	QuestManager.is_in_combat = false
+	Engine.time_scale = 1.0
+	if QuestManager.load_game(QuestManager.last_used_slot):
+		get_tree().reload_current_scene()
+	else:
+		get_tree().reload_current_scene()
+
+
 func _style_panel() -> void:
 	if not is_instance_valid(panel): return
 	var s = StyleBoxFlat.new()
@@ -139,28 +268,44 @@ func _other_menu_is_open() -> bool:
 func _is_panel_open() -> bool:
 	return is_instance_valid(panel) and panel.visible
 
-# Public helper for other scripts (mainplayer, ItemsStation, frog_npc) to
-# check pause state without needing to know about the internal Panel node.
+func _is_combat_menu_open() -> bool:
+	return is_instance_valid(combat_panel) and combat_panel.visible
+
 func is_open() -> bool:
-	return _is_panel_open()
+	return _is_panel_open() or _is_combat_menu_open()
 
 
 func _input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE and not event.is_echo():
+		if _is_combat_menu_open():
+			_close_combat_menu()
+			get_viewport().set_input_as_handled()
+			return
 		if _is_panel_open():
 			close_menu()
 			get_viewport().set_input_as_handled()
 			return
-		if _other_menu_is_open() or QuestManager.is_in_combat:
+		if QuestManager.is_in_combat:
+			_open_combat_menu()
+			get_viewport().set_input_as_handled()
+			return
+		if _other_menu_is_open():
 			return
 		open_menu()
 		get_viewport().set_input_as_handled()
 
 
 func _on_menu_button_pressed() -> void:
+	if _is_combat_menu_open():
+		_close_combat_menu()
+		return
 	if _is_panel_open():
 		close_menu()
-	elif not _other_menu_is_open() and not QuestManager.is_in_combat:
+		return
+	if QuestManager.is_in_combat:
+		_open_combat_menu()
+		return
+	if not _other_menu_is_open():
 		open_menu()
 
 
@@ -235,6 +380,6 @@ func _on_exit_pressed() -> void:
 		if is_instance_valid(load_view): load_view.visible = false
 		if is_instance_valid(confirm_view): confirm_view.visible = true
 		if is_instance_valid(confirm_label):
-			confirm_label.text = "Unsaved progress will be lost!\nVisit the Frog NPC to save before exiting."
+			confirm_label.text = "Unsaved progress will be lost!\nVisit the Elder NPC to save before exiting."
 	else:
 		get_tree().quit()

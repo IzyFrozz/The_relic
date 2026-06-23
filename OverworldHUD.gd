@@ -6,6 +6,10 @@ var xp_bar: ProgressBar = null
 var xp_text: Label = null
 var roadmap_button: Button = null
 var roadmap_popup: CanvasLayer = null
+var timer_label: Label = null
+
+# ── Play timer ──
+var play_seconds: float = 0.0
 
 const COL_GOLD   := Color(1.00, 0.85, 0.30, 1.0)
 const COL_BORDER := Color(0.28, 0.33, 0.52, 1.0)
@@ -27,25 +31,22 @@ func _ready() -> void:
 	xp_bar         = find_child("XPBar",         true, false) as ProgressBar
 	xp_text        = find_child("XPText",        true, false) as Label
 	roadmap_button = find_child("RoadmapButton", true, false) as Button
+	timer_label    = find_child("TimerLabel",    true, false) as Label
 
-	# ── Style left pill (Level + HP) ──
 	var left_panel = find_child("LeftStatPanel", true, false) as Panel
 	if is_instance_valid(left_panel):
 		left_panel.add_theme_stylebox_override("panel", _s(COL_PANEL, COL_BORDER, 8))
 
-	# ── Level label ──
 	if is_instance_valid(level_label):
 		level_label.add_theme_font_size_override("font_size", 20)
 		level_label.add_theme_color_override("font_color", COL_GOLD)
 		level_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 
-	# ── HP label ──
 	if is_instance_valid(max_hp_label):
 		max_hp_label.add_theme_font_size_override("font_size", 17)
 		max_hp_label.add_theme_color_override("font_color", Color(0.95, 0.55, 0.55))
 		max_hp_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 
-	# ── XP bar — top center ──
 	if is_instance_valid(xp_bar):
 		var bg = StyleBoxFlat.new()
 		bg.bg_color = COL_XP_BG; bg.set_corner_radius_all(4)
@@ -55,13 +56,11 @@ func _ready() -> void:
 		xp_bar.add_theme_stylebox_override("fill", fill)
 		xp_bar.custom_minimum_size = Vector2(500, 16)
 
-	# ── XP text ──
 	if is_instance_valid(xp_text):
 		xp_text.add_theme_font_size_override("font_size", 13)
 		xp_text.add_theme_color_override("font_color", Color(0.65, 0.75, 1.0))
 		xp_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 
-	# ── Roadmap button — right side ──
 	if is_instance_valid(roadmap_button):
 		roadmap_button.text = "📜  Roadmap"
 		roadmap_button.focus_mode = Control.FOCUS_NONE
@@ -72,9 +71,33 @@ func _ready() -> void:
 		roadmap_button.add_theme_font_size_override("font_size", 14)
 		roadmap_button.pressed.connect(_on_roadmap_pressed)
 
-func _process(_delta: float) -> void:
-	visible = not (QuestManager.is_in_combat or _is_end_screen_active())
-	if visible: _refresh()
+	# Create timer label dynamically if not in scene
+	if not is_instance_valid(timer_label):
+		timer_label = Label.new()
+		timer_label.name = "TimerLabel"
+		add_child(timer_label)
+
+	if is_instance_valid(timer_label):
+		timer_label.add_theme_font_size_override("font_size", 14)
+		timer_label.add_theme_color_override("font_color", Color(0.70, 0.70, 0.85, 1.0))
+		timer_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		timer_label.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+		timer_label.set_offsets_preset(Control.PRESET_TOP_RIGHT)
+		timer_label.position = Vector2(-160, 8)
+		timer_label.custom_minimum_size = Vector2(150, 30)
+
+func _process(delta: float) -> void:
+	var in_combat = QuestManager.is_in_combat
+	var end_active = _is_end_screen_active()
+
+	visible = not (in_combat or end_active)
+
+	# Timer ticks only while actually playing (not paused, not in combat, not end screen)
+	if not in_combat and not end_active and Engine.time_scale > 0.0:
+		play_seconds += delta
+
+	if visible:
+		_refresh()
 
 func _refresh() -> void:
 	if is_instance_valid(level_label):
@@ -86,6 +109,17 @@ func _refresh() -> void:
 		xp_bar.value     = QuestManager.current_xp
 	if is_instance_valid(xp_text):
 		xp_text.text = "XP  %d / %d" % [QuestManager.current_xp, QuestManager.xp_required]
+	if is_instance_valid(timer_label):
+		timer_label.text = "⏱  " + _format_time(play_seconds)
+
+func _format_time(seconds: float) -> String:
+	var total = int(seconds)
+	var h = total / 3600
+	var m = (total % 3600) / 60
+	var s = total % 60
+	if h > 0:
+		return "%d:%02d:%02d" % [h, m, s]
+	return "%02d:%02d" % [m, s]
 
 func _is_end_screen_active() -> bool:
 	for n in ["LoseUI", "WinUI", "DeathScreen", "VictoryScreen", "VictoryUI"]:

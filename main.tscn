@@ -13,7 +13,7 @@
 [ext_resource type="PackedScene" uid="uid://dn2a5bka3ukty" path="res://foreground.tscn" id="15_074og"]
 [ext_resource type="Texture2D" uid="uid://b1ykf6xq4wg1u" path="res://Asset/Pixel Crawler - Free Pack/Environment/Structures/Stations/Anvil/Anvil only.png" id="18_074og"]
 [ext_resource type="Texture2D" uid="uid://d2b5gfvc577yl" path="res://Asset/sprites/characters/player.png" id="22_4lmeg"]
-[ext_resource type="Script" uid="uid://dn2n6hy830nqg" path="res://frog_npc.gd" id="23_1u8w0"]
+[ext_resource type="Script" uid="uid://dn2n6hy830nqg" path="res://SaveNPC.gd" id="23_1u8w0"]
 [ext_resource type="Texture2D" uid="uid://bo1vgt0hrwf02" path="res://Asset/Meta data assets files/Visuals/OBJECTS/sprites/chest-closed.png" id="27_xuqvo"]
 [ext_resource type="Script" uid="uid://iujueewjbunt" path="res://delivery_point.gd" id="28_kq58d"]
 [ext_resource type="Script" uid="uid://c0yq6db10h3yi" path="res://Doorway.gd" id="30_kq58d"]
@@ -580,7 +580,7 @@ theme_override_constants/separation = 12
 [node name="TitleLabel" type="Label" parent="SavePopup/Panel/MainVBox" unique_id=-1894967292]
 layout_mode = 2
 size_flags_horizontal = 3
-text = "🐸  Frog NPC"
+text = "🧙  Elder NPC"
 horizontal_alignment = 1
 
 [node name="StatusLabel" type="Label" parent="SavePopup/Panel/MainVBox" unique_id=-1894967291]
@@ -738,7 +738,7 @@ theme_override_constants/separation = 12
 [node name="ConfirmLabel" type="Label" parent="PauseMenu/Panel/MainVBox/ConfirmView" unique_id=-1894967181]
 layout_mode = 2
 text = "Unsaved progress will be lost!
-Visit the Frog NPC to save before exiting."
+Visit the Elder NPC to save before exiting."
 horizontal_alignment = 1
 autowrap_mode = 2
 
