@@ -16,10 +16,10 @@
 [ext_resource type="Script" uid="uid://dn2n6hy830nqg" path="res://frog_npc.gd" id="23_1u8w0"]
 [ext_resource type="Texture2D" uid="uid://bo1vgt0hrwf02" path="res://Asset/Meta data assets files/Visuals/OBJECTS/sprites/chest-closed.png" id="27_xuqvo"]
 [ext_resource type="Script" uid="uid://iujueewjbunt" path="res://delivery_point.gd" id="28_kq58d"]
-[ext_resource type="Script" path="res://SavePopup.gd" id="40_savepop"]
-[ext_resource type="Script" path="res://PauseMenu.gd" id="41_pausemenu"]
 [ext_resource type="Script" uid="uid://c0yq6db10h3yi" path="res://Doorway.gd" id="30_kq58d"]
 [ext_resource type="Texture2D" uid="uid://v6sfe4o7cjl4" path="res://Asset/Pixel Crawler - Free Pack/Entities/Npc's/Knight/Idle/Idle-Sheet.png" id="34_4lmeg"]
+[ext_resource type="Script" uid="uid://bq0f4qkpk56wi" path="res://SavePopup.gd" id="40_savepop"]
+[ext_resource type="Script" uid="uid://bc5k6lhc85jyl" path="res://PauseMenu.gd" id="41_pausemenu"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_cegan"]
 size = Vector2(48, 29)
@@ -440,7 +440,6 @@ text = "                                                                "
 script = ExtResource("3_1u8w0")
 
 [node name="Panel" type="Panel" parent="RoadmapPopup" unique_id=1727531082]
-layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
@@ -470,19 +469,16 @@ theme_override_constants/separation = 12
 layout_mode = 2
 size_flags_vertical = 3
 text = "Road Map"
-fit_content = false
-scroll_active = true
 
 [node name="CloseButton" type="Button" parent="RoadmapPopup/Panel/RoadmapVBox" unique_id=185379812]
-layout_mode = 2
 custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
 text = "Close Roadmap"
 
 [node name="EquipmentMenu" type="CanvasLayer" parent="." unique_id=2021918082]
 script = ExtResource("4_0odxb")
 
 [node name="Panel" type="Panel" parent="EquipmentMenu" unique_id=1422517685]
-layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
@@ -495,7 +491,7 @@ offset_bottom = 290.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="MainVBox" type="VBoxContainer" parent="EquipmentMenu/Panel" unique_id=2210039001]
+[node name="MainVBox" type="VBoxContainer" parent="EquipmentMenu/Panel" unique_id=-2084928295]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -514,17 +510,17 @@ size_flags_horizontal = 3
 text = "Equipment Menu"
 horizontal_alignment = 1
 
-[node name="ColumnsHBox" type="HBoxContainer" parent="EquipmentMenu/Panel/MainVBox" unique_id=2210039002]
+[node name="ColumnsHBox" type="HBoxContainer" parent="EquipmentMenu/Panel/MainVBox" unique_id=-2084928294]
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/separation = 14
 
-[node name="UnlockedSection" type="PanelContainer" parent="EquipmentMenu/Panel/MainVBox/ColumnsHBox" unique_id=2210039003]
+[node name="UnlockedSection" type="PanelContainer" parent="EquipmentMenu/Panel/MainVBox/ColumnsHBox" unique_id=-2084928293]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
-[node name="UnlockedVBox" type="VBoxContainer" parent="EquipmentMenu/Panel/MainVBox/ColumnsHBox/UnlockedSection" unique_id=2210039004]
+[node name="UnlockedVBox" type="VBoxContainer" parent="EquipmentMenu/Panel/MainVBox/ColumnsHBox/UnlockedSection" unique_id=-2084928292]
 layout_mode = 2
 theme_override_constants/separation = 8
 
@@ -533,12 +529,12 @@ layout_mode = 2
 size_flags_horizontal = 3
 columns = 2
 
-[node name="EquippedSection" type="PanelContainer" parent="EquipmentMenu/Panel/MainVBox/ColumnsHBox" unique_id=2210039005]
+[node name="EquippedSection" type="PanelContainer" parent="EquipmentMenu/Panel/MainVBox/ColumnsHBox" unique_id=-2084928291]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
-[node name="EquippedVBox" type="VBoxContainer" parent="EquipmentMenu/Panel/MainVBox/ColumnsHBox/EquippedSection" unique_id=2210039006]
+[node name="EquippedVBox" type="VBoxContainer" parent="EquipmentMenu/Panel/MainVBox/ColumnsHBox/EquippedSection" unique_id=-2084928290]
 layout_mode = 2
 theme_override_constants/separation = 8
 
@@ -548,15 +544,14 @@ size_flags_horizontal = 3
 columns = 2
 
 [node name="CloseButton" type="Button" parent="EquipmentMenu/Panel/MainVBox" unique_id=166129530]
-layout_mode = 2
 custom_minimum_size = Vector2(0, 46)
+layout_mode = 2
 text = "Save & Close"
 
-[node name="SavePopup" type="CanvasLayer" parent="." unique_id=2400000001]
+[node name="SavePopup" type="CanvasLayer" parent="." unique_id=-1894967295]
 script = ExtResource("40_savepop")
 
-[node name="Panel" type="Panel" parent="SavePopup" unique_id=2400000002]
-layout_mode = 1
+[node name="Panel" type="Panel" parent="SavePopup" unique_id=-1894967294]
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
@@ -569,7 +564,7 @@ offset_bottom = 230.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="MainVBox" type="VBoxContainer" parent="SavePopup/Panel" unique_id=2400000003]
+[node name="MainVBox" type="VBoxContainer" parent="SavePopup/Panel" unique_id=-1894967293]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -582,41 +577,40 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/separation = 12
 
-[node name="TitleLabel" type="Label" parent="SavePopup/Panel/MainVBox" unique_id=2400000004]
+[node name="TitleLabel" type="Label" parent="SavePopup/Panel/MainVBox" unique_id=-1894967292]
 layout_mode = 2
 size_flags_horizontal = 3
 text = "🐸  Frog NPC"
 horizontal_alignment = 1
 
-[node name="StatusLabel" type="Label" parent="SavePopup/Panel/MainVBox" unique_id=2400000005]
+[node name="StatusLabel" type="Label" parent="SavePopup/Panel/MainVBox" unique_id=-1894967291]
 layout_mode = 2
 size_flags_horizontal = 3
 text = "Would you like to save your progress?"
 horizontal_alignment = 1
 autowrap_mode = 2
 
-[node name="Slot1Button" type="Button" parent="SavePopup/Panel/MainVBox" unique_id=2400000009]
+[node name="Slot1Button" type="Button" parent="SavePopup/Panel/MainVBox" unique_id=-1894967287]
 layout_mode = 2
 text = "Slot 1"
 
-[node name="Slot2Button" type="Button" parent="SavePopup/Panel/MainVBox" unique_id=2400000010]
+[node name="Slot2Button" type="Button" parent="SavePopup/Panel/MainVBox" unique_id=-1894967286]
 layout_mode = 2
 text = "Slot 2"
 
-[node name="Slot3Button" type="Button" parent="SavePopup/Panel/MainVBox" unique_id=2400000011]
+[node name="Slot3Button" type="Button" parent="SavePopup/Panel/MainVBox" unique_id=-1894967285]
 layout_mode = 2
 text = "Slot 3"
 
-[node name="BackButton" type="Button" parent="SavePopup/Panel/MainVBox" unique_id=2400000008]
-layout_mode = 2
+[node name="BackButton" type="Button" parent="SavePopup/Panel/MainVBox" unique_id=-1894967288]
 custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
 text = "Back Out"
 
-[node name="PauseMenu" type="CanvasLayer" parent="." unique_id=2400000101]
+[node name="PauseMenu" type="CanvasLayer" parent="." unique_id=-1894967195]
 script = ExtResource("41_pausemenu")
 
-[node name="MenuButton" type="Button" parent="PauseMenu" unique_id=2400000200]
-layout_mode = 1
+[node name="MenuButton" type="Button" parent="PauseMenu" unique_id=-1894967096]
 anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
@@ -627,8 +621,7 @@ offset_bottom = 46.0
 grow_horizontal = 0
 text = "☰  Menu"
 
-[node name="Panel" type="Panel" parent="PauseMenu" unique_id=2400000102]
-layout_mode = 1
+[node name="Panel" type="Panel" parent="PauseMenu" unique_id=-1894967194]
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
@@ -641,7 +634,7 @@ offset_bottom = 260.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="MainVBox" type="VBoxContainer" parent="PauseMenu/Panel" unique_id=2400000103]
+[node name="MainVBox" type="VBoxContainer" parent="PauseMenu/Panel" unique_id=-1894967193]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -654,108 +647,109 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/separation = 14
 
-[node name="TitleLabel" type="Label" parent="PauseMenu/Panel/MainVBox" unique_id=2400000104]
+[node name="TitleLabel" type="Label" parent="PauseMenu/Panel/MainVBox" unique_id=-1894967192]
 layout_mode = 2
 size_flags_horizontal = 3
 text = "⏸  Game Paused"
 horizontal_alignment = 1
 
-[node name="MainView" type="VBoxContainer" parent="PauseMenu/Panel/MainVBox" unique_id=2400000105]
+[node name="MainView" type="VBoxContainer" parent="PauseMenu/Panel/MainVBox" unique_id=-1894967191]
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/separation = 12
 
-[node name="AudioLabel" type="Label" parent="PauseMenu/Panel/MainVBox/MainView" unique_id=2400000106]
+[node name="AudioLabel" type="Label" parent="PauseMenu/Panel/MainVBox/MainView" unique_id=-1894967190]
 layout_mode = 2
 text = "🔊 Audio"
 
-[node name="VolumeSlider" type="HSlider" parent="PauseMenu/Panel/MainVBox/MainView" unique_id=2400000107]
-layout_mode = 2
+[node name="VolumeSlider" type="HSlider" parent="PauseMenu/Panel/MainVBox/MainView" unique_id=-1894967189]
 custom_minimum_size = Vector2(0, 24)
+layout_mode = 2
 
-[node name="MuteCheck" type="CheckButton" parent="PauseMenu/Panel/MainVBox/MainView" unique_id=2400000108]
+[node name="MuteCheck" type="CheckButton" parent="PauseMenu/Panel/MainVBox/MainView" unique_id=-1894967188]
 layout_mode = 2
 text = "Mute"
 
-[node name="DisplayLabel" type="Label" parent="PauseMenu/Panel/MainVBox/MainView" unique_id=2400000109]
+[node name="DisplayLabel" type="Label" parent="PauseMenu/Panel/MainVBox/MainView" unique_id=-1894967187]
 layout_mode = 2
 text = "🖥️ Display"
 
-[node name="FullscreenCheck" type="CheckButton" parent="PauseMenu/Panel/MainVBox/MainView" unique_id=2400000110]
+[node name="FullscreenCheck" type="CheckButton" parent="PauseMenu/Panel/MainVBox/MainView" unique_id=-1894967186]
 layout_mode = 2
 text = "Fullscreen"
 
-[node name="Spacer" type="Control" parent="PauseMenu/Panel/MainVBox/MainView" unique_id=2400000111]
+[node name="Spacer" type="Control" parent="PauseMenu/Panel/MainVBox/MainView" unique_id=-1894967185]
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="ResumeButton" type="Button" parent="PauseMenu/Panel/MainVBox/MainView" unique_id=2400000112]
-layout_mode = 2
+[node name="ResumeButton" type="Button" parent="PauseMenu/Panel/MainVBox/MainView" unique_id=-1894967184]
 custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
 text = "Resume"
 
-[node name="LoadButton" type="Button" parent="PauseMenu/Panel/MainVBox/MainView" unique_id=2400000119]
-layout_mode = 2
+[node name="LoadButton" type="Button" parent="PauseMenu/Panel/MainVBox/MainView" unique_id=-1894967177]
 custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
 text = "Load Game"
 
-[node name="ExitButton" type="Button" parent="PauseMenu/Panel/MainVBox/MainView" unique_id=2400000113]
-layout_mode = 2
+[node name="ExitButton" type="Button" parent="PauseMenu/Panel/MainVBox/MainView" unique_id=-1894967183]
 custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
 text = "Exit to Desktop"
 
-[node name="LoadView" type="VBoxContainer" parent="PauseMenu/Panel/MainVBox" unique_id=2400000120]
+[node name="LoadView" type="VBoxContainer" parent="PauseMenu/Panel/MainVBox" unique_id=-1894967176]
+visible = false
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/separation = 12
-visible = false
 
-[node name="LoadStatusLabel" type="Label" parent="PauseMenu/Panel/MainVBox/LoadView" unique_id=2400000121]
+[node name="LoadStatusLabel" type="Label" parent="PauseMenu/Panel/MainVBox/LoadView" unique_id=-1894967175]
 layout_mode = 2
 text = "Choose a slot to load:"
-autowrap_mode = 2
 horizontal_alignment = 1
+autowrap_mode = 2
 
-[node name="LoadSlot1Button" type="Button" parent="PauseMenu/Panel/MainVBox/LoadView" unique_id=2400000122]
-layout_mode = 2
+[node name="LoadSlot1Button" type="Button" parent="PauseMenu/Panel/MainVBox/LoadView" unique_id=-1894967174]
 custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
 text = "Slot 1"
 
-[node name="LoadSlot2Button" type="Button" parent="PauseMenu/Panel/MainVBox/LoadView" unique_id=2400000123]
-layout_mode = 2
+[node name="LoadSlot2Button" type="Button" parent="PauseMenu/Panel/MainVBox/LoadView" unique_id=-1894967173]
 custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
 text = "Slot 2"
 
-[node name="LoadSlot3Button" type="Button" parent="PauseMenu/Panel/MainVBox/LoadView" unique_id=2400000124]
-layout_mode = 2
+[node name="LoadSlot3Button" type="Button" parent="PauseMenu/Panel/MainVBox/LoadView" unique_id=-1894967172]
 custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
 text = "Slot 3"
 
-[node name="LoadBackButton" type="Button" parent="PauseMenu/Panel/MainVBox/LoadView" unique_id=2400000125]
-layout_mode = 2
+[node name="LoadBackButton" type="Button" parent="PauseMenu/Panel/MainVBox/LoadView" unique_id=-1894967171]
 custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
 text = "Back"
 
-[node name="ConfirmView" type="VBoxContainer" parent="PauseMenu/Panel/MainVBox" unique_id=2400000114]
+[node name="ConfirmView" type="VBoxContainer" parent="PauseMenu/Panel/MainVBox" unique_id=-1894967182]
+visible = false
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/separation = 12
-visible = false
 
-[node name="ConfirmLabel" type="Label" parent="PauseMenu/Panel/MainVBox/ConfirmView" unique_id=2400000115]
+[node name="ConfirmLabel" type="Label" parent="PauseMenu/Panel/MainVBox/ConfirmView" unique_id=-1894967181]
 layout_mode = 2
-text = "Unsaved progress will be lost!\nVisit the Frog NPC to save before exiting."
-autowrap_mode = 2
+text = "Unsaved progress will be lost!
+Visit the Frog NPC to save before exiting."
 horizontal_alignment = 1
+autowrap_mode = 2
 
-[node name="ExitAnywayButton" type="Button" parent="PauseMenu/Panel/MainVBox/ConfirmView" unique_id=2400000117]
-layout_mode = 2
+[node name="ExitAnywayButton" type="Button" parent="PauseMenu/Panel/MainVBox/ConfirmView" unique_id=-1894967179]
 custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
 text = "Exit Anyway"
 
-[node name="CancelExitButton" type="Button" parent="PauseMenu/Panel/MainVBox/ConfirmView" unique_id=2400000118]
-layout_mode = 2
+[node name="CancelExitButton" type="Button" parent="PauseMenu/Panel/MainVBox/ConfirmView" unique_id=-1894967178]
 custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
 text = "Cancel"
 
 [node name="ui" parent="." unique_id=560062949 instance=ExtResource("2_ryguw")]
@@ -764,16 +758,16 @@ text = "Cancel"
 
 [node name="Character" parent="." unique_id=220561368 instance=ExtResource("4_vivmo")]
 
-[node name="mob1" parent="Character" index="0" unique_id=8730518 node_paths=PackedStringArray("combat_ui", "lose_ui")]
+[node name="mob1" parent="Character" index="1" unique_id=8730518 node_paths=PackedStringArray("combat_ui", "lose_ui")]
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
 
-[node name="mob1_2" parent="Character" index="1" unique_id=1964334702 node_paths=PackedStringArray("combat_ui", "lose_ui")]
+[node name="mob1_2" parent="Character" index="2" unique_id=1964334702 node_paths=PackedStringArray("combat_ui", "lose_ui")]
 position = Vector2(-124, 353)
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
 
-[node name="mob1_3" parent="Character" index="2" unique_id=465294187 node_paths=PackedStringArray("combat_ui", "lose_ui")]
+[node name="mob1_3" parent="Character" index="3" unique_id=465294187 node_paths=PackedStringArray("combat_ui", "lose_ui")]
 position = Vector2(-175, 338)
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
@@ -781,7 +775,7 @@ lose_ui = NodePath("../../ui/LoseUI")
 [node name="CollisionShape2D" parent="Character/mob1_3" index="2" unique_id=1103006557]
 position = Vector2(0, 4)
 
-[node name="mob1_4" parent="Character" index="3" unique_id=1189837377 node_paths=PackedStringArray("combat_ui", "lose_ui")]
+[node name="mob1_4" parent="Character" index="4" unique_id=1189837377 node_paths=PackedStringArray("combat_ui", "lose_ui")]
 position = Vector2(-105, 405)
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
@@ -789,70 +783,60 @@ lose_ui = NodePath("../../ui/LoseUI")
 [node name="CollisionShape2D" parent="Character/mob1_4" index="2" unique_id=2012463128]
 position = Vector2(0, 3)
 
-[node name="mob2" parent="Character" index="4" unique_id=1081548398 node_paths=PackedStringArray("combat_ui", "lose_ui")]
+[node name="mob2" parent="Character" index="5" unique_id=1081548398 node_paths=PackedStringArray("combat_ui", "lose_ui")]
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
 
-[node name="mob3" parent="Character" index="5" unique_id=1476578817 node_paths=PackedStringArray("combat_ui", "lose_ui")]
+[node name="mob3" parent="Character" index="6" unique_id=1476578817 node_paths=PackedStringArray("combat_ui", "lose_ui")]
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
 
-[node name="mob4" parent="Character" index="6" unique_id=262431056 node_paths=PackedStringArray("combat_ui", "lose_ui")]
+[node name="mob4" parent="Character" index="7" unique_id=262431056 node_paths=PackedStringArray("combat_ui", "lose_ui")]
 position = Vector2(-54, 240)
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
 
-[node name="mob5" parent="Character" index="7" unique_id=1899198502 node_paths=PackedStringArray("combat_ui", "lose_ui")]
+[node name="mob5" parent="Character" index="8" unique_id=1899198502 node_paths=PackedStringArray("combat_ui", "lose_ui")]
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
 
-[node name="mob6" parent="Character" index="8" unique_id=2100000001 node_paths=PackedStringArray("combat_ui", "lose_ui")]
-position = Vector2(50, 480)
+[node name="mob6" parent="Character" index="13" unique_id=2100000001 node_paths=PackedStringArray("combat_ui", "lose_ui")]
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
 
-[node name="mob7" parent="Character" index="9" unique_id=2100000006 node_paths=PackedStringArray("combat_ui", "lose_ui")]
-position = Vector2(120, 480)
+[node name="mob7" parent="Character" index="14" unique_id=2100000006 node_paths=PackedStringArray("combat_ui", "lose_ui")]
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
 
-[node name="mob8" parent="Character" index="10" unique_id=2100000011 node_paths=PackedStringArray("combat_ui", "lose_ui")]
-position = Vector2(190, 480)
+[node name="mob8" parent="Character" index="15" unique_id=2100000011 node_paths=PackedStringArray("combat_ui", "lose_ui")]
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
 
-[node name="mob9" parent="Character" index="11" unique_id=2100000016 node_paths=PackedStringArray("combat_ui", "lose_ui")]
-position = Vector2(260, 480)
+[node name="mob9" parent="Character" index="16" unique_id=2100000016 node_paths=PackedStringArray("combat_ui", "lose_ui")]
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
 
-[node name="mob10" parent="Character" index="12" unique_id=2100000021 node_paths=PackedStringArray("combat_ui", "lose_ui")]
-position = Vector2(330, 480)
+[node name="mob10" parent="Character" index="17" unique_id=2100000021 node_paths=PackedStringArray("combat_ui", "lose_ui")]
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
 
-[node name="mob11" parent="Character" index="13" unique_id=2100000026 node_paths=PackedStringArray("combat_ui", "lose_ui")]
-position = Vector2(50, 550)
+[node name="mob11" parent="Character" index="18" unique_id=2100000026 node_paths=PackedStringArray("combat_ui", "lose_ui")]
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
 
-[node name="mob12" parent="Character" index="14" unique_id=2100000031 node_paths=PackedStringArray("combat_ui", "lose_ui")]
-position = Vector2(120, 550)
+[node name="mob12" parent="Character" index="19" unique_id=2100000031 node_paths=PackedStringArray("combat_ui", "lose_ui")]
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
 
-[node name="mob13" parent="Character" index="15" unique_id=2100000036 node_paths=PackedStringArray("combat_ui", "lose_ui")]
-position = Vector2(190, 550)
+[node name="mob13" parent="Character" index="20" unique_id=2100000036 node_paths=PackedStringArray("combat_ui", "lose_ui")]
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
 
-[node name="mob14" parent="Character" index="16" unique_id=2100000041 node_paths=PackedStringArray("combat_ui", "lose_ui")]
-position = Vector2(260, 550)
+[node name="mob14" parent="Character" index="21" unique_id=2100000041 node_paths=PackedStringArray("combat_ui", "lose_ui")]
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
 
-[node name="mob15" parent="Character" index="17" unique_id=2100000046 node_paths=PackedStringArray("combat_ui", "lose_ui")]
-position = Vector2(330, 550)
+[node name="mob15" parent="Character" index="22" unique_id=2100000046 node_paths=PackedStringArray("combat_ui", "lose_ui")]
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
 
