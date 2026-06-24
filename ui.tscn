@@ -4,6 +4,10 @@
 [ext_resource type="Script" uid="uid://blwtx4u7mqi7s" path="res://WinUI.gd" id="2_ibotj"]
 [ext_resource type="Script" uid="uid://c0i1ayu6cesit" path="res://CombatUI.gd" id="2_nltto"]
 [ext_resource type="Script" uid="uid://5fw3555pk2gh" path="res://life_label.gd" id="3_ibotj"]
+[ext_resource type="Script" uid="uid://dguo2l24kneq0" path="res://RoadmapPopup.gd" id="4_ui001"]
+[ext_resource type="Script" uid="uid://dgpt3iklg6rmq" path="res://EquipmentMenu.gd" id="5_ui002"]
+[ext_resource type="Script" uid="uid://bq0f4qkpk56wi" path="res://SavePopup.gd" id="6_ui003"]
+[ext_resource type="Script" uid="uid://bc5k6lhc85jyl" path="res://PauseMenu.gd" id="7_ui004"]
 
 [sub_resource type="FontFile" id="FontFile_h8e4i"]
 subpixel_positioning = 0
@@ -227,3 +231,319 @@ layout_mode = 2
 text = "HP: "
 label_settings = SubResource("LabelSettings_n5ude")
 script = ExtResource("3_ibotj")
+
+[node name="RoadmapPopup" type="CanvasLayer" parent="." unique_id=3717834]
+script = ExtResource("4_ui001")
+
+[node name="Panel" type="Panel" parent="RoadmapPopup" unique_id=1727531082]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -310.0
+offset_top = -340.0
+offset_right = 310.0
+offset_bottom = 340.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="RoadmapVBox" type="VBoxContainer" parent="RoadmapPopup/Panel" unique_id=3717835]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 18.0
+offset_top = 16.0
+offset_right = -18.0
+offset_bottom = -16.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 12
+
+[node name="RichTextLabel" type="RichTextLabel" parent="RoadmapPopup/Panel/RoadmapVBox" unique_id=19851805]
+layout_mode = 2
+size_flags_vertical = 3
+text = "Road Map"
+
+[node name="CloseButton" type="Button" parent="RoadmapPopup/Panel/RoadmapVBox" unique_id=185379812]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+text = "Close Roadmap"
+
+[node name="EquipmentMenu" type="CanvasLayer" parent="." unique_id=2021918082]
+script = ExtResource("5_ui002")
+
+[node name="Panel" type="Panel" parent="EquipmentMenu" unique_id=1422517685]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -380.0
+offset_top = -290.0
+offset_right = 380.0
+offset_bottom = 290.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="MainVBox" type="VBoxContainer" parent="EquipmentMenu/Panel" unique_id=-2084928295]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 18.0
+offset_top = 16.0
+offset_right = -18.0
+offset_bottom = -16.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 14
+
+[node name="TitleLabel" type="Label" parent="EquipmentMenu/Panel/MainVBox" unique_id=1470423410]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Equipment Menu"
+horizontal_alignment = 1
+
+[node name="ColumnsHBox" type="HBoxContainer" parent="EquipmentMenu/Panel/MainVBox" unique_id=-2084928294]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 14
+
+[node name="UnlockedSection" type="PanelContainer" parent="EquipmentMenu/Panel/MainVBox/ColumnsHBox" unique_id=-2084928293]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="UnlockedVBox" type="VBoxContainer" parent="EquipmentMenu/Panel/MainVBox/ColumnsHBox/UnlockedSection" unique_id=-2084928292]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="UnlockedGrid" type="GridContainer" parent="EquipmentMenu/Panel/MainVBox/ColumnsHBox/UnlockedSection/UnlockedVBox" unique_id=719893414]
+layout_mode = 2
+size_flags_horizontal = 3
+columns = 2
+
+[node name="EquippedSection" type="PanelContainer" parent="EquipmentMenu/Panel/MainVBox/ColumnsHBox" unique_id=-2084928291]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="EquippedVBox" type="VBoxContainer" parent="EquipmentMenu/Panel/MainVBox/ColumnsHBox/EquippedSection" unique_id=-2084928290]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="EquippedGrid" type="GridContainer" parent="EquipmentMenu/Panel/MainVBox/ColumnsHBox/EquippedSection/EquippedVBox" unique_id=285528932]
+layout_mode = 2
+size_flags_horizontal = 3
+columns = 2
+
+[node name="CloseButton" type="Button" parent="EquipmentMenu/Panel/MainVBox" unique_id=166129530]
+custom_minimum_size = Vector2(0, 46)
+layout_mode = 2
+text = "Save & Close"
+
+[node name="SavePopup" type="CanvasLayer" parent="." unique_id=-1894967295]
+script = ExtResource("6_ui003")
+
+[node name="Panel" type="Panel" parent="SavePopup" unique_id=-1894967294]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -240.0
+offset_top = -230.0
+offset_right = 240.0
+offset_bottom = 230.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="MainVBox" type="VBoxContainer" parent="SavePopup/Panel" unique_id=-1894967293]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 20.0
+offset_top = 18.0
+offset_right = -20.0
+offset_bottom = -18.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 12
+
+[node name="TitleLabel" type="Label" parent="SavePopup/Panel/MainVBox" unique_id=-1894967292]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "🧙  Elder NPC"
+horizontal_alignment = 1
+
+[node name="StatusLabel" type="Label" parent="SavePopup/Panel/MainVBox" unique_id=-1894967291]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Would you like to save your progress?"
+horizontal_alignment = 1
+autowrap_mode = 2
+
+[node name="Slot1Button" type="Button" parent="SavePopup/Panel/MainVBox" unique_id=-1894967287]
+layout_mode = 2
+text = "Slot 1"
+
+[node name="Slot2Button" type="Button" parent="SavePopup/Panel/MainVBox" unique_id=-1894967286]
+layout_mode = 2
+text = "Slot 2"
+
+[node name="Slot3Button" type="Button" parent="SavePopup/Panel/MainVBox" unique_id=-1894967285]
+layout_mode = 2
+text = "Slot 3"
+
+[node name="BackButton" type="Button" parent="SavePopup/Panel/MainVBox" unique_id=-1894967288]
+custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
+text = "Back Out"
+
+[node name="PauseMenu" type="CanvasLayer" parent="." unique_id=-1894967195]
+script = ExtResource("7_ui004")
+
+[node name="MenuButton" type="Button" parent="PauseMenu" unique_id=-1894967096]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -110.0
+offset_top = 10.0
+offset_right = -10.0
+offset_bottom = 46.0
+grow_horizontal = 0
+text = "☰  Menu"
+
+[node name="Panel" type="Panel" parent="PauseMenu" unique_id=-1894967194]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -260.0
+offset_top = -260.0
+offset_right = 260.0
+offset_bottom = 260.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="MainVBox" type="VBoxContainer" parent="PauseMenu/Panel" unique_id=-1894967193]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 22.0
+offset_top = 18.0
+offset_right = -22.0
+offset_bottom = -18.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 14
+
+[node name="TitleLabel" type="Label" parent="PauseMenu/Panel/MainVBox" unique_id=-1894967192]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "⏸  Game Paused"
+horizontal_alignment = 1
+
+[node name="MainView" type="VBoxContainer" parent="PauseMenu/Panel/MainVBox" unique_id=-1894967191]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 12
+
+[node name="AudioLabel" type="Label" parent="PauseMenu/Panel/MainVBox/MainView" unique_id=-1894967190]
+layout_mode = 2
+text = "🔊 Audio"
+
+[node name="VolumeSlider" type="HSlider" parent="PauseMenu/Panel/MainVBox/MainView" unique_id=-1894967189]
+custom_minimum_size = Vector2(0, 24)
+layout_mode = 2
+
+[node name="MuteCheck" type="CheckButton" parent="PauseMenu/Panel/MainVBox/MainView" unique_id=-1894967188]
+layout_mode = 2
+text = "Mute"
+
+[node name="DisplayLabel" type="Label" parent="PauseMenu/Panel/MainVBox/MainView" unique_id=-1894967187]
+layout_mode = 2
+text = "🖥️ Display"
+
+[node name="FullscreenCheck" type="CheckButton" parent="PauseMenu/Panel/MainVBox/MainView" unique_id=-1894967186]
+layout_mode = 2
+text = "Fullscreen"
+
+[node name="Spacer" type="Control" parent="PauseMenu/Panel/MainVBox/MainView" unique_id=-1894967185]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="ResumeButton" type="Button" parent="PauseMenu/Panel/MainVBox/MainView" unique_id=-1894967184]
+custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
+text = "Resume"
+
+[node name="LoadButton" type="Button" parent="PauseMenu/Panel/MainVBox/MainView" unique_id=-1894967177]
+custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
+text = "Load Game"
+
+[node name="ExitButton" type="Button" parent="PauseMenu/Panel/MainVBox/MainView" unique_id=-1894967183]
+custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
+text = "Exit to Desktop"
+
+[node name="LoadView" type="VBoxContainer" parent="PauseMenu/Panel/MainVBox" unique_id=-1894967176]
+visible = false
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 12
+
+[node name="LoadStatusLabel" type="Label" parent="PauseMenu/Panel/MainVBox/LoadView" unique_id=-1894967175]
+layout_mode = 2
+text = "Choose a slot to load:"
+horizontal_alignment = 1
+autowrap_mode = 2
+
+[node name="LoadSlot1Button" type="Button" parent="PauseMenu/Panel/MainVBox/LoadView" unique_id=-1894967174]
+custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
+text = "Slot 1"
+
+[node name="LoadSlot2Button" type="Button" parent="PauseMenu/Panel/MainVBox/LoadView" unique_id=-1894967173]
+custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
+text = "Slot 2"
+
+[node name="LoadSlot3Button" type="Button" parent="PauseMenu/Panel/MainVBox/LoadView" unique_id=-1894967172]
+custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
+text = "Slot 3"
+
+[node name="LoadBackButton" type="Button" parent="PauseMenu/Panel/MainVBox/LoadView" unique_id=-1894967171]
+custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
+text = "Back"
+
+[node name="ConfirmView" type="VBoxContainer" parent="PauseMenu/Panel/MainVBox" unique_id=-1894967182]
+visible = false
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 12
+
+[node name="ConfirmLabel" type="Label" parent="PauseMenu/Panel/MainVBox/ConfirmView" unique_id=-1894967181]
+layout_mode = 2
+text = "Unsaved progress will be lost!
+Visit the Elder NPC to save before exiting."
+horizontal_alignment = 1
+autowrap_mode = 2
+
+[node name="ExitAnywayButton" type="Button" parent="PauseMenu/Panel/MainVBox/ConfirmView" unique_id=-1894967179]
+custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
+text = "Exit Anyway"
+
+[node name="CancelExitButton" type="Button" parent="PauseMenu/Panel/MainVBox/ConfirmView" unique_id=-1894967178]
+custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
+text = "Cancel"

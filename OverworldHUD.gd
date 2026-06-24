@@ -7,6 +7,7 @@ var xp_text: Label = null
 var roadmap_button: Button = null
 var roadmap_popup: CanvasLayer = null
 var timer_label: Label = null
+var hud_root: Control = null
 
 # ── Play timer ──
 var play_seconds: float = 0.0
@@ -26,11 +27,13 @@ func _s(bg: Color, border: Color, r: int = 6) -> StyleBoxFlat:
 	return s
 
 func _ready() -> void:
+	# ── Wire existing scene nodes ──
 	level_label    = find_child("LevelLabel",    true, false) as Label
 	max_hp_label   = find_child("MaxHPLabel",    true, false) as Label
 	xp_bar         = find_child("XPBar",         true, false) as ProgressBar
 	xp_text        = find_child("XPText",        true, false) as Label
 	roadmap_button = find_child("RoadmapButton", true, false) as Button
+	# Look for an existing TimerLabel in scene first
 	timer_label    = find_child("TimerLabel",    true, false) as Label
 
 	var left_panel = find_child("LeftStatPanel", true, false) as Panel
@@ -71,28 +74,36 @@ func _ready() -> void:
 		roadmap_button.add_theme_font_size_override("font_size", 14)
 		roadmap_button.pressed.connect(_on_roadmap_pressed)
 
-	# Create timer label dynamically if not in scene
+	# ── Timer: use a full-rect Control as anchor root so positioning works ──
 	if not is_instance_valid(timer_label):
+		hud_root = Control.new()
+		hud_root.name = "HUDTimerRoot"
+		hud_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		hud_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(hud_root)
+
 		timer_label = Label.new()
 		timer_label.name = "TimerLabel"
-		add_child(timer_label)
+		hud_root.add_child(timer_label)
 
 	if is_instance_valid(timer_label):
-		timer_label.add_theme_font_size_override("font_size", 14)
-		timer_label.add_theme_color_override("font_color", Color(0.70, 0.70, 0.85, 1.0))
+		timer_label.add_theme_font_size_override("font_size", 15)
+		timer_label.add_theme_color_override("font_color", Color(0.80, 0.80, 0.95, 1.0))
 		timer_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-		timer_label.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-		timer_label.set_offsets_preset(Control.PRESET_TOP_RIGHT)
-		timer_label.position = Vector2(-160, 8)
-		timer_label.custom_minimum_size = Vector2(150, 30)
+		# Anchor to top-right inside the HUDTimerRoot control
+		timer_label.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+		timer_label.offset_left  = -170
+		timer_label.offset_right = -10
+		timer_label.offset_top   = 10
+		timer_label.offset_bottom = 34
 
 func _process(delta: float) -> void:
-	var in_combat = QuestManager.is_in_combat
+	var in_combat  = QuestManager.is_in_combat
 	var end_active = _is_end_screen_active()
 
 	visible = not (in_combat or end_active)
 
-	# Timer ticks only while actually playing (not paused, not in combat, not end screen)
+	# Timer ticks only while actively playing
 	if not in_combat and not end_active and Engine.time_scale > 0.0:
 		play_seconds += delta
 

@@ -110,14 +110,15 @@ func _build_combat_overlay() -> void:
 	combat_panel.add_theme_stylebox_override("panel", s)
 	combat_panel.custom_minimum_size = Vector2(420, 280)
 	add_child(combat_panel)
-	# Defer positioning so the panel has a layout size before we center it
-	combat_panel.call_deferred("_notification", NOTIFICATION_RESIZED)
+	# Defer centering one frame so layout is ready
 	get_tree().process_frame.connect(_center_combat_panel, CONNECT_ONE_SHOT)
 
 	var vbox = VBoxContainer.new()
 	vbox.add_theme_constant_override("separation", 14)
+	vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	vbox.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	combat_panel.add_child(vbox)
-	vbox.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT, Control.PRESET_MODE_MINSIZE, 22)
+	vbox.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT, Control.PRESET_MODE_KEEP_SIZE, 22)
 
 	var title = Label.new()
 	title.text = "☰  COMBAT MENU"

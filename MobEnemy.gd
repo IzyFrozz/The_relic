@@ -28,7 +28,6 @@ var enemy_sharpened: bool = false
 var enemy_piercing: bool = false
 var enemy_is_disarmed: bool = false
 
-# ── New item effect state (10 new items) ──
 var player_regen_rounds: int = 0
 var enemy_regen_rounds: int = 0
 var player_poison_rounds: int = 0
@@ -52,6 +51,57 @@ var player_ref: Node2D = null
 var is_in_combat: bool = false
 var enemy_overworld_position: Vector2 = Vector2.ZERO
 
+# ── Visual flash colours ──────────────────────────────────────────────────────
+const FLASH_HEAL        := Color(0.30, 1.00, 0.30, 1.0)   # bright green   — heal / regen
+const FLASH_POISON      := Color(0.10, 0.55, 0.10, 1.0)   # dark green     — poison applied
+const FLASH_DAMAGE      := Color(1.00, 0.18, 0.18, 1.0)   # red            — taking a hit
+const FLASH_SHIELD      := Color(0.50, 0.75, 1.00, 1.0)   # blue-white     — shield up
+const FLASH_OVERCHARGE  := Color(1.00, 0.55, 0.10, 1.0)   # orange         — overcharge / grindstone
+const FLASH_CURSE       := Color(0.65, 0.20, 0.90, 1.0)   # purple         — curse / weaken
+const FLASH_DODGE       := Color(0.30, 0.90, 1.00, 1.0)   # cyan           — dodge / smoke
+const FLASH_REFLECT     := Color(1.00, 0.90, 0.20, 1.0)   # gold           — mirror ward
+const FLASH_DISARM      := Color(1.00, 0.70, 0.10, 1.0)   # amber          — whip / disarm
+const FLASH_STEAL       := Color(0.80, 0.40, 1.00, 1.0)   # violet         — magnet / chain hook
+const FLASH_HORN        := Color(1.00, 0.85, 0.30, 1.0)   # gold-yellow    — battle horn
+const FLASH_STATIC      := Color(0.70, 0.90, 1.00, 1.0)   # electric blue  — static field
+const FLASH_TIMEWARP    := Color(0.70, 1.00, 0.95, 1.0)   # teal           — time warp
+
+# ── Emoji floater colours / labels ───────────────────────────────────────────
+# Used to show a floating emoji above the sprite for 1s so intent is clear.
+func _float_emoji(target: String, emoji: String) -> void:
+	var sprite = _get_sprite(target)
+	if not is_instance_valid(sprite): return
+	var lbl = Label.new()
+	lbl.text = emoji
+	lbl.add_theme_font_size_override("font_size", 28)
+	lbl.position = sprite.global_position + Vector2(-20, -80)
+	lbl.z_index = 100
+	get_tree().root.add_child(lbl)
+	await get_tree().create_timer(1.0).timeout
+	if is_instance_valid(lbl): lbl.queue_free()
+
+func _get_sprite(target: String) -> AnimatedSprite2D:
+	if target == "player":
+		if is_instance_valid(player_ref):
+			return player_ref.get_node_or_null("AnimatedSprite2D") as AnimatedSprite2D
+	elif target == "enemy":
+		return get_node_or_null("AnimatedSprite2D") as AnimatedSprite2D
+	return null
+
+func _flash(target: String, color: Color, duration: float = 0.5) -> void:
+	if is_instance_valid(combat_ui) and combat_ui.has_method("flash_sprite"):
+		combat_ui.flash_sprite(target, color, duration)
+	else:
+		# Fallback: direct modulate if CombatUI not available
+		var sprite = _get_sprite(target)
+		if is_instance_valid(sprite):
+			var orig = sprite.modulate
+			sprite.modulate = color
+			await get_tree().create_timer(duration).timeout
+			if is_instance_valid(sprite): sprite.modulate = orig
+
+# Short pause between actions — replaces blocking popups
+const ACTION_PAUSE := 0.55
 
 func _ready() -> void:
 	_initialize_mob_stats_by_character_tier()
@@ -66,11 +116,6 @@ func _auto_wire_overworld_signals() -> void:
 		deadzone_node.body_entered.connect(_on_deadzone_body_entered)
 
 
-# Curated item pools for tiers 6-15. Every pool uses exactly 6 items so
-# higher-level enemies always bring a full loadout. Each pool deliberately
-# mixes mechanics (heal/defense/control/aggression/utility) rather than
-# stacking pure damage buffs, and only ever includes items already unlocked
-# by the player at that level (see QuestManager.item_unlocks).
 const TIER_POOLS_LV6_PLUS := {
 	6:  ["potion", "shield", "grindstone", "needle", "magnet", "poison_dart"],
 	7:  ["shield", "whip", "poison_dart", "bandage", "needle", "magnet"],
@@ -85,21 +130,15 @@ const TIER_POOLS_LV6_PLUS := {
 }
 
 func _initialize_mob_stats_by_character_tier() -> void:
-	# HP scales every level, no cap
 	enemy_max_health = 80 + (enemy_level * 20)
-
 	if enemy_level <= 5:
-		# Original 5 tiers — unchanged, cumulative unlock as before
 		enemy_item_pool = ["potion", "shield"]
 		if enemy_level >= 2: enemy_item_pool.append("grindstone")
 		if enemy_level >= 3: enemy_item_pool.append("whip")
 		if enemy_level >= 4: enemy_item_pool.append("needle")
 		if enemy_level >= 5: enemy_item_pool.append("magnet")
 	else:
-		# Tiers 6+ use curated, distinct combo pools rather than simple
-		# cumulative stacking — each tier teaches a different strategy.
 		enemy_item_pool = TIER_POOLS_LV6_PLUS.get(enemy_level, ["potion", "shield", "grindstone", "needle"]).duplicate()
-
 	enemy_health = enemy_max_health
 	current_items_per_deal = 1
 
@@ -163,6 +202,8 @@ func use_player_item(item_type: String) -> void:
 					player_inventory.erase("magnet")
 					enemy_inventory.erase(chosen)
 					player_inventory.append(chosen)
+					_flash("player", FLASH_STEAL, 0.5)
+					_float_emoji("player", "🧲")
 					combat_ui.display_round_history("🧲 Magnet swiped 1x [%s] from the Enemy!" % chosen.to_upper(), true)
 				else:
 					combat_ui.display_round_history("🧲 Magnet cancelled.", true)
@@ -176,9 +217,12 @@ func use_player_item(item_type: String) -> void:
 				var steal_target = valid_targets.pick_random()
 				enemy_inventory.erase(steal_target)
 				player_inventory.append(steal_target)
-				if combat_ui: combat_ui.display_round_history("⛓️ Chain Hook yanked [%s] from the Enemy and weakened their next attack!" % steal_target.to_upper(), true)
+				_flash("player", FLASH_STEAL, 0.5)
+				_float_emoji("enemy", "⛓️")
+				combat_ui.display_round_history("⛓️ Chain Hook yanked [%s] from Enemy and weakened their next attack!" % steal_target.to_upper(), true)
 			else:
-				if combat_ui: combat_ui.display_round_history("⛓️ Chain Hook found nothing to steal, but still weakened the Enemy's next attack!", true)
+				_flash("enemy", FLASH_CURSE, 0.4)
+				combat_ui.display_round_history("⛓️ Chain Hook found nothing to steal, but still weakened the Enemy's next attack!", true)
 			if combat_ui: combat_ui._refresh_ui_states()
 			return
 		_:
@@ -187,49 +231,77 @@ func use_player_item(item_type: String) -> void:
 	match item_type:
 		"potion":
 			QuestManager.player_health = clampi(QuestManager.player_health + 20, 0, QuestManager.MAX_HEALTH)
-			if combat_ui: combat_ui.display_round_history("🧪 Deployed a Potion (+20 HP)", true)
+			_flash("player", FLASH_HEAL, 0.7)
+			_float_emoji("player", "🧪")
+			if combat_ui: combat_ui.display_round_history("🧪 Potion (+20 HP)", true)
 		"shield":
 			player_active_armor = true
-			if combat_ui: combat_ui.display_round_history("🛡️ Deployed a Shield (Block Next Hit)", true)
+			_flash("player", FLASH_SHIELD, 0.6)
+			_float_emoji("player", "🛡️")
+			if combat_ui: combat_ui.display_round_history("🛡️ Shield raised", true)
 		"grindstone":
 			player_sharpened = true
-			if combat_ui: combat_ui.display_round_history("🪨 Deployed a Grindstone (2x DMG Next Phase)", true)
+			_flash("player", FLASH_OVERCHARGE, 0.6)
+			_float_emoji("player", "🪨")
+			if combat_ui: combat_ui.display_round_history("🪨 Grindstone — next attack 2×", true)
 		"whip":
 			enemy_is_disarmed = true
-			if combat_ui: combat_ui.display_round_history("💥 Whipped Enemy! (Skips their upcoming turn)", true)
+			_flash("enemy", FLASH_DISARM, 0.6)
+			_float_emoji("enemy", "💥")
+			if combat_ui: combat_ui.display_round_history("💥 Whip — enemy turn skipped", true)
 		"needle":
 			player_piercing = true
-			if combat_ui: combat_ui.display_round_history("📌 Loaded a Needle (Pierces Enemy Armor)", true)
+			_flash("player", FLASH_OVERCHARGE, 0.5)
+			_float_emoji("player", "📌")
+			if combat_ui: combat_ui.display_round_history("📌 Needle — next attack pierces armor", true)
 		"bandage":
 			QuestManager.player_health = clampi(QuestManager.player_health + 10, 0, QuestManager.MAX_HEALTH)
 			player_regen_rounds = 2
-			if combat_ui: combat_ui.display_round_history("🩹 Applied a Bandage (+10 HP now, +10 HP for 2 more rounds)", true)
+			_flash("player", FLASH_HEAL, 0.7)
+			_float_emoji("player", "🩹")
+			if combat_ui: combat_ui.display_round_history("🩹 Bandage (+10 HP now, +10 regen × 2)", true)
 		"poison_dart":
 			enemy_poison_rounds = 4
-			if combat_ui: combat_ui.display_round_history("☠️ Threw a Poison Dart at the Enemy (10 dmg/round for 4 rounds)", true)
+			_flash("enemy", FLASH_POISON, 0.6)
+			_float_emoji("enemy", "☠️")
+			if combat_ui: combat_ui.display_round_history("☠️ Poison Dart — enemy takes 10/round × 4", true)
 		"battle_horn":
 			player_horn_charges = 2
-			if combat_ui: combat_ui.display_round_history("📯 Sounded the Battle Horn (Next 2 attacks +50% damage)", true)
+			_flash("player", FLASH_HORN, 0.6)
+			_float_emoji("player", "📯")
+			if combat_ui: combat_ui.display_round_history("📯 Battle Horn — next 2 attacks +50%", true)
 		"mirror_ward":
 			player_reflect_active = true
-			if combat_ui: combat_ui.display_round_history("🪞 Raised a Mirror Ward (Next hit taken is reflected)", true)
+			_flash("player", FLASH_REFLECT, 0.6)
+			_float_emoji("player", "🪞")
+			if combat_ui: combat_ui.display_round_history("🪞 Mirror Ward — next hit reflected", true)
 		"smoke_bomb":
 			player_dodge_active = true
-			if combat_ui: combat_ui.display_round_history("💨 Threw a Smoke Bomb (Next attack against you will miss)", true)
+			_flash("player", FLASH_DODGE, 0.6)
+			_float_emoji("player", "💨")
+			if combat_ui: combat_ui.display_round_history("💨 Smoke Bomb — next enemy attack misses", true)
 		"weaken_totem":
 			enemy_cursed = true
-			if combat_ui: combat_ui.display_round_history("🗿 Cursed the Enemy! (Their next attack deals 0 damage — you heal 20 HP)", true)
+			_flash("enemy", FLASH_CURSE, 0.7)
+			_float_emoji("enemy", "🗿")
+			if combat_ui: combat_ui.display_round_history("🗿 Weaken Totem — enemy attack cursed", true)
 		"static_field":
 			enemy_items_locked = true
-			if combat_ui: combat_ui.display_round_history("⚡ Charged a Static Field (Enemy can't use items next turn — forced basic attack)", true)
+			_flash("enemy", FLASH_STATIC, 0.6)
+			_float_emoji("enemy", "⚡")
+			if combat_ui: combat_ui.display_round_history("⚡ Static Field — enemy items locked next turn", true)
 		"time_warp":
 			enemy_is_disarmed = true
 			enemy_stun_extra_turns += 1
-			if combat_ui: combat_ui.display_round_history("⏳ Cast Time Warp! Enemy skips their next TWO turns!", true)
+			_flash("enemy", FLASH_TIMEWARP, 0.8)
+			_float_emoji("enemy", "⏳")
+			if combat_ui: combat_ui.display_round_history("⏳ Time Warp — enemy skips 2 turns", true)
 		"overcharge":
 			player_piercing = true
 			player_sharpened = true
-			if combat_ui: combat_ui.display_round_history("🔥 Overcharged! Next attack ignores armor AND deals 2× damage!", true)
+			_flash("player", FLASH_OVERCHARGE, 0.8)
+			_float_emoji("player", "🔥")
+			if combat_ui: combat_ui.display_round_history("🔥 Overcharge — pierce + 2× damage next attack", true)
 
 	if combat_ui: combat_ui._refresh_ui_states()
 
@@ -243,16 +315,15 @@ func process_player_attack_phase() -> void:
 		if player_stun_extra_turns > 0:
 			player_stun_extra_turns -= 1
 			player_is_disarmed = true
+		_flash("player", FLASH_DISARM, 0.5)
+		_float_emoji("player", "💥")
 		if combat_ui:
-			combat_ui.display_round_history("💥 You were DISARMED! Your attack phase was skipped!", true)
+			combat_ui.display_round_history("💥 DISARMED — your attack phase skipped!", true)
 			combat_ui._refresh_ui_states()
-			await combat_ui.show_blocking_popup("⚡ DISARMED!", "The Enemy's Whip disarmed you — your attack phase is skipped this round!", false)
-
-		if await _check_combat_end_conditions():
-			return
-
+		await get_tree().create_timer(ACTION_PAUSE).timeout
+		if await _check_combat_end_conditions(): return
 		if combat_ui: combat_ui.start_enemy_turn_visuals()
-		await get_tree().create_timer(1.3).timeout
+		await get_tree().create_timer(1.0).timeout
 		_execute_enemy_turn_ai()
 		return
 
@@ -275,31 +346,40 @@ func process_player_attack_phase() -> void:
 		enemy_health = clampi(enemy_health + 20, 0, enemy_max_health)
 
 	if was_cursed:
-		if combat_ui: combat_ui.display_round_history("🗿 You were CURSED! Your attack dealt 0 damage and the enemy healed 20 HP!", true)
+		_flash("player", FLASH_CURSE, 0.6)
+		_float_emoji("player", "🗿")
+		_flash("enemy", FLASH_HEAL, 0.6)
+		if combat_ui: combat_ui.display_round_history("🗿 CURSED — your attack dealt 0 dmg, enemy healed 20!", true)
 	elif enemy_dodge_active:
 		enemy_dodge_active = false
-		if combat_ui: combat_ui.display_round_history("💨 The enemy vanished in smoke — your attack missed completely!", true)
+		_flash("enemy", FLASH_DODGE, 0.5)
+		_float_emoji("enemy", "💨")
+		if combat_ui: combat_ui.display_round_history("💨 Enemy dodged — your attack missed!", true)
 	elif enemy_reflect_active:
 		enemy_reflect_active = false
 		QuestManager.player_health = clampi(QuestManager.player_health - damage_output, 0, QuestManager.MAX_HEALTH)
-		if combat_ui: combat_ui.display_round_history("🪞 The enemy's Mirror Ward bounced your %d damage right back at you!" % damage_output, true)
+		_flash("enemy", FLASH_REFLECT, 0.5)
+		_flash("player", FLASH_DAMAGE, 0.5)
+		_float_emoji("enemy", "🪞")
+		if combat_ui: combat_ui.display_round_history("🪞 REFLECTED — %d damage bounced back at you!" % damage_output, true)
 	elif enemy_active_armor and not player_piercing:
 		damage_output = 0
 		enemy_active_armor = false
-		if combat_ui: combat_ui.display_round_history("🛡️ Enemy Shield completely blocked your hit!", true)
+		_flash("enemy", FLASH_SHIELD, 0.5)
+		_float_emoji("enemy", "🛡️")
+		if combat_ui: combat_ui.display_round_history("🛡️ Enemy shield blocked your hit!", true)
 	else:
 		if player_piercing:
 			player_piercing = false
 		enemy_health = clampi(enemy_health - damage_output, 0, enemy_max_health)
+		_flash("enemy", FLASH_DAMAGE, 0.45)
 		if combat_ui: combat_ui.display_round_history("⚔️ You attacked for %d damage!" % damage_output, true)
 
 	if combat_ui: combat_ui._refresh_ui_states()
-
-	if await _check_combat_end_conditions():
-		return
-
+	await get_tree().create_timer(ACTION_PAUSE).timeout
+	if await _check_combat_end_conditions(): return
 	if combat_ui: combat_ui.start_enemy_turn_visuals()
-	await get_tree().create_timer(1.3).timeout
+	await get_tree().create_timer(1.0).timeout
 	_execute_enemy_turn_ai()
 
 
@@ -309,12 +389,12 @@ func _execute_enemy_turn_ai() -> void:
 		if enemy_stun_extra_turns > 0:
 			enemy_stun_extra_turns -= 1
 			enemy_is_disarmed = true
-		# Disarmed — shake enemy in place, no lunge
+		_flash("enemy", FLASH_DISARM, 0.5)
+		_float_emoji("enemy", "💥")
 		if is_instance_valid(player_ref) and player_ref.has_method("do_enemy_lunge"):
 			await player_ref.do_enemy_lunge(self, player_ref.global_position, true)
 		if combat_ui:
-			combat_ui.display_round_history("💥 Enemy was disarmed and skipped their turn!", false)
-			await combat_ui.show_blocking_popup("💀 ENEMY ACTION", "The enemy is DISARMED and cannot act!", false)
+			combat_ui.display_round_history("💥 Enemy was disarmed — turn skipped!", false)
 		await _conclude_round_cycle_ticks()
 		return
 
@@ -329,9 +409,11 @@ func _execute_enemy_turn_ai() -> void:
 
 	if enemy_items_locked:
 		enemy_items_locked = false
+		_flash("enemy", FLASH_STATIC, 0.5)
+		_float_emoji("enemy", "⚡")
 		if combat_ui:
-			combat_ui.display_round_history("⚡ Enemy's items are LOCKED this turn — forced basic attack only!", false)
-			await combat_ui.show_blocking_popup("⚡ ITEMS LOCKED", "Your Static Field denies the enemy's items this turn — they can only basic attack!", false)
+			combat_ui.display_round_history("⚡ Enemy items LOCKED — forced basic attack!", false)
+		await get_tree().create_timer(ACTION_PAUSE).timeout
 	else:
 		var processing_combat_actions = true
 		while processing_combat_actions:
@@ -384,6 +466,7 @@ func _execute_enemy_turn_ai() -> void:
 
 	if not is_in_combat: return
 
+	# ── Enemy basic attack ────────────────────────────────────────────────────
 	var raw_dmg = 20
 	if enemy_sharpened:
 		raw_dmg *= 2
@@ -402,55 +485,47 @@ func _execute_enemy_turn_ai() -> void:
 		raw_dmg = 0
 		QuestManager.player_health = clampi(QuestManager.player_health + 20, 0, QuestManager.MAX_HEALTH)
 
-	var attack_log = ""
-
-	if enemy_was_cursed:
-		attack_log = "🗿 The enemy was CURSED! Their attack dealt 0 damage and YOU healed 20 HP!"
-		if combat_ui: combat_ui.display_round_history("🗿 Your Weaken Totem curse triggered — enemy dealt 0 damage, you healed 20 HP!", false)
-	elif player_dodge_active:
-		player_dodge_active = false
-		attack_log = "💨 DODGED! You vanished in smoke and the enemy's attack missed completely!"
-		if combat_ui: combat_ui.display_round_history("💨 Your Smoke Bomb caused the enemy's attack to miss entirely!", false)
-	elif player_reflect_active:
-		player_reflect_active = false
-		enemy_health = clampi(enemy_health - raw_dmg, 0, enemy_max_health)
-		attack_log = "🪞 REFLECTED! Your Mirror Ward bounced %d damage back at the enemy!" % raw_dmg
-		if combat_ui: combat_ui.display_round_history("🪞 Your Mirror Ward reflected %d damage back at the enemy!" % raw_dmg, false)
-	elif player_active_armor and not enemy_piercing:
-		# Shield blocks cleanly — consumed, needle not active
-		player_active_armor = false
-		attack_log = "🛡️ SAFE! Your armor absorbed their %d damage hit!" % raw_dmg
-		if combat_ui: combat_ui.display_round_history("🛡️ Your Shield blocked the enemy's hit.", false)
-	elif enemy_piercing:
-		# Needle bypasses armor — armor is NOT consumed, needle is spent
-		enemy_piercing = false
-		var had_armor = player_active_armor
-		QuestManager.player_health = clampi(QuestManager.player_health - raw_dmg, 0, QuestManager.MAX_HEALTH)
-		if had_armor:
-			attack_log = "🪡 PIERCED! Needle bypassed your shield for %d damage! (Shield still active)" % raw_dmg
-			if combat_ui: combat_ui.display_round_history("🪡 Enemy Needle bypassed your shield for %d dmg — shield intact!" % raw_dmg, false)
-		else:
-			attack_log = "🪡 PIERCED! Enemy struck for %d damage!" % raw_dmg
-			if combat_ui: combat_ui.display_round_history("🪡 Enemy Needle struck for %d damage!" % raw_dmg, false)
-	else:
-		# No armor, no needle — straight hit
-		QuestManager.player_health = clampi(QuestManager.player_health - raw_dmg, 0, QuestManager.MAX_HEALTH)
-		attack_log = "❌ OUCH! Enemy struck for %d damage!" % raw_dmg
-		if combat_ui: combat_ui.display_round_history("⚔️ Enemy dealt %d damage to you!" % raw_dmg, false)
-
-	if combat_ui:
-		combat_ui._refresh_ui_states()
-
-	# Enemy lunges toward player before showing attack result
+	# Enemy lunges first so it looks like the attack is happening
 	if is_instance_valid(player_ref) and player_ref.has_method("do_enemy_lunge"):
 		await player_ref.do_enemy_lunge(self, player_ref.global_position, false)
 
-	if combat_ui:
-		await combat_ui.show_blocking_popup("💀 ENEMY ACTION", attack_log, false)
+	if enemy_was_cursed:
+		_flash("enemy", FLASH_CURSE, 0.6)
+		_flash("player", FLASH_HEAL, 0.6)
+		_float_emoji("enemy", "🗿")
+		if combat_ui: combat_ui.display_round_history("🗿 Enemy cursed — 0 dmg, you healed 20!", false)
+	elif player_dodge_active:
+		player_dodge_active = false
+		_flash("player", FLASH_DODGE, 0.5)
+		_float_emoji("player", "💨")
+		if combat_ui: combat_ui.display_round_history("💨 DODGED — enemy attack missed!", false)
+	elif player_reflect_active:
+		player_reflect_active = false
+		enemy_health = clampi(enemy_health - raw_dmg, 0, enemy_max_health)
+		_flash("player", FLASH_REFLECT, 0.5)
+		_flash("enemy", FLASH_DAMAGE, 0.5)
+		_float_emoji("player", "🪞")
+		if combat_ui: combat_ui.display_round_history("🪞 REFLECTED — %d damage bounced back at enemy!" % raw_dmg, false)
+	elif player_active_armor and not enemy_piercing:
+		player_active_armor = false
+		_flash("player", FLASH_SHIELD, 0.5)
+		_float_emoji("player", "🛡️")
+		if combat_ui: combat_ui.display_round_history("🛡️ Your shield blocked enemy's hit!", false)
+	elif enemy_piercing:
+		enemy_piercing = false
+		QuestManager.player_health = clampi(QuestManager.player_health - raw_dmg, 0, QuestManager.MAX_HEALTH)
+		_flash("player", FLASH_DAMAGE, 0.6)
+		_float_emoji("player", "🪡")
+		if combat_ui: combat_ui.display_round_history("🪡 Needle pierced your shield for %d dmg!" % raw_dmg, false)
+	else:
+		QuestManager.player_health = clampi(QuestManager.player_health - raw_dmg, 0, QuestManager.MAX_HEALTH)
+		_flash("player", FLASH_DAMAGE, 0.5)
+		if combat_ui: combat_ui.display_round_history("⚔️ Enemy dealt %d damage to you!" % raw_dmg, false)
 
-	if await _check_combat_end_conditions():
-		return
+	if combat_ui: combat_ui._refresh_ui_states()
+	await get_tree().create_timer(ACTION_PAUSE).timeout
 
+	if await _check_combat_end_conditions(): return
 	await _conclude_round_cycle_ticks()
 
 
@@ -459,68 +534,81 @@ func _enemy_execute_item(item_type: String, tracking: Dictionary) -> void:
 
 	enemy_inventory.erase(item_type)
 	tracking[item_type] = tracking.get(item_type, 0) + 1
-	var outcome_text = ""
 
 	match item_type:
 		"potion":
 			enemy_health = clampi(enemy_health + 20, 0, enemy_max_health)
-			outcome_text = "🧪 The enemy drank a Potion and restored 20 HP!"
-			if combat_ui: combat_ui.display_round_history("🧪 Enemy used a Potion.", false)
+			_flash("enemy", FLASH_HEAL, 0.6)
+			_float_emoji("enemy", "🧪")
+			if combat_ui: combat_ui.display_round_history("🧪 Enemy used Potion (+20 HP)", false)
 		"shield":
 			enemy_active_armor = true
-			outcome_text = "🛡️ The enemy deployed a Shield! Incoming damage will be blocked."
-			if combat_ui: combat_ui.display_round_history("🛡️ Enemy deployed a Shield.", false)
+			_flash("enemy", FLASH_SHIELD, 0.6)
+			_float_emoji("enemy", "🛡️")
+			if combat_ui: combat_ui.display_round_history("🛡️ Enemy raised Shield", false)
 		"grindstone":
 			enemy_sharpened = true
-			outcome_text = "🪨 The enemy used a Grindstone! Next attack deals 2x DAMAGE!"
-			if combat_ui: combat_ui.display_round_history("🪨 Enemy used a Grindstone.", false)
+			_flash("enemy", FLASH_OVERCHARGE, 0.6)
+			_float_emoji("enemy", "🪨")
+			if combat_ui: combat_ui.display_round_history("🪨 Enemy used Grindstone (2× next attack)", false)
 		"whip":
 			player_is_disarmed = true
-			outcome_text = "💥 The enemy cracked the Whip! YOUR next turn is SKIPPED!"
+			_flash("player", FLASH_DISARM, 0.6)
+			_float_emoji("enemy", "💥")
 			if combat_ui: combat_ui.display_round_history("💥 Enemy Whip — YOUR turn skipped!", false)
 		"needle":
 			enemy_piercing = true
-			outcome_text = "🪡 The enemy loaded a Needle! Next strike PIERCES your armor!"
-			if combat_ui: combat_ui.display_round_history("🪡 Enemy loaded a Needle.", false)
+			_flash("enemy", FLASH_OVERCHARGE, 0.5)
+			_float_emoji("enemy", "🪡")
+			if combat_ui: combat_ui.display_round_history("🪡 Enemy loaded Needle (pierces armor)", false)
 		"bandage":
 			enemy_health = clampi(enemy_health + 10, 0, enemy_max_health)
 			enemy_regen_rounds = 2
-			outcome_text = "🩹 The enemy applied a Bandage! +10 HP now, +10 HP for 2 more rounds!"
-			if combat_ui: combat_ui.display_round_history("🩹 Enemy used a Bandage.", false)
+			_flash("enemy", FLASH_HEAL, 0.6)
+			_float_emoji("enemy", "🩹")
+			if combat_ui: combat_ui.display_round_history("🩹 Enemy used Bandage (+10 HP + regen)", false)
 		"poison_dart":
 			player_poison_rounds = 4
-			outcome_text = "☠️ The enemy threw a Poison Dart at YOU! 10 damage per round for 4 rounds!"
-			if combat_ui: combat_ui.display_round_history("☠️ Enemy poisoned you!", false)
+			_flash("player", FLASH_POISON, 0.6)
+			_float_emoji("enemy", "☠️")
+			if combat_ui: combat_ui.display_round_history("☠️ Enemy poisoned you! (10/round × 4)", false)
 		"battle_horn":
 			enemy_horn_charges = 2
-			outcome_text = "📯 The enemy sounded their Battle Horn! Their next 2 attacks deal +50% damage!"
-			if combat_ui: combat_ui.display_round_history("📯 Enemy used a Battle Horn.", false)
+			_flash("enemy", FLASH_HORN, 0.6)
+			_float_emoji("enemy", "📯")
+			if combat_ui: combat_ui.display_round_history("📯 Enemy Battle Horn (+50% next 2 attacks)", false)
 		"mirror_ward":
 			enemy_reflect_active = true
-			outcome_text = "🪞 The enemy raised a Mirror Ward! Your next hit on them will be reflected!"
-			if combat_ui: combat_ui.display_round_history("🪞 Enemy raised a Mirror Ward.", false)
+			_flash("enemy", FLASH_REFLECT, 0.6)
+			_float_emoji("enemy", "🪞")
+			if combat_ui: combat_ui.display_round_history("🪞 Enemy Mirror Ward (reflects next hit)", false)
 		"smoke_bomb":
 			enemy_dodge_active = true
-			outcome_text = "💨 The enemy threw a Smoke Bomb! Your next attack against them will miss!"
-			if combat_ui: combat_ui.display_round_history("💨 Enemy used a Smoke Bomb.", false)
+			_flash("enemy", FLASH_DODGE, 0.6)
+			_float_emoji("enemy", "💨")
+			if combat_ui: combat_ui.display_round_history("💨 Enemy Smoke Bomb (next attack misses)", false)
 		"weaken_totem":
 			player_cursed = true
-			outcome_text = "🗿 The enemy cursed YOU! Your next attack will deal 0 damage and heal the enemy 20 HP!"
-			if combat_ui: combat_ui.display_round_history("🗿 Enemy cursed your next attack.", false)
+			_flash("player", FLASH_CURSE, 0.6)
+			_float_emoji("enemy", "🗿")
+			if combat_ui: combat_ui.display_round_history("🗿 Enemy cursed your next attack!", false)
 		"static_field":
 			player_items_locked = true
-			outcome_text = "⚡ The enemy charged a Static Field! YOU can't use items next turn — forced basic attack!"
-			if combat_ui: combat_ui.display_round_history("⚡ Enemy locked your items for next turn.", false)
+			_flash("player", FLASH_STATIC, 0.6)
+			_float_emoji("enemy", "⚡")
+			if combat_ui: combat_ui.display_round_history("⚡ Enemy locked your items next turn!", false)
 		"time_warp":
 			player_is_disarmed = true
 			player_stun_extra_turns += 1
-			outcome_text = "⏳ The enemy cast Time Warp! YOU skip your next TWO turns!"
-			if combat_ui: combat_ui.display_round_history("⏳ Enemy cast Time Warp on you!", false)
+			_flash("player", FLASH_TIMEWARP, 0.8)
+			_float_emoji("enemy", "⏳")
+			if combat_ui: combat_ui.display_round_history("⏳ Enemy Time Warp — YOU skip 2 turns!", false)
 		"overcharge":
 			enemy_piercing = true
 			enemy_sharpened = true
-			outcome_text = "🔥 The enemy Overcharged! Their next attack ignores your armor AND deals 2× damage!"
-			if combat_ui: combat_ui.display_round_history("🔥 Enemy Overcharged their next attack!", false)
+			_flash("enemy", FLASH_OVERCHARGE, 0.8)
+			_float_emoji("enemy", "🔥")
+			if combat_ui: combat_ui.display_round_history("🔥 Enemy Overcharged — pierce + 2× next attack!", false)
 		"chain_hook":
 			var valid_targets = player_inventory.filter(func(item): return item != "chain_hook")
 			player_weakened = true
@@ -528,43 +616,43 @@ func _enemy_execute_item(item_type: String, tracking: Dictionary) -> void:
 				var steal_target = valid_targets.pick_random()
 				player_inventory.erase(steal_target)
 				enemy_inventory.append(steal_target)
-				outcome_text = "⛓️ CHAIN HOOK! The enemy yanked your [%s] AND weakened your next attack!" % steal_target.to_upper()
-				if combat_ui: combat_ui.display_round_history("⛓️ Enemy stole your [%s] with a Chain Hook!" % steal_target, false)
+				_flash("player", FLASH_STEAL, 0.5)
+				_float_emoji("enemy", "⛓️")
+				if combat_ui: combat_ui.display_round_history("⛓️ Enemy Chain Hook stole your [%s]!" % steal_target, false)
 			else:
-				outcome_text = "⛓️ CHAIN HOOK! Nothing to steal, but your next attack is still weakened!"
+				_flash("player", FLASH_CURSE, 0.4)
 				if combat_ui: combat_ui.display_round_history("⛓️ Enemy Chain Hook weakened your next attack.", false)
 		"magnet":
 			var valid_targets = player_inventory.filter(func(item): return item != "magnet")
 			if valid_targets.size() > 0:
 				var steal_target = ""
-				if valid_targets.has("needle"): steal_target = "needle"
+				if valid_targets.has("needle"):      steal_target = "needle"
 				elif valid_targets.has("grindstone"): steal_target = "grindstone"
-				elif valid_targets.has("shield"): steal_target = "shield"
+				elif valid_targets.has("shield"):     steal_target = "shield"
 				else: steal_target = valid_targets.pick_random()
 				player_inventory.erase(steal_target)
 				enemy_inventory.append(steal_target)
-				outcome_text = "🧲 MAGNET! The enemy stole your [%s]!" % steal_target.to_upper()
-				if combat_ui: combat_ui.display_round_history("🧲 Enemy stole your [%s]!" % steal_target, false)
+				_flash("player", FLASH_STEAL, 0.5)
+				_float_emoji("enemy", "🧲")
+				if combat_ui: combat_ui.display_round_history("🧲 Enemy Magnet stole your [%s]!" % steal_target, false)
 			else:
-				outcome_text = "🧲 MAGNET... Enemy reached in but you have no stealable items!"
-				if combat_ui: combat_ui.display_round_history("🧲 Enemy Magnet fizzled — Refunded to inventory.", false)
 				enemy_inventory.append("magnet")
+				if combat_ui: combat_ui.display_round_history("🧲 Enemy Magnet fizzled — refunded.", false)
 
-	if combat_ui:
-		combat_ui._refresh_ui_states()
-		await combat_ui.show_blocking_popup("💀 ENEMY ACTION", outcome_text, false)
+	if combat_ui: combat_ui._refresh_ui_states()
+	await get_tree().create_timer(ACTION_PAUSE).timeout
 
 
 func _conclude_round_cycle_ticks() -> void:
 	await _process_dot_hot_ticks()
 	if combat_ui: combat_ui._refresh_ui_states()
-	if await _check_combat_end_conditions():
-		return
+	if await _check_combat_end_conditions(): return
 
 	cycles_until_drop -= 1
 	if cycles_until_drop <= 0:
 		_apply_supply_drop_rewards()
-		if combat_ui: await combat_ui.show_blocking_popup("📦 SUPPLY DROP", "Supply drop deployed! New items added to both inventories.", false)
+		if combat_ui:
+			combat_ui.display_round_history("📦 Supply drop — new items added!", true)
 
 	if combat_ui:
 		combat_ui.start_player_turn()
@@ -576,37 +664,36 @@ func _process_dot_hot_ticks() -> void:
 	if player_poison_rounds > 0:
 		player_poison_rounds -= 1
 		QuestManager.player_health = clampi(QuestManager.player_health - 10, 0, QuestManager.MAX_HEALTH)
-		tick_log += "☠️ Poison ticked — you took 10 damage! (%d round%s left)\n" % [player_poison_rounds, "" if player_poison_rounds == 1 else "s"]
+		_flash("player", FLASH_POISON, 0.4)
+		tick_log += "☠️ Poison ticked — 10 dmg (%d left)\n" % player_poison_rounds
 	if enemy_poison_rounds > 0:
 		enemy_poison_rounds -= 1
 		enemy_health = clampi(enemy_health - 10, 0, enemy_max_health)
-		tick_log += "☠️ Your Poison Dart ticked on the enemy — 10 damage! (%d round%s left)\n" % [enemy_poison_rounds, "" if enemy_poison_rounds == 1 else "s"]
+		_flash("enemy", FLASH_POISON, 0.4)
+		tick_log += "☠️ Enemy poison ticked — 10 dmg (%d left)\n" % enemy_poison_rounds
 	if player_regen_rounds > 0:
 		player_regen_rounds -= 1
 		QuestManager.player_health = clampi(QuestManager.player_health + 10, 0, QuestManager.MAX_HEALTH)
-		tick_log += "✨ Bandage regen healed you for 10 HP! (%d round%s left)\n" % [player_regen_rounds, "" if player_regen_rounds == 1 else "s"]
+		_flash("player", FLASH_HEAL, 0.4)
+		tick_log += "🩹 Regen healed you 10 HP (%d left)\n" % player_regen_rounds
 	if enemy_regen_rounds > 0:
 		enemy_regen_rounds -= 1
 		enemy_health = clampi(enemy_health + 10, 0, enemy_max_health)
-		tick_log += "✨ The enemy's Bandage regen healed them for 10 HP! (%d round%s left)\n" % [enemy_regen_rounds, "" if enemy_regen_rounds == 1 else "s"]
+		_flash("enemy", FLASH_HEAL, 0.4)
+		tick_log += "🩹 Enemy regen healed 10 HP (%d left)\n" % enemy_regen_rounds
 
 	if tick_log != "" and combat_ui:
 		combat_ui.display_round_history(tick_log.strip_edges(), true)
-		await combat_ui.show_blocking_popup("🔄 ROUND EFFECTS", tick_log.strip_edges(), false)
+		await get_tree().create_timer(ACTION_PAUSE).timeout
 
 
 func _apply_supply_drop_rewards() -> void:
 	drop_round_index += 1
-
-	# Items per drop: 1, 2, 3, 4, 5, 6 — capped at 6 forever
 	var items_this_drop = min(drop_round_index, 6)
 	current_items_per_deal = items_this_drop
-
-	# Drop timing schedule: after rounds 1, 2, 4, 6, 8, 8, 8...
 	const DROP_SCHEDULE = [1, 2, 4, 6, 8]
 	var next_idx = min(drop_round_index, DROP_SCHEDULE.size() - 1)
 	cycles_until_drop = DROP_SCHEDULE[next_idx]
-
 	for i in range(items_this_drop):
 		if QuestManager.equipped_items.size() > 0:
 			player_inventory.append(QuestManager.equipped_items.pick_random())
@@ -615,32 +702,18 @@ func _apply_supply_drop_rewards() -> void:
 
 
 func _reset_all_combat_modifiers() -> void:
-	player_active_armor = false
-	player_sharpened = false
-	player_piercing = false
-	player_is_disarmed = false
-	enemy_active_armor = false
-	enemy_sharpened = false
-	enemy_piercing = false
-	enemy_is_disarmed = false
-	player_regen_rounds = 0
-	enemy_regen_rounds = 0
-	player_poison_rounds = 0
-	enemy_poison_rounds = 0
-	player_horn_charges = 0
-	enemy_horn_charges = 0
-	player_reflect_active = false
-	enemy_reflect_active = false
-	player_dodge_active = false
-	enemy_dodge_active = false
-	player_weakened = false
-	enemy_weakened = false
-	player_cursed = false
-	enemy_cursed = false
-	player_items_locked = false
-	enemy_items_locked = false
-	player_stun_extra_turns = 0
-	enemy_stun_extra_turns = 0
+	player_active_armor = false; player_sharpened = false; player_piercing = false
+	player_is_disarmed = false; enemy_active_armor = false; enemy_sharpened = false
+	enemy_piercing = false; enemy_is_disarmed = false
+	player_regen_rounds = 0; enemy_regen_rounds = 0
+	player_poison_rounds = 0; enemy_poison_rounds = 0
+	player_horn_charges = 0; enemy_horn_charges = 0
+	player_reflect_active = false; enemy_reflect_active = false
+	player_dodge_active = false; enemy_dodge_active = false
+	player_weakened = false; enemy_weakened = false
+	player_cursed = false; enemy_cursed = false
+	player_items_locked = false; enemy_items_locked = false
+	player_stun_extra_turns = 0; enemy_stun_extra_turns = 0
 
 
 func _switch_to_combat_camera() -> void:
@@ -672,12 +745,10 @@ func _check_combat_end_conditions() -> bool:
 		return true
 
 	if enemy_health <= 0:
-		# Immediately block any further combat input
 		is_in_combat = false
 		QuestManager.is_in_combat = false
 		if is_instance_valid(combat_ui): combat_ui.visible = false
 
-		# XP reward
 		var xp_reward := 25
 		match enemy_level:
 			1: xp_reward = 25
@@ -688,27 +759,22 @@ func _check_combat_end_conditions() -> bool:
 		QuestManager.gain_xp(xp_reward)
 		QuestManager.player_health = QuestManager.MAX_HEALTH
 
-		# Play die animation — force stop after one fixed pause so loop doesn't trap us
 		var enemy_sprite = get_node_or_null("AnimatedSprite2D") as AnimatedSprite2D
 		if is_instance_valid(enemy_sprite) and enemy_sprite.sprite_frames \
 				and enemy_sprite.sprite_frames.has_animation("die"):
 			enemy_sprite.stop()
 			enemy_sprite.play("die")
 
-		# Fixed pause — adjust to match your die animation length
 		await get_tree().create_timer(1.0).timeout
 
-		# Stop the animation so it doesn't keep playing after we return
 		if is_instance_valid(enemy_sprite):
 			enemy_sprite.stop()
 
-		# Restore player position
 		if is_instance_valid(player_ref):
 			if "velocity" in player_ref: player_ref.velocity = Vector2.ZERO
 			player_ref.global_position = QuestManager.player_overworld_position
 
 		_switch_to_overworld_camera()
-
 		queue_free()
 		return true
 	return false

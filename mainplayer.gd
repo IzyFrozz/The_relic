@@ -2,9 +2,9 @@ extends CharacterBody2D
 
 signal life_changed(new_life)
 
-@export var max_speed: float = 150.0
-@export var acceleration: float = 900.0
-@export var friction: float = 1200.0
+@export var max_speed: float = 100.0
+@export var acceleration: float = 600.0
+@export var friction: float = 900.0
 var life = 3
 
 var is_knocked_back: bool = false
