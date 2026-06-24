@@ -777,8 +777,22 @@ animations = [{
 visible = false
 modulate = Color(0.78235406, 0.78235406, 0.78235406, 0.1254902)
 
+[node name="BattlePlayerMarker" type="Marker2D" parent="." unique_id=59159906]
+position = Vector2(-2905, -314)
+
+[node name="BattleEnemyMarker" type="Marker2D" parent="." unique_id=1168484741]
+position = Vector2(-2905, -376)
+
+[node name="GraveyardMarker" type="Marker2D" parent="." unique_id=1909701348]
+position = Vector2(-1632, -1010)
+
+[node name="CombatArenaCamera" type="Camera2D" parent="." unique_id=-1794967295]
+position = Vector2(-2905, -309)
+enabled = false
+zoom = Vector2(2.6, 2.6)
+
 [node name="mob1" type="CharacterBody2D" parent="." unique_id=8730518 node_paths=PackedStringArray("battle_player_marker", "battle_enemy_marker", "graveyard_marker")]
-position = Vector2(-53, 295)
+position = Vector2(419, 556)
 script = ExtResource("1_px5sl")
 battle_player_marker = NodePath("../BattlePlayerMarker")
 battle_enemy_marker = NodePath("../BattleEnemyMarker")
@@ -802,7 +816,7 @@ position = Vector2(0, 3)
 shape = SubResource("CapsuleShape2D_7tnxx")
 
 [node name="mob1_2" type="CharacterBody2D" parent="." unique_id=1964334702 node_paths=PackedStringArray("battle_player_marker", "battle_enemy_marker", "graveyard_marker")]
-position = Vector2(-201, 308)
+position = Vector2(480, 576)
 script = ExtResource("1_px5sl")
 battle_player_marker = NodePath("../BattlePlayerMarker")
 battle_enemy_marker = NodePath("../BattleEnemyMarker")
@@ -826,7 +840,7 @@ position = Vector2(0, 3)
 shape = SubResource("CapsuleShape2D_7tnxx")
 
 [node name="mob1_3" type="CharacterBody2D" parent="." unique_id=465294187 node_paths=PackedStringArray("battle_player_marker", "battle_enemy_marker", "graveyard_marker")]
-position = Vector2(-161, 285)
+position = Vector2(523, 601)
 script = ExtResource("1_px5sl")
 battle_player_marker = NodePath("../BattlePlayerMarker")
 battle_enemy_marker = NodePath("../BattleEnemyMarker")
@@ -850,7 +864,7 @@ position = Vector2(0, 3)
 shape = SubResource("CapsuleShape2D_7tnxx")
 
 [node name="mob1_4" type="CharacterBody2D" parent="." unique_id=1189837377 node_paths=PackedStringArray("battle_player_marker", "battle_enemy_marker", "graveyard_marker")]
-position = Vector2(-108, 300)
+position = Vector2(558, 628)
 script = ExtResource("1_px5sl")
 battle_player_marker = NodePath("../BattlePlayerMarker")
 battle_enemy_marker = NodePath("../BattleEnemyMarker")
@@ -874,7 +888,7 @@ position = Vector2(0, 5)
 shape = SubResource("CapsuleShape2D_7tnxx")
 
 [node name="mob2" type="CharacterBody2D" parent="." unique_id=1081548398 node_paths=PackedStringArray("battle_player_marker", "battle_enemy_marker", "graveyard_marker")]
-position = Vector2(57, 233)
+position = Vector2(386, 394)
 script = ExtResource("1_px5sl")
 enemy_level = 2
 battle_player_marker = NodePath("../BattlePlayerMarker")
@@ -899,7 +913,7 @@ position = Vector2(0, 2)
 shape = SubResource("CapsuleShape2D_c1b4b")
 
 [node name="mob3" type="CharacterBody2D" parent="." unique_id=1476578817 node_paths=PackedStringArray("battle_player_marker", "battle_enemy_marker", "graveyard_marker")]
-position = Vector2(66, 512)
+position = Vector2(438, 352)
 script = ExtResource("1_px5sl")
 enemy_level = 3
 battle_player_marker = NodePath("../BattlePlayerMarker")
@@ -924,7 +938,7 @@ position = Vector2(1, 3)
 shape = SubResource("CapsuleShape2D_88tkl")
 
 [node name="mob4" type="CharacterBody2D" parent="." unique_id=262431056 node_paths=PackedStringArray("battle_player_marker", "battle_enemy_marker", "graveyard_marker")]
-position = Vector2(-85, 139)
+position = Vector2(499, 335)
 script = ExtResource("1_px5sl")
 enemy_level = 4
 battle_player_marker = NodePath("../BattlePlayerMarker")
@@ -949,7 +963,7 @@ position = Vector2(0, 3)
 shape = SubResource("CapsuleShape2D_3d8aq")
 
 [node name="mob5" type="CharacterBody2D" parent="." unique_id=1899198502 node_paths=PackedStringArray("battle_player_marker", "battle_enemy_marker", "graveyard_marker")]
-position = Vector2(-154, 186)
+position = Vector2(559, 328)
 script = ExtResource("1_px5sl")
 enemy_level = 5
 battle_player_marker = NodePath("../BattlePlayerMarker")
@@ -973,22 +987,8 @@ flip_h = true
 position = Vector2(0, 3)
 shape = SubResource("CapsuleShape2D_bwfjh")
 
-[node name="BattlePlayerMarker" type="Marker2D" parent="." unique_id=59159906]
-position = Vector2(-2905, -314)
-
-[node name="BattleEnemyMarker" type="Marker2D" parent="." unique_id=1168484741]
-position = Vector2(-2905, -376)
-
-[node name="CombatArenaCamera" type="Camera2D" parent="." unique_id=-1794967295]
-position = Vector2(-2905, -309)
-enabled = false
-zoom = Vector2(2.6, 2.6)
-
-[node name="GraveyardMarker" type="Marker2D" parent="." unique_id=1909701348]
-position = Vector2(-1632, -1010)
-
 [node name="mob6" type="CharacterBody2D" parent="." unique_id=2100000001 node_paths=PackedStringArray("battle_player_marker", "battle_enemy_marker", "graveyard_marker")]
-position = Vector2(50, 480)
+position = Vector2(691, 438)
 script = ExtResource("1_px5sl")
 enemy_level = 6
 battle_player_marker = NodePath("../BattlePlayerMarker")
@@ -1013,7 +1013,7 @@ position = Vector2(0, 3)
 shape = SubResource("CapsuleShape2D_7tnxx")
 
 [node name="mob7" type="CharacterBody2D" parent="." unique_id=2100000006 node_paths=PackedStringArray("battle_player_marker", "battle_enemy_marker", "graveyard_marker")]
-position = Vector2(120, 480)
+position = Vector2(735, 381)
 script = ExtResource("1_px5sl")
 enemy_level = 7
 battle_player_marker = NodePath("../BattlePlayerMarker")
@@ -1038,7 +1038,7 @@ position = Vector2(0, 3)
 shape = SubResource("CapsuleShape2D_7tnxx")
 
 [node name="mob8" type="CharacterBody2D" parent="." unique_id=2100000011 node_paths=PackedStringArray("battle_player_marker", "battle_enemy_marker", "graveyard_marker")]
-position = Vector2(190, 480)
+position = Vector2(785, 337)
 script = ExtResource("1_px5sl")
 enemy_level = 8
 battle_player_marker = NodePath("../BattlePlayerMarker")
@@ -1063,7 +1063,7 @@ position = Vector2(0, 3)
 shape = SubResource("CapsuleShape2D_7tnxx")
 
 [node name="mob9" type="CharacterBody2D" parent="." unique_id=2100000016 node_paths=PackedStringArray("battle_player_marker", "battle_enemy_marker", "graveyard_marker")]
-position = Vector2(260, 480)
+position = Vector2(829, 296)
 script = ExtResource("1_px5sl")
 enemy_level = 9
 battle_player_marker = NodePath("../BattlePlayerMarker")
@@ -1089,7 +1089,7 @@ position = Vector2(0, 3)
 shape = SubResource("CapsuleShape2D_7tnxx")
 
 [node name="mob10" type="CharacterBody2D" parent="." unique_id=2100000021 node_paths=PackedStringArray("battle_player_marker", "battle_enemy_marker", "graveyard_marker")]
-position = Vector2(330, 480)
+position = Vector2(708, 551)
 script = ExtResource("1_px5sl")
 enemy_level = 10
 battle_player_marker = NodePath("../BattlePlayerMarker")
@@ -1115,7 +1115,7 @@ position = Vector2(0, 3)
 shape = SubResource("CapsuleShape2D_7tnxx")
 
 [node name="mob11" type="CharacterBody2D" parent="." unique_id=2100000026 node_paths=PackedStringArray("battle_player_marker", "battle_enemy_marker", "graveyard_marker")]
-position = Vector2(50, 550)
+position = Vector2(749, 585)
 script = ExtResource("1_px5sl")
 enemy_level = 11
 battle_player_marker = NodePath("../BattlePlayerMarker")
@@ -1141,7 +1141,7 @@ position = Vector2(0, 3)
 shape = SubResource("CapsuleShape2D_7tnxx")
 
 [node name="mob12" type="CharacterBody2D" parent="." unique_id=2100000031 node_paths=PackedStringArray("battle_player_marker", "battle_enemy_marker", "graveyard_marker")]
-position = Vector2(120, 550)
+position = Vector2(789, 628)
 script = ExtResource("1_px5sl")
 enemy_level = 12
 battle_player_marker = NodePath("../BattlePlayerMarker")
@@ -1167,7 +1167,7 @@ position = Vector2(0, 3)
 shape = SubResource("CapsuleShape2D_7tnxx")
 
 [node name="mob13" type="CharacterBody2D" parent="." unique_id=2100000036 node_paths=PackedStringArray("battle_player_marker", "battle_enemy_marker", "graveyard_marker")]
-position = Vector2(190, 550)
+position = Vector2(819, 681)
 script = ExtResource("1_px5sl")
 enemy_level = 13
 battle_player_marker = NodePath("../BattlePlayerMarker")
@@ -1193,7 +1193,7 @@ position = Vector2(0, 3)
 shape = SubResource("CapsuleShape2D_7tnxx")
 
 [node name="mob14" type="CharacterBody2D" parent="." unique_id=2100000041 node_paths=PackedStringArray("battle_player_marker", "battle_enemy_marker", "graveyard_marker")]
-position = Vector2(260, 550)
+position = Vector2(852, 562)
 script = ExtResource("1_px5sl")
 enemy_level = 14
 battle_player_marker = NodePath("../BattlePlayerMarker")
@@ -1219,7 +1219,7 @@ position = Vector2(0, 3)
 shape = SubResource("CapsuleShape2D_7tnxx")
 
 [node name="mob15" type="CharacterBody2D" parent="." unique_id=2100000046 node_paths=PackedStringArray("battle_player_marker", "battle_enemy_marker", "graveyard_marker")]
-position = Vector2(330, 550)
+position = Vector2(920, 555)
 script = ExtResource("1_px5sl")
 enemy_level = 15
 battle_player_marker = NodePath("../BattlePlayerMarker")
