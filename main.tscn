@@ -8,6 +8,7 @@
 [ext_resource type="PackedScene" uid="uid://b5s0bfhkjp1hq" path="res://character.tscn" id="4_vivmo"]
 [ext_resource type="PackedScene" uid="uid://bthp4nwyq6ewh" path="res://quest.tscn" id="5_dg77c"]
 [ext_resource type="Script" uid="uid://ch7qn1m4lhwlc" path="res://ItemsStation.gd" id="9_lswn8"]
+[ext_resource type="Texture2D" uid="uid://c1wrl0sg74qpk" path="res://Asset/Pixel Crawler - Free Pack/Entities/Npc's/Wizzard/Idle/Idle-Sheet.png" id="12_2cqfq"]
 [ext_resource type="PackedScene" uid="uid://dn2a5bka3ukty" path="res://foreground.tscn" id="15_074og"]
 [ext_resource type="Texture2D" uid="uid://b1ykf6xq4wg1u" path="res://Asset/Pixel Crawler - Free Pack/Environment/Structures/Stations/Anvil/Anvil only.png" id="18_074og"]
 [ext_resource type="Texture2D" uid="uid://d2b5gfvc577yl" path="res://Asset/sprites/characters/player.png" id="22_4lmeg"]
@@ -15,13 +16,54 @@
 [ext_resource type="Texture2D" uid="uid://bo1vgt0hrwf02" path="res://Asset/Meta data assets files/Visuals/OBJECTS/sprites/chest-closed.png" id="27_xuqvo"]
 [ext_resource type="Script" uid="uid://iujueewjbunt" path="res://delivery_point.gd" id="28_kq58d"]
 [ext_resource type="Script" uid="uid://c0yq6db10h3yi" path="res://Doorway.gd" id="30_kq58d"]
-[ext_resource type="Texture2D" uid="uid://v6sfe4o7cjl4" path="res://Asset/Pixel Crawler - Free Pack/Entities/Npc's/Knight/Idle/Idle-Sheet.png" id="34_4lmeg"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_cegan"]
 size = Vector2(48, 29)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_82xsv"]
 size = Vector2(43, 33)
+
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_0cp0l"]
+height = 34.0
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_2cqfq"]
+atlas = ExtResource("12_2cqfq")
+region = Rect2(0, 0, 32, 38)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_yaehf"]
+atlas = ExtResource("12_2cqfq")
+region = Rect2(32, 0, 32, 38)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_074og"]
+atlas = ExtResource("12_2cqfq")
+region = Rect2(64, 0, 32, 38)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_cegan"]
+atlas = ExtResource("12_2cqfq")
+region = Rect2(96, 0, 32, 38)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_0arob"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_2cqfq")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_yaehf")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_074og")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_cegan")
+}],
+"loop": true,
+"name": &"default",
+"speed": 4.0
+}]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_qsp4k"]
+radius = 29.274563
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_wu3dr"]
 atlas = ExtResource("22_4lmeg")
@@ -343,49 +385,6 @@ animations = [{
 radius = 6.0
 height = 16.0
 
-[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_0cp0l"]
-radius = 12.0
-height = 36.0
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_yjja3"]
-atlas = ExtResource("34_4lmeg")
-region = Rect2(0, 0, 32, 32)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_l0gw7"]
-atlas = ExtResource("34_4lmeg")
-region = Rect2(32, 0, 32, 32)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_inymm"]
-atlas = ExtResource("34_4lmeg")
-region = Rect2(64, 0, 32, 32)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_jcxqu"]
-atlas = ExtResource("34_4lmeg")
-region = Rect2(96, 0, 32, 32)
-
-[sub_resource type="SpriteFrames" id="SpriteFrames_0arob"]
-animations = [{
-"frames": [{
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_yjja3")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_l0gw7")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_inymm")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_jcxqu")
-}],
-"loop": true,
-"name": &"default",
-"speed": 4.0
-}]
-
-[sub_resource type="CircleShape2D" id="CircleShape2D_qsp4k"]
-radius = 29.274563
-
 [sub_resource type="CircleShape2D" id="CircleShape2D_seu75"]
 radius = 15.0
 
@@ -438,16 +437,16 @@ text = "                                                                "
 
 [node name="Character" parent="." unique_id=220561368 instance=ExtResource("4_vivmo")]
 
-[node name="mob1" parent="Character" index="0" unique_id=8730518 node_paths=PackedStringArray("combat_ui", "lose_ui")]
+[node name="mob1" parent="Character" index="1" unique_id=8730518 node_paths=PackedStringArray("combat_ui", "lose_ui")]
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
 
-[node name="mob1_2" parent="Character" index="1" unique_id=1964334702 node_paths=PackedStringArray("combat_ui", "lose_ui")]
+[node name="mob1_2" parent="Character" index="2" unique_id=1964334702 node_paths=PackedStringArray("combat_ui", "lose_ui")]
 position = Vector2(-124, 353)
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
 
-[node name="mob1_3" parent="Character" index="2" unique_id=465294187 node_paths=PackedStringArray("combat_ui", "lose_ui")]
+[node name="mob1_3" parent="Character" index="3" unique_id=465294187 node_paths=PackedStringArray("combat_ui", "lose_ui")]
 position = Vector2(-175, 338)
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
@@ -455,7 +454,7 @@ lose_ui = NodePath("../../ui/LoseUI")
 [node name="CollisionShape2D" parent="Character/mob1_3" index="2" unique_id=1103006557]
 position = Vector2(0, 4)
 
-[node name="mob1_4" parent="Character" index="3" unique_id=1189837377 node_paths=PackedStringArray("combat_ui", "lose_ui")]
+[node name="mob1_4" parent="Character" index="4" unique_id=1189837377 node_paths=PackedStringArray("combat_ui", "lose_ui")]
 position = Vector2(-105, 405)
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
@@ -463,60 +462,60 @@ lose_ui = NodePath("../../ui/LoseUI")
 [node name="CollisionShape2D" parent="Character/mob1_4" index="2" unique_id=2012463128]
 position = Vector2(0, 3)
 
-[node name="mob2" parent="Character" index="4" unique_id=1081548398 node_paths=PackedStringArray("combat_ui", "lose_ui")]
+[node name="mob2" parent="Character" index="5" unique_id=1081548398 node_paths=PackedStringArray("combat_ui", "lose_ui")]
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
 
-[node name="mob3" parent="Character" index="5" unique_id=1476578817 node_paths=PackedStringArray("combat_ui", "lose_ui")]
+[node name="mob3" parent="Character" index="6" unique_id=1476578817 node_paths=PackedStringArray("combat_ui", "lose_ui")]
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
 
-[node name="mob4" parent="Character" index="6" unique_id=262431056 node_paths=PackedStringArray("combat_ui", "lose_ui")]
+[node name="mob4" parent="Character" index="7" unique_id=262431056 node_paths=PackedStringArray("combat_ui", "lose_ui")]
 position = Vector2(-54, 240)
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
 
-[node name="mob5" parent="Character" index="7" unique_id=1899198502 node_paths=PackedStringArray("combat_ui", "lose_ui")]
+[node name="mob5" parent="Character" index="8" unique_id=1899198502 node_paths=PackedStringArray("combat_ui", "lose_ui")]
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
 
-[node name="mob6" parent="Character" index="12" unique_id=2100000001 node_paths=PackedStringArray("combat_ui", "lose_ui")]
+[node name="mob6" parent="Character" index="13" unique_id=2100000001 node_paths=PackedStringArray("combat_ui", "lose_ui")]
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
 
-[node name="mob7" parent="Character" index="13" unique_id=2100000006 node_paths=PackedStringArray("combat_ui", "lose_ui")]
+[node name="mob7" parent="Character" index="14" unique_id=2100000006 node_paths=PackedStringArray("combat_ui", "lose_ui")]
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
 
-[node name="mob8" parent="Character" index="14" unique_id=2100000011 node_paths=PackedStringArray("combat_ui", "lose_ui")]
+[node name="mob8" parent="Character" index="15" unique_id=2100000011 node_paths=PackedStringArray("combat_ui", "lose_ui")]
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
 
-[node name="mob9" parent="Character" index="15" unique_id=2100000016 node_paths=PackedStringArray("combat_ui", "lose_ui")]
+[node name="mob9" parent="Character" index="16" unique_id=2100000016 node_paths=PackedStringArray("combat_ui", "lose_ui")]
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
 
-[node name="mob10" parent="Character" index="16" unique_id=2100000021 node_paths=PackedStringArray("combat_ui", "lose_ui")]
+[node name="mob10" parent="Character" index="17" unique_id=2100000021 node_paths=PackedStringArray("combat_ui", "lose_ui")]
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
 
-[node name="mob11" parent="Character" index="17" unique_id=2100000026 node_paths=PackedStringArray("combat_ui", "lose_ui")]
+[node name="mob11" parent="Character" index="18" unique_id=2100000026 node_paths=PackedStringArray("combat_ui", "lose_ui")]
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
 
-[node name="mob12" parent="Character" index="18" unique_id=2100000031 node_paths=PackedStringArray("combat_ui", "lose_ui")]
+[node name="mob12" parent="Character" index="19" unique_id=2100000031 node_paths=PackedStringArray("combat_ui", "lose_ui")]
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
 
-[node name="mob13" parent="Character" index="19" unique_id=2100000036 node_paths=PackedStringArray("combat_ui", "lose_ui")]
+[node name="mob13" parent="Character" index="20" unique_id=2100000036 node_paths=PackedStringArray("combat_ui", "lose_ui")]
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
 
-[node name="mob14" parent="Character" index="20" unique_id=2100000041 node_paths=PackedStringArray("combat_ui", "lose_ui")]
+[node name="mob14" parent="Character" index="21" unique_id=2100000041 node_paths=PackedStringArray("combat_ui", "lose_ui")]
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
 
-[node name="mob15" parent="Character" index="21" unique_id=2100000046 node_paths=PackedStringArray("combat_ui", "lose_ui")]
+[node name="mob15" parent="Character" index="22" unique_id=2100000046 node_paths=PackedStringArray("combat_ui", "lose_ui")]
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
 
@@ -548,25 +547,8 @@ position = Vector2(1.5, 16.5)
 shape = SubResource("RectangleShape2D_82xsv")
 debug_color = Color(0.61802286, 0.35644442, 1, 0.41960785)
 
-[node name="mainplayer" type="CharacterBody2D" parent="." unique_id=1827658377]
-position = Vector2(-268, 387)
-script = ExtResource("3_82xsv")
-
-[node name="Camera2D" type="Camera2D" parent="mainplayer" unique_id=1520419372]
-zoom = Vector2(3, 3)
-
-[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="mainplayer" unique_id=1865239903]
-position = Vector2(-1, -9.000008)
-scale = Vector2(1.1311195, 1.1311195)
-sprite_frames = SubResource("SpriteFrames_come4")
-animation = &"AttackDown"
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="mainplayer" unique_id=2000731134]
-position = Vector2(-1, 3)
-shape = SubResource("CapsuleShape2D_f6a44")
-
-[node name="ElderNPC" type="Area2D" parent="." unique_id=430870357]
-position = Vector2(-1547, -693)
+[node name="ElderNPC" type="CharacterBody2D" parent="." unique_id=1109828738]
+position = Vector2(-2912, 316)
 script = ExtResource("23_1u8w0")
 
 [node name="InteractPrompt" type="Label" parent="ElderNPC" unique_id=1761656827]
@@ -603,11 +585,13 @@ metadata/_edit_use_anchors_ = true
 shape = SubResource("CapsuleShape2D_0cp0l")
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="ElderNPC" unique_id=1474654494]
+modulate = Color(0.737193, 0.7371929, 0.7371929, 1)
 position = Vector2(0.9999962, 1.0000039)
 scale = Vector2(0.90624976, 0.90624976)
 sprite_frames = SubResource("SpriteFrames_0arob")
 autoplay = "default"
-frame_progress = 0.10175163
+frame_progress = 0.095246404
+flip_h = true
 
 [node name="DialogueBox" type="Label" parent="ElderNPC" unique_id=1123502031]
 visible = false
@@ -621,8 +605,26 @@ text = "Hello Sir Lance"
 [node name="InteractionArea" type="Area2D" parent="ElderNPC" unique_id=505268078]
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="ElderNPC/InteractionArea" unique_id=939082717]
+visible = false
 shape = SubResource("CircleShape2D_qsp4k")
 debug_color = Color(0.1767202, 0.64351225, 0, 0.41960785)
+
+[node name="mainplayer" type="CharacterBody2D" parent="." unique_id=1827658377]
+position = Vector2(-268, 387)
+script = ExtResource("3_82xsv")
+
+[node name="Camera2D" type="Camera2D" parent="mainplayer" unique_id=1520419372]
+zoom = Vector2(3, 3)
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="mainplayer" unique_id=1865239903]
+position = Vector2(-1, -9.000008)
+scale = Vector2(1.1311195, 1.1311195)
+sprite_frames = SubResource("SpriteFrames_come4")
+animation = &"AttackDown"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="mainplayer" unique_id=2000731134]
+position = Vector2(-1, 3)
+shape = SubResource("CapsuleShape2D_f6a44")
 
 [node name="Foreground" parent="." unique_id=473946262 instance=ExtResource("15_074og")]
 
@@ -675,17 +677,17 @@ shape = SubResource("CircleShape2D_htxhm")
 
 [node name="PromptLabel" type="Label" parent="OutsideDoor/CollisionShape2D" unique_id=838512896]
 offset_left = -17.0
-offset_top = -15.0
+offset_top = 1.0
 offset_right = 49.0
-offset_bottom = 8.0
+offset_bottom = 24.0
 scale = Vector2(0.5, 0.5)
 text = "[E] Enter"
 
 [node name="InsideSpawnMarker" type="Marker2D" parent="OutsideDoor/CollisionShape2D/PromptLabel" unique_id=1683657800]
-position = Vector2(-2234, -1548)
+position = Vector2(-4882, 304)
 
 [node name="InsideDoor" type="Area2D" parent="." unique_id=1414512390 node_paths=PackedStringArray("target_marker")]
-position = Vector2(-1632, -475)
+position = Vector2(-2990, 435)
 script = ExtResource("30_kq58d")
 target_marker = NodePath("CollisionShape2D/PromptLabel/OutsideSpawnMarker")
 
@@ -694,18 +696,16 @@ position = Vector2(-17, -200)
 shape = SubResource("CircleShape2D_jq2sk")
 
 [node name="PromptLabel" type="Label" parent="InsideDoor/CollisionShape2D" unique_id=406882851]
-offset_left = -20.0
-offset_top = 14.0
-offset_right = 46.0
-offset_bottom = 37.0
+offset_left = -16.0
+offset_top = 3.0
+offset_right = 50.0
+offset_bottom = 26.0
 scale = Vector2(0.5, 0.5)
 text = "[E] Exit"
 
 [node name="OutsideSpawnMarker" type="Marker2D" parent="InsideDoor/CollisionShape2D/PromptLabel" unique_id=1654383068]
-position = Vector2(2304, 1722)
+position = Vector2(4948, -222)
 
-[connection signal="body_entered" from="ElderNPC" to="ElderNPC" method="_on_body_entered"]
-[connection signal="body_exited" from="ElderNPC" to="ElderNPC" method="_on_body_exited"]
 [connection signal="body_entered" from="ElderNPC/InteractionArea" to="ElderNPC" method="_on_interaction_area_body_entered"]
 [connection signal="body_exited" from="ElderNPC/InteractionArea" to="ElderNPC" method="_on_interaction_area_body_exited"]
 [connection signal="body_entered" from="DeliveryPoint" to="DeliveryPoint" method="_on_body_entered"]
