@@ -288,14 +288,25 @@ func is_open() -> bool:
 
 func _input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE and not event.is_echo():
+		# Priority 1: close combat menu
 		if _is_combat_menu_open():
 			_close_combat_menu()
 			get_viewport().set_input_as_handled()
 			return
+		# Priority 2: if normal panel open, close confirm view first, then main panel
 		if _is_panel_open():
+			if is_instance_valid(confirm_view) and confirm_view.visible:
+				_show_main_view()
+				get_viewport().set_input_as_handled()
+				return
+			if is_instance_valid(load_view) and load_view.visible:
+				_show_main_view()
+				get_viewport().set_input_as_handled()
+				return
 			close_menu()
 			get_viewport().set_input_as_handled()
 			return
+		# Priority 3: in combat — open combat menu
 		if QuestManager.is_in_combat:
 			_open_combat_menu()
 			get_viewport().set_input_as_handled()

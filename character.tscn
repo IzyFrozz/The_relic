@@ -774,6 +774,7 @@ animations = [{
 [node name="Character" type="Node2D" unique_id=220561368]
 
 [node name="Map" parent="." unique_id=1786850984 instance=ExtResource("1_88tkl")]
+visible = false
 modulate = Color(0.78235406, 0.78235406, 0.78235406, 0.1254902)
 
 [node name="mob1" type="CharacterBody2D" parent="." unique_id=8730518 node_paths=PackedStringArray("battle_player_marker", "battle_enemy_marker", "graveyard_marker")]
