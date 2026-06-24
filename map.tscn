@@ -141820,6 +141820,7 @@ texture = ExtResource("61_f65ro")
 20:11/0 = 0
 21:11/0 = 0
 23:11/0 = 0
+23:11/0/physics_layer_0/polygon_0/points = PackedVector2Array(-4.856186, -8, 4.856186, -8, 5.75548, 8, -5.036044, 8)
 0:12/0 = 0
 1:12/0 = 0
 2:12/0 = 0
@@ -141837,6 +141838,7 @@ texture = ExtResource("61_f65ro")
 20:12/0 = 0
 21:12/0 = 0
 23:12/0 = 0
+23:12/0/physics_layer_0/polygon_0/points = PackedVector2Array(-5.75548, -8, 5.5756207, -8, 6.115196, -4.13675, -5.3957615, -4.4964676)
 1:13/0 = 0
 2:13/0 = 0
 3:13/0 = 0
@@ -143830,6 +143832,7 @@ texture = ExtResource("16_epbps")
 13:26/0 = 0
 
 [sub_resource type="TileSet" id="TileSet_pwevm"]
+physics_layer_0/collision_layer = 1
 sources/33 = SubResource("TileSetAtlasSource_kgwk8")
 sources/34 = SubResource("TileSetAtlasSource_evxkg")
 sources/35 = SubResource("TileSetAtlasSource_vuyvv")
@@ -152076,6 +152079,7 @@ tile_map_data = PackedByteArray("AAA+/w8AJgAhAA0AAAA+/xAAJgAhAA4AAAA//w8AJgAiAA0
 tile_set = SubResource("TileSet_edewk")
 
 [node name="Interior4" type="TileMapLayer" parent="CabinsInterior" unique_id=2011470694]
+tile_map_data = PackedByteArray("AAA8/xEAJwAXAAkAAAA8/xIAJwAXAAoAAAA8/xMAJwAXAAsAAAA8/xQAJwAXAAwAAABB/xEAJwAXAAkAAABB/xIAJwAXAAoAAABB/xMAJwAXAAsAAABB/xQAJwAXAAwAAABG/xEAJwAXAAkAAABG/xIAJwAXAAoAAABG/xMAJwAXAAsAAABG/xQAJwAXAAwAAABL/xEAJwAXAAkAAABL/xIAJwAXAAoAAABL/xMAJwAXAAsAAABL/xQAJwAXAAwAAAA8/xAAJwAXAAgAAABB/xAAJwAXAAgAAABG/xAAJwAXAAgAAABL/xAAJwAXAAgAAAA=")
 tile_set = SubResource("TileSet_pwevm")
 
 [node name="Interior5" type="TileMapLayer" parent="CabinsInterior" unique_id=1911458248]

@@ -383,7 +383,7 @@ animations = [{
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_f6a44"]
 radius = 6.0
-height = 16.0
+height = 18.0
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_seu75"]
 radius = 15.0
@@ -623,7 +623,7 @@ sprite_frames = SubResource("SpriteFrames_come4")
 animation = &"AttackDown"
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="mainplayer" unique_id=2000731134]
-position = Vector2(-1, 3)
+position = Vector2(-1, 4)
 shape = SubResource("CapsuleShape2D_f6a44")
 
 [node name="Foreground" parent="." unique_id=473946262 instance=ExtResource("15_074og")]
