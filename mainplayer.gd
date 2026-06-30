@@ -70,27 +70,33 @@ func _physics_process(delta: float) -> void:
 		_play_walk_animation(input_dir)
 	else:
 		velocity = velocity.move_toward(Vector2.ZERO, friction * delta)
+		sprite.speed_scale = 1.0
 		sprite.stop()
 		sprite.animation = "default"
 
 	move_and_slide()
 
+# ── Facing ────────────────────────────────────────────────────────────────────
+
 func face_up() -> void:
 	last_input_dir = Vector2.UP
 	sprite.flip_h = false
+	sprite.speed_scale = 1.0
 	sprite.stop()
 	sprite.animation = "WalkUp"
 	sprite.frame = 0
 
-func _face_up_idle() -> void:
-	# Snap to upward idle without animation call — used after lunge returns
-	sprite.flip_h = false
-	sprite.stop()
-	sprite.animation = "WalkUp"
-	sprite.frame = 0
-	last_input_dir = Vector2.UP
+# Combat idle: freeze on frame 2 of WalkSide. AnimatedSprite2D has no pause()
+# method in Godot 4 — freezing is done by setting speed_scale to 0 instead.
+func face_right() -> void:
+	last_input_dir = Vector2.RIGHT
+	sprite.flip_h  = false      # WalkSide natural dir = right
+	sprite.play("WalkSide")
+	sprite.frame   = 2          # best idle combat frame
+	sprite.speed_scale = 0.0    # freeze without resetting frame
 
 func _play_walk_animation(dir: Vector2) -> void:
+	sprite.speed_scale = 1.0   # un-freeze in case we were in combat idle
 	if abs(dir.x) >= abs(dir.y):
 		sprite.flip_h = dir.x < 0
 		sprite.play("WalkSide")
@@ -101,72 +107,67 @@ func _play_walk_animation(dir: Vector2) -> void:
 		sprite.flip_h = false
 		sprite.play("WalkDown")
 
-# ── Player attack lunge ────────────────────────────────────────────────────────
-# is_disarmed: skip attack anim, just shake in place
+# ── Player attack lunge ───────────────────────────────────────────────────────
 func do_attack_lunge(enemy_pos: Vector2, enemy_node: Node2D = null, is_disarmed: bool = false) -> void:
-	var start_pos = global_position
-	var lunge_target = start_pos.lerp(enemy_pos, 0.45)
-	var enemy_start_pos = enemy_node.global_position if is_instance_valid(enemy_node) else Vector2.ZERO
+	var start_pos       = global_position
+	var lunge_target    = start_pos.lerp(enemy_pos, 0.45)
+	var enemy_start_pos = enemy_node.global_position if is_instance_valid(enemy_node) else enemy_pos
 
 	if is_disarmed:
-		# Disarmed — just shake in place, no lunge, no attack anim
 		await _shake_node(self, start_pos, 0.32)
-		_face_up_idle()
+		face_right()
 		return
 
-	# Play attack animation
+	# The player's SpriteFrames DOES have a proper "AttackSide" animation —
+	# use it directly instead of faking the effect with WalkSide + a tween.
 	sprite.flip_h = false
-	sprite.play("AttackUp")
+	sprite.speed_scale = 1.0
+	sprite.play("AttackSide")
 
-	# Lunge toward enemy
 	var tw = create_tween().set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 	tw.tween_property(self, "global_position", lunge_target, 0.18)
 	await tw.finished
 
-	# Shake both player and enemy on impact
-	var shake_time := 0.32
 	var elapsed := 0.0
-	while elapsed < shake_time:
+	while elapsed < 0.32:
 		global_position = lunge_target + Vector2(randf_range(-5, 5), randf_range(-4, 4))
 		if is_instance_valid(enemy_node):
 			enemy_node.global_position = enemy_start_pos + Vector2(randf_range(-4, 4), randf_range(-3, 3))
 		await get_tree().create_timer(0.04).timeout
 		elapsed += 0.04
 
-	# Snap back
 	global_position = lunge_target
 	if is_instance_valid(enemy_node):
 		enemy_node.global_position = enemy_start_pos
 
-	await get_tree().create_timer(0.2).timeout
+	await get_tree().create_timer(0.20).timeout
 
-	# Return to start
 	var tw2 = create_tween().set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
 	tw2.tween_property(self, "global_position", start_pos, 0.15)
 	await tw2.finished
 
-	_face_up_idle()
+	# Return to frozen combat idle pose
+	face_right()
 
-# ── Enemy lunge (called by CombatUI for enemy attack turn) ────────────────────
-# enemy_node lunges toward player_pos, shakes both, returns
-# is_disarmed: skip lunge, just shake enemy in place
+# ── Enemy lunge ───────────────────────────────────────────────────────────────
 func do_enemy_lunge(enemy_node: Node2D, player_pos: Vector2, is_disarmed: bool = false) -> void:
 	if not is_instance_valid(enemy_node): return
-	var enemy_start_pos = enemy_node.global_position
+	var enemy_start_pos  = enemy_node.global_position
 	var player_start_pos = global_position
 
 	if is_disarmed:
-		# Disarmed — shake enemy in place only
 		await _shake_node(enemy_node, enemy_start_pos, 0.32)
 		return
 
-	# Enemy runs toward player
 	var lunge_target = enemy_start_pos.lerp(player_pos, 0.45)
+	var espr = enemy_node.get_node_or_null("AnimatedSprite2D") as AnimatedSprite2D
+	if is_instance_valid(espr):
+		espr.flip_h = true
+
 	var tw = create_tween().set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 	tw.tween_property(enemy_node, "global_position", lunge_target, 0.20)
 	await tw.finished
 
-	# Shake enemy and player on impact
 	var elapsed := 0.0
 	while elapsed < 0.32:
 		enemy_node.global_position = lunge_target + Vector2(randf_range(-5, 5), randf_range(-4, 4))
@@ -179,12 +180,16 @@ func do_enemy_lunge(enemy_node: Node2D, player_pos: Vector2, is_disarmed: bool =
 
 	await get_tree().create_timer(0.15).timeout
 
-	# Return enemy to start
 	var tw2 = create_tween().set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
 	tw2.tween_property(enemy_node, "global_position", enemy_start_pos, 0.15)
 	await tw2.finished
 
-# ── Utility shake ─────────────────────────────────────────────────────────────
+	if is_instance_valid(espr):
+		espr.flip_h = true
+
+	face_right()
+
+# ── Utility ───────────────────────────────────────────────────────────────────
 func _shake_node(node: Node2D, origin: Vector2, duration: float) -> void:
 	var elapsed := 0.0
 	while elapsed < duration:

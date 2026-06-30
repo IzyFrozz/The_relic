@@ -778,10 +778,10 @@ visible = false
 modulate = Color(0.78235406, 0.78235406, 0.78235406, 0.1254902)
 
 [node name="BattlePlayerMarker" type="Marker2D" parent="." unique_id=59159906]
-position = Vector2(-2905, -314)
+position = Vector2(-2971, -309)
 
 [node name="BattleEnemyMarker" type="Marker2D" parent="." unique_id=1168484741]
-position = Vector2(-2905, -376)
+position = Vector2(-2841, -310)
 
 [node name="GraveyardMarker" type="Marker2D" parent="." unique_id=1909701348]
 position = Vector2(-1632, -1010)

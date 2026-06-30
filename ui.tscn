@@ -119,96 +119,132 @@ text = "Exit Game!"
 [node name="CombatUI" type="CanvasLayer" parent="." unique_id=313349406]
 script = ExtResource("2_nltto")
 
-[node name="RightTopGroup" type="VBoxContainer" parent="CombatUI" unique_id=1594275861]
-offset_right = 358.0
-offset_bottom = 300.0
-size_flags_horizontal = 3
+[node name="TopLeftCard" type="Panel" parent="CombatUI" unique_id=-2094967295]
+offset_left = 12.0
+offset_top = 12.0
+offset_right = 460.0
+offset_bottom = 168.0
 
-[node name="HistoryScroll" type="ScrollContainer" parent="CombatUI/RightTopGroup" unique_id=9332017]
-layout_mode = 2
-size_flags_vertical = 3
-
-[node name="HistoryLabel" type="RichTextLabel" parent="CombatUI/RightTopGroup/HistoryScroll" unique_id=991351191]
-layout_mode = 2
-scroll_following = true
-
-[node name="TopHUD" type="HBoxContainer" parent="CombatUI" unique_id=1609322381]
-anchors_preset = 10
-anchor_right = 1.0
-offset_bottom = 300.0
-grow_horizontal = 2
-theme_override_constants/separation = 80
-
-[node name="LeftTopGroup" type="VBoxContainer" parent="CombatUI/TopHUD" unique_id=1698759797]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_stretch_ratio = 2.0
-
-[node name="TurnTitleLabel" type="Label" parent="CombatUI/TopHUD/LeftTopGroup" unique_id=1467964531]
-layout_mode = 2
-
-[node name="DropCountdownLabel" type="Label" parent="CombatUI/TopHUD/LeftTopGroup" unique_id=1997162130]
-layout_mode = 2
-
-[node name="CombatPanel" type="Panel" parent="CombatUI" unique_id=296805917]
-anchors_preset = 12
-anchor_top = 1.0
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_top = -276.0
-offset_bottom = 4.0
-grow_horizontal = 2
-grow_vertical = 0
-
-[node name="MainLayout" type="VBoxContainer" parent="CombatUI/CombatPanel" unique_id=1043278422]
+[node name="PlayerCardVBox" type="VBoxContainer" parent="CombatUI/TopLeftCard" unique_id=-2094967294]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+offset_left = 12.0
+offset_top = 10.0
+offset_right = -12.0
+offset_bottom = -10.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/separation = 15
+theme_override_constants/separation = 6
 
-[node name="CombatantsSplit" type="HBoxContainer" parent="CombatUI/CombatPanel/MainLayout" unique_id=1549937371]
+[node name="PlayerHPLabel" type="Label" parent="CombatUI/TopLeftCard/PlayerCardVBox" unique_id=-2094967293]
 layout_mode = 2
+text = "YOU"
 
-[node name="PlayerSection" type="VBoxContainer" parent="CombatUI/CombatPanel/MainLayout/CombatantsSplit" unique_id=1921330279]
+[node name="PlayerBuffsLabel" type="Label" parent="CombatUI/TopLeftCard/PlayerCardVBox" unique_id=-2094967292]
+layout_mode = 2
+text = "Normal"
+autowrap_mode = 3
+
+[node name="TopRightCard" type="Panel" parent="CombatUI" unique_id=-2094967291]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -460.0
+offset_top = 12.0
+offset_right = -12.0
+offset_bottom = 168.0
+grow_horizontal = 0
+
+[node name="EnemyCardVBox" type="VBoxContainer" parent="CombatUI/TopRightCard" unique_id=-2094967290]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 12.0
+offset_top = 10.0
+offset_right = -12.0
+offset_bottom = -10.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 6
+
+[node name="EnemyHPLabel" type="Label" parent="CombatUI/TopRightCard/EnemyCardVBox" unique_id=-2094967289]
+layout_mode = 2
+text = "ENEMY LV.1"
+
+[node name="EnemyBuffsLabel" type="Label" parent="CombatUI/TopRightCard/EnemyCardVBox" unique_id=-2094967288]
+layout_mode = 2
+text = "Normal"
+autowrap_mode = 3
+
+[node name="BottomPanel" type="Panel" parent="CombatUI" unique_id=-2094967287]
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -262.0
+grow_horizontal = 2
+grow_vertical = 0
+
+[node name="BottomHBox" type="HBoxContainer" parent="CombatUI/BottomPanel" unique_id=-2094967286]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 12.0
+offset_top = 12.0
+offset_right = -12.0
+offset_bottom = -12.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 14
+
+[node name="PlayerItemsSectionVBox" type="VBoxContainer" parent="CombatUI/BottomPanel/BottomHBox" unique_id=-2094967285]
 layout_mode = 2
 size_flags_horizontal = 3
-
-[node name="PlayerHPLabel" type="Label" parent="CombatUI/CombatPanel/MainLayout/CombatantsSplit/PlayerSection" unique_id=2093044007]
-layout_mode = 2
-
-[node name="PlayerBuffsLabel" type="Label" parent="CombatUI/CombatPanel/MainLayout/CombatantsSplit/PlayerSection" unique_id=28018381]
-layout_mode = 2
-
-[node name="PlayerItemsGrid" type="GridContainer" parent="CombatUI/CombatPanel/MainLayout/CombatantsSplit/PlayerSection" unique_id=525662687]
-layout_mode = 2
 size_flags_vertical = 3
-columns = 3
+alignment = 1
 
-[node name="EnemySection" type="VBoxContainer" parent="CombatUI/CombatPanel/MainLayout/CombatantsSplit" unique_id=49837739]
+[node name="PlayerItemsGrid" type="GridContainer" parent="CombatUI/BottomPanel/BottomHBox/PlayerItemsSectionVBox" unique_id=-2094967284]
 layout_mode = 2
 size_flags_horizontal = 3
-
-[node name="EnemyHPLabel" type="Label" parent="CombatUI/CombatPanel/MainLayout/CombatantsSplit/EnemySection" unique_id=695317421]
-layout_mode = 2
-
-[node name="EnemyBuffsLabel" type="Label" parent="CombatUI/CombatPanel/MainLayout/CombatantsSplit/EnemySection" unique_id=1695829262]
-layout_mode = 2
-
-[node name="EnemyItemsGrid" type="GridContainer" parent="CombatUI/CombatPanel/MainLayout/CombatantsSplit/EnemySection" unique_id=864570497]
-layout_mode = 2
 size_flags_vertical = 3
-columns = 3
+columns = 2
 
-[node name="fight_button" type="Button" parent="CombatUI/CombatPanel" unique_id=741457388]
-layout_mode = 0
-offset_top = 200.0
-offset_right = 1152.0
-offset_bottom = 280.0
+[node name="BottomCenterVBox" type="VBoxContainer" parent="CombatUI/BottomPanel/BottomHBox" unique_id=-2094967283]
+custom_minimum_size = Vector2(420, 0)
+layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 3
+theme_override_constants/separation = 10
+alignment = 2
+
+[node name="DropCountdownLabel" type="Label" parent="CombatUI/BottomPanel/BottomHBox/BottomCenterVBox" unique_id=-2094967282]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Drop in 1 round (+1 items)"
+horizontal_alignment = 1
+
+[node name="fight_button" type="Button" parent="CombatUI/BottomPanel/BottomHBox/BottomCenterVBox" unique_id=741457388]
+custom_minimum_size = Vector2(420, 86)
+layout_mode = 2
+size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 22
-text = "⚔️ EXECUTE FIGHT! ⚔️"
+text = "EXECUTE FIGHT!"
+
+[node name="EnemyItemsSectionVBox" type="VBoxContainer" parent="CombatUI/BottomPanel/BottomHBox" unique_id=-2094967281]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+alignment = 1
+
+[node name="EnemyItemsGrid" type="GridContainer" parent="CombatUI/BottomPanel/BottomHBox/EnemyItemsSectionVBox" unique_id=-2094967280]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+columns = 2
 
 [node name="CanvasLayer" type="CanvasLayer" parent="." unique_id=1556923697]
 visible = false

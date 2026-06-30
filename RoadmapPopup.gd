@@ -7,6 +7,14 @@ const COL_BG     := Color(0.09, 0.10, 0.15, 0.97)
 const COL_BORDER := Color(0.30, 0.35, 0.55, 1.0)
 const COL_GOLD   := Color(1.00, 0.85, 0.30, 1.0)
 
+const SLOT_UNLOCKS := {
+	2: 3,
+	4: 4,
+	6: 5,
+	8: 6,
+}
+const STARTING_SLOTS := 2
+
 func _ready() -> void:
 	visible = false
 	rich_text    = find_child("RichTextLabel", true, false) as RichTextLabel
@@ -42,11 +50,8 @@ func _ready() -> void:
 		close_button.pressed.connect(func(): visible = false)
 
 func _process(_delta: float) -> void:
-	# Safety net: if a Win/Lose screen pops up while this popup happens to be
-	# open, force it closed so it can never sit on top of an end screen.
 	if visible and _is_end_screen_active():
 		visible = false
-
 
 func _is_end_screen_active() -> bool:
 	for n in ["LoseUI", "WinUI"]:
@@ -55,47 +60,60 @@ func _is_end_screen_active() -> bool:
 			return true
 	return false
 
-
 func _input(event: InputEvent) -> void:
 	if visible and event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
 		visible = false
 		get_viewport().set_input_as_handled()
 
+func _slot_unlock_at(lvl: int) -> int:
+	return SLOT_UNLOCKS.get(lvl, 0)
+
 func refresh_display() -> void:
 	if not is_instance_valid(rich_text): return
 
-	var out = "[b][color=#FFD84D]📜  ITEM UNLOCK ROADMAP[/color][/b]\n\n"
+	var out = "[b][color=#FFD84D]📜  PROGRESSION ROADMAP[/color][/b]\n\n"
 
-	# Level 1 starters
-	out += "[b]LEVEL 1[/b]  [color=#aaaaaa](Starting Gear)[/color]\n"
+	out += "[b]LEVEL 1[/b]\n"
 	out += "  🧪  Potion  —  Restore 20 HP\n"
-	out += "  🛡️  Shield  —  Block next hit\n\n"
+	out += "  🛡️  Shield  —  Block next hit\n"
+	out += "  🎒  Loadout: [b]%d slots[/b]\n\n" % STARTING_SLOTS
 
 	var sorted = QuestManager.item_unlocks.keys()
 	sorted.sort()
+
 	for lvl in sorted:
-		var item = QuestManager.item_unlocks[lvl]
+		var item        = QuestManager.item_unlocks[lvl]
 		var is_unlocked = QuestManager.unlocked_items.has(item)
-		var is_equipped  = QuestManager.equipped_items.has(item)
+		var is_equipped = QuestManager.equipped_items.has(item)
+		var slot_gain   = _slot_unlock_at(lvl)
+
+		# Always pull display data from ITEM_META so renamed/reworked items
+		# (e.g. battle_horn -> Lifesteal Vial) show correctly everywhere,
+		# instead of deriving a label from the raw item id string.
+		var meta  = QuestManager.ITEM_META.get(item, {"emoji": "❓", "label": item.capitalize(), "desc": ""})
+		var emoji = meta.get("emoji", "❓")
+		var label = meta.get("label", item.capitalize())
+		var desc  = meta.get("desc", "")
 
 		if not is_unlocked:
-			# Locked — show nothing about the item
-			out += "[b]LEVEL %d[/b]  [color=#444444]🔒 ???[/color]\n" % lvl
-			out += "  [color=#333333]Reach level %d to unlock.[/color]\n\n" % lvl
+			out += "[b]LEVEL %d[/b]  [color=#555555]🔒  Locked[/color]\n" % lvl
+			if slot_gain > 0:
+				out += "  [color=#555555]🎒  Loadout expands to %d slots[/color]\n" % slot_gain
+			out += "  [color=#444444]Reach level %d to reveal.[/color]\n\n" % lvl
 			continue
 
-		var status_tag = ""
-		if is_equipped:
-			status_tag = "  [color=#44FF88]✓ Equipped[/color]"
-		else:
-			status_tag = "  [color=#FFAA44]✓ Unlocked[/color]"
+		var badge := ""
+		if is_equipped:  badge = "  [color=#44FF88]✓ Equipped[/color]"
+		else:            badge = "  [color=#FFAA44]✓ Unlocked[/color]"
 
-		var meta = QuestManager.ITEM_META.get(item, {"emoji": "❓", "desc": ""})
-		var emoji = meta["emoji"]
-		var desc  = meta["desc"]
+		out += "[b]LEVEL %d[/b]%s\n" % [lvl, badge]
+		out += "  %s  %s  —  %s\n" % [emoji, label, desc]
 
-		out += "[b]LEVEL %d[/b]%s\n" % [lvl, status_tag]
-		out += "  %s  %s  —  %s\n\n" % [emoji, item.capitalize(), desc]
+		if slot_gain > 0:
+			var prev = slot_gain - 1
+			out += "  🎒  Loadout Slot Unlocked!  [b](%d → %d items)[/b]\n" % [prev, slot_gain]
+
+		out += "\n"
 
 	rich_text.bbcode_enabled = true
 	rich_text.text = out

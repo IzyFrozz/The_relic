@@ -29,12 +29,13 @@ const COL_BG := Color(0.06, 0.07, 0.11, 0.97)
 const COL_BORDER := Color(0.35, 0.40, 0.55)
 const MASTER_BUS := 0
 
-# ── In-combat mini overlay ──
 var combat_panel: Panel = null
 var flee_button: Button = null
 var combat_resume_button: Button = null
 
+var _prev_in_combat: bool = false
 
+# ── Ready ─────────────────────────────────────────────────────────────────────
 func _ready() -> void:
 	if is_instance_valid(panel):
 		panel.visible = false
@@ -95,7 +96,36 @@ func _ready() -> void:
 		menu_button.focus_mode = Control.FOCUS_NONE
 		menu_button.pressed.connect(_on_menu_button_pressed)
 
+func _process(_delta: float) -> void:
+	var in_combat = QuestManager.is_in_combat
+	if in_combat != _prev_in_combat:
+		_prev_in_combat = in_combat
+		_reposition_menu_button(in_combat)
 
+func _reposition_menu_button(in_combat: bool) -> void:
+	if not is_instance_valid(menu_button): return
+	if in_combat:
+		menu_button.anchor_left   = 0.5
+		menu_button.anchor_right  = 0.5
+		menu_button.anchor_top    = 0.0
+		menu_button.anchor_bottom = 0.0
+		menu_button.offset_left   = -60.0
+		menu_button.offset_right  =  60.0
+		menu_button.offset_top    =  10.0
+		menu_button.offset_bottom =  46.0
+		menu_button.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	else:
+		menu_button.anchor_left   = 1.0
+		menu_button.anchor_right  = 1.0
+		menu_button.anchor_top    = 0.0
+		menu_button.anchor_bottom = 0.0
+		menu_button.offset_left   = -110.0
+		menu_button.offset_right  =  -10.0
+		menu_button.offset_top    =   10.0
+		menu_button.offset_bottom =   46.0
+		menu_button.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+
+# ── Combat overlay ────────────────────────────────────────────────────────────
 func _build_combat_overlay() -> void:
 	combat_panel = Panel.new()
 	combat_panel.name = "CombatMenuPanel"
@@ -104,19 +134,17 @@ func _build_combat_overlay() -> void:
 
 	var s = StyleBoxFlat.new()
 	s.bg_color = Color(0.06, 0.07, 0.13, 0.97)
-	s.set_corner_radius_all(12)
-	s.set_border_width_all(2)
+	s.set_corner_radius_all(12); s.set_border_width_all(2)
 	s.border_color = Color(0.55, 0.25, 0.25)
 	combat_panel.add_theme_stylebox_override("panel", s)
 	combat_panel.custom_minimum_size = Vector2(420, 280)
 	add_child(combat_panel)
-	# Defer centering one frame so layout is ready
 	get_tree().process_frame.connect(_center_combat_panel, CONNECT_ONE_SHOT)
 
 	var vbox = VBoxContainer.new()
 	vbox.add_theme_constant_override("separation", 14)
 	vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	vbox.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	vbox.size_flags_vertical   = Control.SIZE_EXPAND_FILL
 	combat_panel.add_child(vbox)
 	vbox.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT, Control.PRESET_MODE_KEEP_SIZE, 22)
 
@@ -126,7 +154,6 @@ func _build_combat_overlay() -> void:
 	title.add_theme_font_size_override("font_size", 20)
 	title.add_theme_color_override("font_color", Color(1.0, 0.85, 0.3))
 	vbox.add_child(title)
-
 	vbox.add_child(HSeparator.new())
 
 	var hint = Label.new()
@@ -161,8 +188,7 @@ func _build_combat_overlay() -> void:
 	fs_btn.pressed.connect(func():
 		var is_fs = DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN
 		DisplayServer.window_set_mode(
-			DisplayServer.WINDOW_MODE_WINDOWED if is_fs else DisplayServer.WINDOW_MODE_FULLSCREEN
-		)
+			DisplayServer.WINDOW_MODE_WINDOWED if is_fs else DisplayServer.WINDOW_MODE_FULLSCREEN)
 	)
 	audio_hbox.add_child(fs_btn)
 
@@ -186,34 +212,29 @@ func _build_combat_overlay() -> void:
 	flee_button.add_theme_font_size_override("font_size", 14)
 	var flee_style = StyleBoxFlat.new()
 	flee_style.bg_color = Color(0.28, 0.10, 0.10)
-	flee_style.set_corner_radius_all(6)
-	flee_style.set_border_width_all(1)
+	flee_style.set_corner_radius_all(6); flee_style.set_border_width_all(1)
 	flee_style.border_color = Color(0.70, 0.25, 0.25)
 	flee_button.add_theme_stylebox_override("normal", flee_style)
 	flee_button.pressed.connect(_on_flee_pressed)
 	btn_hbox.add_child(flee_button)
 
-
 func _center_combat_panel() -> void:
 	if not is_instance_valid(combat_panel): return
 	var vp = get_viewport()
 	if not is_instance_valid(vp): return
-	var vp_size = vp.get_visible_rect().size
+	var vp_size    = vp.get_visible_rect().size
 	var panel_size = combat_panel.get_combined_minimum_size()
 	combat_panel.set_position((vp_size - panel_size) * 0.5)
 	combat_panel.set_size(panel_size)
 
 func _open_combat_menu() -> void:
 	if is_instance_valid(combat_panel):
-		# Re-center every time in case window was resized
 		_center_combat_panel()
 		combat_panel.visible = true
-
 
 func _close_combat_menu() -> void:
 	if is_instance_valid(combat_panel):
 		combat_panel.visible = false
-
 
 func _on_flee_pressed() -> void:
 	_close_combat_menu()
@@ -229,16 +250,14 @@ func _on_flee_pressed() -> void:
 	else:
 		get_tree().reload_current_scene()
 
-
+# ── Styling ───────────────────────────────────────────────────────────────────
 func _style_panel() -> void:
 	if not is_instance_valid(panel): return
 	var s = StyleBoxFlat.new()
 	s.bg_color = COL_BG
-	s.set_corner_radius_all(12)
-	s.set_border_width_all(2)
+	s.set_corner_radius_all(12); s.set_border_width_all(2)
 	s.border_color = COL_BORDER
 	panel.add_theme_stylebox_override("panel", s)
-
 
 func _style_buttons() -> void:
 	var all_buttons = [resume_button, load_button, exit_button,
@@ -249,24 +268,21 @@ func _style_buttons() -> void:
 		btn.focus_mode = Control.FOCUS_NONE
 		btn.custom_minimum_size = Vector2(0, 42)
 
-
 func _style_menu_button() -> void:
 	if not is_instance_valid(menu_button): return
 	var s = StyleBoxFlat.new()
 	s.bg_color = Color(0.10, 0.11, 0.16, 0.9)
-	s.set_corner_radius_all(8)
-	s.set_border_width_all(1)
+	s.set_corner_radius_all(8); s.set_border_width_all(1)
 	s.border_color = COL_BORDER
 	menu_button.add_theme_stylebox_override("normal", s)
 
-
+# ── Helpers ───────────────────────────────────────────────────────────────────
 func _load_slot_button(slot: int) -> Button:
 	match slot:
 		1: return load_slot1_button
 		2: return load_slot2_button
 		3: return load_slot3_button
 	return null
-
 
 func _other_menu_is_open() -> bool:
 	for n in ["EquipmentMenu", "RoadmapPopup", "SavePopup"]:
@@ -275,6 +291,16 @@ func _other_menu_is_open() -> bool:
 			return true
 	return false
 
+# Checks whether CombatUI currently has its blocking confirm/magnet popup open.
+# Used to prevent the pause/combat menu from stacking on top of that popup
+# when both scripts react to the same Escape keypress in the same frame.
+func _combat_ui_popup_is_open() -> bool:
+	var combat_ui = get_tree().root.find_child("CombatUI", true, false)
+	if is_instance_valid(combat_ui) and "popup_overlay" in combat_ui:
+		var overlay = combat_ui.popup_overlay
+		if is_instance_valid(overlay) and overlay.visible:
+			return true
+	return false
 
 func _is_panel_open() -> bool:
 	return is_instance_valid(panel) and panel.visible
@@ -285,78 +311,63 @@ func _is_combat_menu_open() -> bool:
 func is_open() -> bool:
 	return _is_panel_open() or _is_combat_menu_open()
 
-
+# ── Input ─────────────────────────────────────────────────────────────────────
 func _input(event: InputEvent) -> void:
+	# If another script (e.g. CombatUI's confirm/magnet popup) already consumed
+	# this exact input event this frame, do not also act on it — this is what
+	# was causing the pause/combat menu to stack visually on top of the
+	# "USE ITEM" confirmation popup when Escape was pressed.
+	if get_viewport().is_input_handled():
+		return
+
 	if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE and not event.is_echo():
-		# Priority 1: close combat menu
+		if _combat_ui_popup_is_open():
+			# Let CombatUI's own Escape handler deal with its popup instead.
+			return
 		if _is_combat_menu_open():
 			_close_combat_menu()
 			get_viewport().set_input_as_handled()
 			return
-		# Priority 2: if normal panel open, close confirm view first, then main panel
 		if _is_panel_open():
 			if is_instance_valid(confirm_view) and confirm_view.visible:
-				_show_main_view()
-				get_viewport().set_input_as_handled()
-				return
+				_show_main_view(); get_viewport().set_input_as_handled(); return
 			if is_instance_valid(load_view) and load_view.visible:
-				_show_main_view()
-				get_viewport().set_input_as_handled()
-				return
-			close_menu()
-			get_viewport().set_input_as_handled()
-			return
-		# Priority 3: in combat — open combat menu
+				_show_main_view(); get_viewport().set_input_as_handled(); return
+			close_menu(); get_viewport().set_input_as_handled(); return
 		if QuestManager.is_in_combat:
-			_open_combat_menu()
-			get_viewport().set_input_as_handled()
-			return
-		if _other_menu_is_open():
-			return
-		open_menu()
-		get_viewport().set_input_as_handled()
-
+			_open_combat_menu(); get_viewport().set_input_as_handled(); return
+		if _other_menu_is_open(): return
+		open_menu(); get_viewport().set_input_as_handled()
 
 func _on_menu_button_pressed() -> void:
-	if _is_combat_menu_open():
-		_close_combat_menu()
-		return
-	if _is_panel_open():
-		close_menu()
-		return
-	if QuestManager.is_in_combat:
-		_open_combat_menu()
-		return
-	if not _other_menu_is_open():
-		open_menu()
-
+	if _combat_ui_popup_is_open(): return
+	if _is_combat_menu_open(): _close_combat_menu(); return
+	if _is_panel_open():       close_menu();          return
+	if QuestManager.is_in_combat: _open_combat_menu(); return
+	if not _other_menu_is_open(): open_menu()
 
 func open_menu() -> void:
 	if is_instance_valid(panel): panel.visible = true
 	Engine.time_scale = 0.0
 	_show_main_view()
 
-
 func close_menu() -> void:
 	if is_instance_valid(panel): panel.visible = false
 	Engine.time_scale = 1.0
 
-
 func _show_main_view() -> void:
-	if is_instance_valid(main_view): main_view.visible = true
-	if is_instance_valid(load_view): load_view.visible = false
+	if is_instance_valid(main_view):    main_view.visible    = true
+	if is_instance_valid(load_view):    load_view.visible    = false
 	if is_instance_valid(confirm_view): confirm_view.visible = false
 
-
 func _show_load_view() -> void:
-	if is_instance_valid(main_view): main_view.visible = false
-	if is_instance_valid(load_view): load_view.visible = true
+	if is_instance_valid(main_view):    main_view.visible    = false
+	if is_instance_valid(load_view):    load_view.visible    = true
 	if is_instance_valid(confirm_view): confirm_view.visible = false
 	_refresh_load_slot_labels()
 	if is_instance_valid(load_status_label):
 		load_status_label.text = "Choose a slot to load:"
 		load_status_label.add_theme_color_override("font_color", Color(0.85, 0.85, 0.92))
-
 
 func _refresh_load_slot_labels() -> void:
 	for i in range(3):
@@ -371,7 +382,6 @@ func _refresh_load_slot_labels() -> void:
 			btn.text = "Slot %d — Empty" % slot
 			btn.disabled = true
 
-
 func _on_load_slot_pressed(slot: int) -> void:
 	if QuestManager.load_game(slot):
 		close_menu()
@@ -380,14 +390,11 @@ func _on_load_slot_pressed(slot: int) -> void:
 		load_status_label.text = "⚠️  Slot %d is empty!" % slot
 		load_status_label.add_theme_color_override("font_color", Color(0.9, 0.5, 0.4))
 
-
 func _on_volume_changed(value: float) -> void:
 	AudioServer.set_bus_volume_db(MASTER_BUS, linear_to_db(value))
 
-
 func _on_mute_toggled(pressed: bool) -> void:
 	AudioServer.set_bus_mute(MASTER_BUS, pressed)
-
 
 func _on_fullscreen_toggled(pressed: bool) -> void:
 	if pressed:
@@ -395,11 +402,10 @@ func _on_fullscreen_toggled(pressed: bool) -> void:
 	else:
 		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
 
-
 func _on_exit_pressed() -> void:
 	if QuestManager.has_unsaved_progress:
-		if is_instance_valid(main_view): main_view.visible = false
-		if is_instance_valid(load_view): load_view.visible = false
+		if is_instance_valid(main_view):    main_view.visible    = false
+		if is_instance_valid(load_view):    load_view.visible    = false
 		if is_instance_valid(confirm_view): confirm_view.visible = true
 		if is_instance_valid(confirm_label):
 			confirm_label.text = "Unsaved progress will be lost!\nVisit the Elder NPC to save before exiting."
