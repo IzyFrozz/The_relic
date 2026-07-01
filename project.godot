@@ -18,6 +18,9 @@ config/icon="res://icon.svg"
 [autoload]
 
 QuestManager="*uid://i7j5bk50c5gj"
+KeybindManager="*res://KeybindManager.gd"
+DialogueManager="*res://DialogueManager.gd"
+PromptHUD="*res://PromptHUD.gd"
 
 [display]
 

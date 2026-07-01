@@ -11,11 +11,14 @@
 [ext_resource type="Texture2D" uid="uid://c1wrl0sg74qpk" path="res://Asset/Pixel Crawler - Free Pack/Entities/Npc's/Wizzard/Idle/Idle-Sheet.png" id="12_2cqfq"]
 [ext_resource type="PackedScene" uid="uid://dn2a5bka3ukty" path="res://foreground.tscn" id="15_074og"]
 [ext_resource type="Texture2D" uid="uid://b1ykf6xq4wg1u" path="res://Asset/Pixel Crawler - Free Pack/Environment/Structures/Stations/Anvil/Anvil only.png" id="18_074og"]
+[ext_resource type="Texture2D" uid="uid://cftq4fn6uxmlk" path="res://Asset/Meta data assets files/Visuals/CHARACTERS/npc/hood/poor-kid1.png" id="18_cegan"]
+[ext_resource type="Texture2D" uid="uid://btvrbjrrs57re" path="res://Asset/Meta data assets files/Visuals/CHARACTERS/npc/hood/poor-kid2.png" id="19_82xsv"]
 [ext_resource type="Texture2D" uid="uid://d2b5gfvc577yl" path="res://Asset/sprites/characters/player.png" id="22_4lmeg"]
-[ext_resource type="Script" uid="uid://dn2n6hy830nqg" path="res://frog_npc.gd" id="23_1u8w0"]
+[ext_resource type="Script" uid="uid://dn2n6hy830nqg" path="res://ElderNPC.gd" id="23_1u8w0"]
 [ext_resource type="Texture2D" uid="uid://bo1vgt0hrwf02" path="res://Asset/Meta data assets files/Visuals/OBJECTS/sprites/chest-closed.png" id="27_xuqvo"]
 [ext_resource type="Script" uid="uid://iujueewjbunt" path="res://delivery_point.gd" id="28_kq58d"]
 [ext_resource type="Script" uid="uid://c0yq6db10h3yi" path="res://Doorway.gd" id="30_kq58d"]
+[ext_resource type="Script" uid="uid://tmmvyr5pr6j4" path="res://QuestGiverNPC.gd" id="31_qnpc"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_cegan"]
 size = Vector2(48, 29)
@@ -386,13 +389,42 @@ radius = 6.0
 height = 18.0
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_seu75"]
-radius = 15.0
+radius = 11.045361
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_htxhm"]
 radius = 49.09175
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_jq2sk"]
 radius = 23.021729
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_getpj"]
+atlas = ExtResource("18_cegan")
+region = Rect2(0, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_ryguw"]
+atlas = ExtResource("19_82xsv")
+region = Rect2(0, 0, 16, 16)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_d13ii"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_getpj")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_ryguw")
+}],
+"loop": true,
+"name": &"default",
+"speed": 5.0
+}]
+
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_1u8w0"]
+radius = 6.0
+height = 16.0
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_cegan"]
+radius = 18.027756
 
 [node name="main" type="Node2D" unique_id=821692882]
 script = ExtResource("1_074og")
@@ -549,6 +581,26 @@ combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
 
 [node name="mob15" parent="Character" index="22" unique_id=2100000046 node_paths=PackedStringArray("combat_ui", "lose_ui")]
+combat_ui = NodePath("../../ui/CombatUI")
+lose_ui = NodePath("../../ui/LoseUI")
+
+[node name="mob16" parent="Character" index="23" unique_id=2100000051 node_paths=PackedStringArray("combat_ui", "lose_ui")]
+combat_ui = NodePath("../../ui/CombatUI")
+lose_ui = NodePath("../../ui/LoseUI")
+
+[node name="mob17" parent="Character" index="24" unique_id=2100000056 node_paths=PackedStringArray("combat_ui", "lose_ui")]
+combat_ui = NodePath("../../ui/CombatUI")
+lose_ui = NodePath("../../ui/LoseUI")
+
+[node name="mob18" parent="Character" index="25" unique_id=2100000061 node_paths=PackedStringArray("combat_ui", "lose_ui")]
+combat_ui = NodePath("../../ui/CombatUI")
+lose_ui = NodePath("../../ui/LoseUI")
+
+[node name="mob19" parent="Character" index="26" unique_id=2100000066 node_paths=PackedStringArray("combat_ui", "lose_ui")]
+combat_ui = NodePath("../../ui/CombatUI")
+lose_ui = NodePath("../../ui/LoseUI")
+
+[node name="mob20" parent="Character" index="27" unique_id=2100000071 node_paths=PackedStringArray("combat_ui", "lose_ui")]
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
 
@@ -742,6 +794,51 @@ text = "[E] Exit"
 [node name="OutsideSpawnMarker" type="Marker2D" parent="InsideDoor/CollisionShape2D/PromptLabel" unique_id=1654383068]
 position = Vector2(4948, -222)
 
+[node name="QuestNPC" type="CharacterBody2D" parent="." unique_id=1660870351]
+position = Vector2(-180, 387)
+script = ExtResource("31_qnpc")
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="QuestNPC" unique_id=1683887389]
+modulate = Color(1, 0.85, 0.4, 1)
+scale = Vector2(1.25, 1.25)
+sprite_frames = SubResource("SpriteFrames_d13ii")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="QuestNPC" unique_id=771000003]
+position = Vector2(0, 2)
+shape = SubResource("CapsuleShape2D_1u8w0")
+
+[node name="PromptLabel" type="Label" parent="QuestNPC" unique_id=771000004]
+offset_left = -25.0
+offset_top = 18.0
+offset_right = 80.0
+offset_bottom = 41.0
+scale = Vector2(0.5, 0.5)
+text = "[E] Talk"
+horizontal_alignment = 1
+
+[node name="Area2D" type="Area2D" parent="QuestNPC" unique_id=1475298371]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="QuestNPC/Area2D" unique_id=413247751]
+shape = SubResource("CircleShape2D_cegan")
+debug_color = Color(0, 0.65121174, 0.05665806, 0.41960785)
+
+[node name="QuestUI" type="CanvasLayer" parent="QuestNPC" unique_id=771000005]
+visible = false
+
+[node name="MenuPanel" type="Panel" parent="QuestNPC/QuestUI" unique_id=771000006]
+offset_left = 40.0
+offset_top = 40.0
+offset_right = 400.0
+offset_bottom = 140.0
+
+[node name="StatusLabel" type="Label" parent="QuestNPC/QuestUI/MenuPanel" unique_id=771000007]
+layout_mode = 0
+offset_left = 14.0
+offset_top = 12.0
+offset_right = 346.0
+offset_bottom = 88.0
+text = "..."
+
 [connection signal="body_entered" from="ElderNPC/InteractionArea" to="ElderNPC" method="_on_interaction_area_body_entered"]
 [connection signal="body_exited" from="ElderNPC/InteractionArea" to="ElderNPC" method="_on_interaction_area_body_exited"]
 [connection signal="body_entered" from="DeliveryPoint" to="DeliveryPoint" method="_on_body_entered"]
@@ -750,6 +847,8 @@ position = Vector2(4948, -222)
 [connection signal="body_exited" from="OutsideDoor" to="OutsideDoor" method="_on_body_exited"]
 [connection signal="body_entered" from="InsideDoor" to="InsideDoor" method="_on_body_entered"]
 [connection signal="body_exited" from="InsideDoor" to="InsideDoor" method="_on_body_exited"]
+[connection signal="body_entered" from="QuestNPC/Area2D" to="QuestNPC" method="_on_area_2d_body_entered"]
+[connection signal="body_exited" from="QuestNPC/Area2D" to="QuestNPC" method="_on_area_2d_body_exited"]
 
 [editable path="ui"]
 [editable path="Character"]

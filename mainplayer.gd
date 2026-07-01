@@ -32,8 +32,8 @@ var sprint_exhausted: bool = false
 # Styled to match the rest of the UI: dark rounded panel + border, like the
 # HUD stat panels / pop-ups, with a themed fill (green → gold when low → red
 # when exhausted).
-const STAMINA_BAR_SIZE := Vector2(38, 6)
-@export var stamina_bar_offset: Vector2 = Vector2(0, 22)
+const STAMINA_BAR_SIZE := Vector2(26, 4)
+@export var stamina_bar_offset: Vector2 = Vector2(0, 20)
 const BAR_BG_COL       := Color(0.08, 0.09, 0.13, 0.92)   # COL_PANEL family
 const BAR_BORDER_COL   := Color(0.30, 0.35, 0.55, 1.0)    # COL_BORDER family
 const BAR_FILL_FULL    := Color(0.32, 0.85, 0.45, 1.0)    # COL_GREEN family
@@ -62,6 +62,11 @@ func _process(_delta: float) -> void:
 
 func _physics_process(delta: float) -> void:
 	if QuestManager.is_in_combat:
+		velocity = Vector2.ZERO
+		move_and_slide()
+		return
+
+	if DialogueManager.is_active:
 		velocity = Vector2.ZERO
 		move_and_slide()
 		return

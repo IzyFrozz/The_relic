@@ -300,8 +300,11 @@ func _initialize_mob_stats_by_character_tier() -> void:
 		if enemy_level >= 4: enemy_item_pool.append("whip")
 		if enemy_level >= 5: enemy_item_pool.append("magnet")
 	else:
+		# Levels above 15 have no dedicated item tier yet — they reuse level 15's
+		# loadout as a placeholder. HP still scales up via enemy_max_health above.
+		var pool_key = mini(enemy_level, 15)
 		enemy_item_pool = TIER_POOLS_LV6_PLUS.get(
-			enemy_level, ["potion", "shield", "grindstone", "needle"]).duplicate()
+			pool_key, ["potion", "shield", "grindstone", "needle"]).duplicate()
 	enemy_health = enemy_max_health
 	current_items_per_deal = 1
 

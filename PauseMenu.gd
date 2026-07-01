@@ -27,6 +27,12 @@ extends CanvasLayer
 
 var pause_timer_label: Label = null
 
+# ── Keybinds (built in code) ──
+var keybind_button: Button = null
+var keybind_view: VBoxContainer = null
+var keybind_rows: Dictionary = {}
+var _rebinding_action: String = ""
+
 const COL_BG := Color(0.06, 0.07, 0.11, 0.97)
 const COL_BORDER := Color(0.35, 0.40, 0.55)
 const MASTER_BUS := 0
@@ -115,6 +121,8 @@ func _ready() -> void:
 		menu_button.text = "☰  Menu"
 		menu_button.focus_mode = Control.FOCUS_NONE
 		menu_button.pressed.connect(_on_menu_button_pressed)
+
+	_build_keybinds_ui()
 
 func _capture_overworld_menu_position() -> void:
 	if not is_instance_valid(menu_button) or _captured_overworld_position:
@@ -374,6 +382,16 @@ func is_open() -> bool:
 
 # ── Input ─────────────────────────────────────────────────────────────────────
 func _input(event: InputEvent) -> void:
+	# While rebinding, the very next key press becomes the new binding (Esc cancels).
+	if _rebinding_action != "" and event is InputEventKey and event.pressed and not event.is_echo():
+		get_viewport().set_input_as_handled()
+		if event.keycode != KEY_ESCAPE:
+			var kc = event.physical_keycode if event.physical_keycode != 0 else event.keycode
+			KeybindManager.rebind(_rebinding_action, kc)
+		_rebinding_action = ""
+		_refresh_keybind_labels()
+		return
+
 	if get_viewport().is_input_handled():
 		return
 
@@ -385,6 +403,8 @@ func _input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 			return
 		if _is_panel_open():
+			if is_instance_valid(keybind_view) and keybind_view.visible:
+				_show_main_view(); get_viewport().set_input_as_handled(); return
 			if is_instance_valid(confirm_view) and confirm_view.visible:
 				_show_main_view(); get_viewport().set_input_as_handled(); return
 			if is_instance_valid(load_view) and load_view.visible:
@@ -415,11 +435,13 @@ func _show_main_view() -> void:
 	if is_instance_valid(main_view):    main_view.visible    = true
 	if is_instance_valid(load_view):    load_view.visible    = false
 	if is_instance_valid(confirm_view): confirm_view.visible = false
+	if is_instance_valid(keybind_view): keybind_view.visible = false
 
 func _show_load_view() -> void:
 	if is_instance_valid(main_view):    main_view.visible    = false
 	if is_instance_valid(load_view):    load_view.visible    = true
 	if is_instance_valid(confirm_view): confirm_view.visible = false
+	if is_instance_valid(keybind_view): keybind_view.visible = false
 	_refresh_load_slot_labels()
 	if is_instance_valid(load_status_label):
 		load_status_label.text = "Choose a slot to load:"
@@ -474,3 +496,95 @@ func _go_to_main_menu() -> void:
 	Engine.time_scale = 1.0
 	QuestManager.is_in_combat = false
 	get_tree().change_scene_to_file("res://main_menu.tscn")
+
+# ── Keybinds view ───────────────────────────────────────────────────────────────
+func _build_keybinds_ui() -> void:
+	# Insert the "Keybinds" button between Load Game and Main Menu.
+	if is_instance_valid(load_button) and is_instance_valid(load_button.get_parent()):
+		keybind_button = Button.new()
+		keybind_button.text = "⌨  Keybinds"
+		keybind_button.focus_mode = Control.FOCUS_NONE
+		keybind_button.custom_minimum_size = Vector2(0, 42)
+		keybind_button.pressed.connect(_show_keybind_view)
+		var p = load_button.get_parent()
+		p.add_child(keybind_button)
+		p.move_child(keybind_button, load_button.get_index() + 1)
+
+	var host: Node = main_view.get_parent() if is_instance_valid(main_view) else panel
+	if not is_instance_valid(host):
+		return
+	keybind_view = VBoxContainer.new()
+	keybind_view.name = "KeybindView"
+	keybind_view.visible = false
+	keybind_view.add_theme_constant_override("separation", 8)
+	keybind_view.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT, Control.PRESET_MODE_MINSIZE, 12)
+	host.add_child(keybind_view)
+
+	var title = Label.new()
+	title.text = "⌨  Rebind Keys"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 18)
+	title.add_theme_color_override("font_color", Color(1.0, 0.85, 0.3))
+	keybind_view.add_child(title)
+
+	var hint = Label.new()
+	hint.text = "Click a key, then press the new key. Saved automatically."
+	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	hint.add_theme_font_size_override("font_size", 12)
+	hint.add_theme_color_override("font_color", Color(0.72, 0.74, 0.84))
+	keybind_view.add_child(hint)
+
+	keybind_rows = {}
+	for action in KeybindManager.action_ids():
+		var row = HBoxContainer.new()
+		row.add_theme_constant_override("separation", 10)
+		var name_lbl = Label.new()
+		name_lbl.text = KeybindManager.label_for(action)
+		name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		name_lbl.add_theme_color_override("font_color", Color(0.9, 0.9, 1.0))
+		row.add_child(name_lbl)
+		var key_btn = Button.new()
+		key_btn.focus_mode = Control.FOCUS_NONE
+		key_btn.custom_minimum_size = Vector2(170, 34)
+		key_btn.text = KeybindManager.key_display(action)
+		var a: String = action
+		var b: Button = key_btn
+		key_btn.pressed.connect(func(): _begin_rebind(a, b))
+		row.add_child(key_btn)
+		keybind_view.add_child(row)
+		keybind_rows[action] = key_btn
+
+	var reset_btn = Button.new()
+	reset_btn.text = "↺  Reset to Defaults"
+	reset_btn.focus_mode = Control.FOCUS_NONE
+	reset_btn.custom_minimum_size = Vector2(0, 40)
+	reset_btn.pressed.connect(func():
+		KeybindManager.reset_defaults()
+		_refresh_keybind_labels())
+	keybind_view.add_child(reset_btn)
+
+	var back_btn = Button.new()
+	back_btn.text = "↩  Back"
+	back_btn.focus_mode = Control.FOCUS_NONE
+	back_btn.custom_minimum_size = Vector2(0, 40)
+	back_btn.pressed.connect(_show_main_view)
+	keybind_view.add_child(back_btn)
+
+func _show_keybind_view() -> void:
+	if is_instance_valid(main_view):    main_view.visible    = false
+	if is_instance_valid(load_view):    load_view.visible    = false
+	if is_instance_valid(confirm_view): confirm_view.visible = false
+	if is_instance_valid(keybind_view): keybind_view.visible = true
+	_rebinding_action = ""
+	_refresh_keybind_labels()
+
+func _begin_rebind(action: String, btn: Button) -> void:
+	_refresh_keybind_labels()   # clear any other "Press a key…" prompt
+	_rebinding_action = action
+	if is_instance_valid(btn):
+		btn.text = "Press a key…"
+
+func _refresh_keybind_labels() -> void:
+	for a in keybind_rows.keys():
+		if is_instance_valid(keybind_rows[a]):
+			keybind_rows[a].text = KeybindManager.key_display(a)
