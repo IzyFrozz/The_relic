@@ -30,6 +30,7 @@ var player_reflect_active: bool = false;  var enemy_reflect_active: bool = false
 var player_dodge_active:   bool = false;  var enemy_dodge_active:   bool = false
 var player_items_locked:   bool = false;  var enemy_items_locked:   bool = false
 var player_lifesteal_active: bool = false; var enemy_lifesteal_active: bool = false
+var player_god_pierce:       bool = false; var enemy_god_pierce:       bool = false
 
 var player_damage_bonus: int = 0;  var enemy_damage_bonus: int = 0
 
@@ -233,6 +234,7 @@ func _hide_and_disable_at_graveyard() -> void:
 	visible = false
 	collision_layer = 0
 	collision_mask  = 0
+	_reset_enemy_visual_state()
 	var dz = find_child("deadzone")
 	if is_instance_valid(dz) and dz is Area2D:
 		dz.monitoring  = false
@@ -252,7 +254,22 @@ func _respawn_enemy() -> void:
 		dz.monitoring  = true
 		dz.monitorable = true
 	self.global_position = enemy_overworld_position
+	_reset_enemy_visual_state()
 	_initialize_mob_stats_by_character_tier()
+
+# Restores the AnimatedSprite2D to its normal idle state. Without this, a
+# respawned mob keeps showing whatever frame the "die" animation froze on
+# (a different, larger spritesheet region than the idle frames), which is
+# what caused the squished/warped look on respawn — the node itself was
+# positioned correctly, the sprite was just stuck on the wrong texture.
+func _reset_enemy_visual_state() -> void:
+	var spr = get_node_or_null("AnimatedSprite2D") as AnimatedSprite2D
+	if is_instance_valid(spr):
+		spr.modulate = Color.WHITE
+		spr.speed_scale = 1.0
+		if spr.sprite_frames and spr.sprite_frames.has_animation("default"):
+			spr.play("default")
+		spr.frame = 0
 
 func _auto_wire_overworld_signals() -> void:
 	var dz = find_child("deadzone")
@@ -446,9 +463,10 @@ func use_player_item(item_type: String) -> void:
 			player_overcharged = true
 			player_damage_bonus += 20
 			player_piercing = true
-			await _fx_status("player", Color(1.0, 0.52, 0.10, 1.0), "🔥")
+			player_god_pierce = true
+			await _fx_status("player", Color(1.0, 0.45, 0.05, 1.0), "🔥")
 			if combat_ui: combat_ui.display_round_history(
-				"🔥 Overcharge — +20 damage + pierces armor (total bonus: +%d)" % player_damage_bonus, true)
+				"🔥 Overcharge — +20 damage, GUARANTEED hit (pierces shield/dodge/reflect entirely, bonus: +%d)" % player_damage_bonus, true)
 
 	_sync_ground_fx()
 	if combat_ui: combat_ui._refresh_ui_states()
@@ -465,7 +483,7 @@ func process_player_attack_phase() -> void:
 		if player_stun_extra_turns > 0:
 			player_stun_extra_turns -= 1; player_is_disarmed = true
 		player_damage_bonus = 0; player_sharpened = false; player_overcharged = false
-		player_lifesteal_active = false
+		player_lifesteal_active = false; player_god_pierce = false
 		await _fx_status("player", Color(1.0, 0.68, 0.10, 1.0), "❌")
 		if combat_ui:
 			combat_ui.display_round_history("💥 DISARMED — your attack was skipped!", true)
@@ -485,7 +503,23 @@ func process_player_attack_phase() -> void:
 
 	var actual_dmg_dealt := 0
 
-	if player_cursed:
+	if player_god_pierce:
+		# Overcharge: the hit is guaranteed to land no matter what the enemy has
+		# active — it ignores this attack being cursed, and it pierces straight
+		# through dodge, reflect, and shield. Shield itself is left standing
+		# (pierced, not broken), matching how needle behaves; dodge/reflect are
+		# consumed since they tried and failed to stop a guaranteed hit.
+		player_god_pierce = false
+		if player_piercing: player_piercing = false
+		player_cursed = false
+		enemy_dodge_active = false
+		enemy_reflect_active = false
+		enemy_health = clampi(enemy_health - dmg, 0, enemy_max_health)
+		actual_dmg_dealt = dmg
+		await _fx_status("enemy", Color(1.0, 0.45, 0.05, 1.0), "🔥")
+		await _fx_damage("enemy")
+		if combat_ui: combat_ui.display_round_history("🔥 OVERCHARGED HIT — %d damage, every defense pierced!" % dmg, true)
+	elif player_cursed:
 		player_cursed = false
 		player_lifesteal_active = false
 		enemy_health = clampi(enemy_health + 20, 0, enemy_max_health)
@@ -543,7 +577,7 @@ func _execute_enemy_turn_ai() -> void:
 		if enemy_stun_extra_turns > 0:
 			enemy_stun_extra_turns -= 1; enemy_is_disarmed = true
 		enemy_damage_bonus = 0; enemy_sharpened = false
-		enemy_overcharged  = false; enemy_lifesteal_active = false
+		enemy_overcharged  = false; enemy_lifesteal_active = false; enemy_god_pierce = false
 		await _fx_status("enemy", Color(1.0, 0.68, 0.10, 1.0), "❌")
 		if is_instance_valid(player_ref) and player_ref.has_method("do_enemy_lunge"):
 			await player_ref.do_enemy_lunge(self, player_ref.global_position, true)
@@ -619,7 +653,22 @@ func _execute_enemy_turn_ai() -> void:
 
 	var actual_dmg_to_player := 0
 
-	if enemy_cursed:
+	if enemy_god_pierce:
+		# Mirror of the player's Overcharge — guaranteed hit, ignores this attack
+		# being cursed, and pierces straight through dodge/reflect/shield.
+		enemy_god_pierce = false
+		if enemy_piercing: enemy_piercing = false
+		enemy_cursed = false
+		player_dodge_active = false
+		player_reflect_active = false
+		QuestManager.player_health = clampi(QuestManager.player_health - raw, 0, QuestManager.MAX_HEALTH)
+		actual_dmg_to_player = raw
+		if is_instance_valid(player_ref) and player_ref.has_method("do_enemy_lunge"):
+			await player_ref.do_enemy_lunge(self, player_ref.global_position, false)
+		await _fx_status("enemy", Color(1.0, 0.45, 0.05, 1.0), "🔥")
+		await _fx_damage("player")
+		if combat_ui: combat_ui.display_round_history("🔥 Enemy OVERCHARGED HIT — %d damage, every defense pierced!" % raw, false)
+	elif enemy_cursed:
 		enemy_cursed = false
 		enemy_lifesteal_active = false
 		QuestManager.player_health = clampi(QuestManager.player_health + 20, 0, QuestManager.MAX_HEALTH)
@@ -752,8 +801,9 @@ func _enemy_execute_item(item_type: String, tracking: Dictionary) -> void:
 			enemy_overcharged = true
 			enemy_damage_bonus += 20
 			enemy_piercing = true
-			await _fx_status("enemy", Color(1.0, 0.52, 0.10, 1.0), "🔥")
-			if combat_ui: combat_ui.display_round_history("🔥 Enemy Overcharge — +20 damage + pierces armor!", false)
+			enemy_god_pierce = true
+			await _fx_status("enemy", Color(1.0, 0.45, 0.05, 1.0), "🔥")
+			if combat_ui: combat_ui.display_round_history("🔥 Enemy Overcharge — +20 damage, GUARANTEED hit, pierces shield/dodge/reflect entirely!", false)
 		"chain_hook":
 			var valid = player_inventory.filter(func(i: String) -> bool:
 				return i != "chain_hook" and i != "magnet" and i in enemy_item_pool
@@ -858,6 +908,7 @@ func _reset_all_combat_modifiers() -> void:
 	player_dodge_active   = false;  enemy_dodge_active   = false
 	player_items_locked   = false;  enemy_items_locked   = false
 	player_lifesteal_active = false; enemy_lifesteal_active = false
+	player_god_pierce      = false; enemy_god_pierce      = false
 	player_damage_bonus   = 0;      enemy_damage_bonus   = 0
 	player_regen_rounds   = 0;      enemy_regen_rounds   = 0
 	player_poison_rounds  = 0;      enemy_poison_rounds  = 0
@@ -907,6 +958,7 @@ func _check_combat_end_conditions() -> bool:
 			4: xp = 90
 			_: xp = 90 + ((enemy_level - 4) * 30)
 
+		xp = roundi(xp * 1.30)   # +30% global XP gain across all mob levels
 		QuestManager.gain_xp(xp)
 		QuestManager.player_health = QuestManager.MAX_HEALTH
 
