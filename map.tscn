@@ -141423,9 +141423,13 @@ texture = ExtResource("21_1f61l")
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_s2gc4"]
 texture = ExtResource("60_ojpgx")
 0:0/0 = 0
+0:0/0/physics_layer_0/polygon_0/points = PackedVector2Array(-8, -8, 8, -8, 8, 8, -8, 8)
 1:0/0 = 0
+1:0/0/physics_layer_0/polygon_0/points = PackedVector2Array(-8, -8, 8, -8, 8, 8, -8, 8)
 2:0/0 = 0
+2:0/0/physics_layer_0/polygon_0/points = PackedVector2Array(-8, -8, 8, -8, 8, 8, -8, 8)
 3:0/0 = 0
+3:0/0/physics_layer_0/polygon_0/points = PackedVector2Array(-8, -8, 8, -8, 8, 8, -8, 8)
 4:0/0 = 0
 5:0/0 = 0
 6:0/0 = 0
@@ -141447,9 +141451,13 @@ texture = ExtResource("60_ojpgx")
 36:0/0 = 0
 37:0/0 = 0
 0:1/0 = 0
+0:1/0/physics_layer_0/polygon_0/points = PackedVector2Array(-5.75548, -8, 8, -8, 8, 1.2590122, -2.877739, 1.2590122)
 1:1/0 = 0
+1:1/0/physics_layer_0/polygon_0/points = PackedVector2Array(-8, -8, 8, -8, 8, 0.8992939, -8, 0.8992939)
 2:1/0 = 0
+2:1/0/physics_layer_0/polygon_0/points = PackedVector2Array(-8, -8, 8, -8, 8, 0.8992939, -8, 0.8992939)
 3:1/0 = 0
+3:1/0/physics_layer_0/polygon_0/points = PackedVector2Array(-8, -8, 5.935339, -8, 3.4173164, 0.8992939, -8, 0.8992939)
 4:1/0 = 0
 5:1/0 = 0
 6:1/0 = 0
@@ -152355,7 +152363,7 @@ tile_map_data = PackedByteArray("AAA+/w8AJgAhAA0AAAA+/xAAJgAhAA4AAAA//w8AJgAiAA0
 tile_set = SubResource("TileSet_edewk")
 
 [node name="Interior4" type="TileMapLayer" parent="CabinsInterior" unique_id=2011470694]
-tile_map_data = PackedByteArray("AAA8/xEAJwAXAAkAAAA8/xIAJwAXAAoAAAA8/xMAJwAXAAsAAAA8/xQAJwAXAAwAAABB/xEAJwAXAAkAAABB/xIAJwAXAAoAAABB/xMAJwAXAAsAAABB/xQAJwAXAAwAAABG/xEAJwAXAAkAAABG/xIAJwAXAAoAAABG/xMAJwAXAAsAAABG/xQAJwAXAAwAAABL/xEAJwAXAAkAAABL/xIAJwAXAAoAAABL/xMAJwAXAAsAAABL/xQAJwAXAAwAAAA8/xAAJwAXAAgAAABB/xAAJwAXAAgAAABG/xAAJwAXAAgAAABL/xAAJwAXAAgAAAA=")
+tile_map_data = PackedByteArray("AAA8/xEAJwAXAAkAAAA8/xIAJwAXAAoAAAA8/xMAJwAXAAsAAAA8/xQAJwAXAAwAAABB/xEAJwAXAAkAAABB/xIAJwAXAAoAAABB/xMAJwAXAAsAAABB/xQAJwAXAAwAAABG/xEAJwAXAAkAAABG/xIAJwAXAAoAAABG/xMAJwAXAAsAAABG/xQAJwAXAAwAAABL/xEAJwAXAAkAAABL/xIAJwAXAAoAAABL/xMAJwAXAAsAAABL/xQAJwAXAAwAAAA8/xAAJwAXAAgAAABB/xAAJwAXAAgAAABG/xAAJwAXAAgAAABL/xAAJwAXAAgAAABA/w8AJgADAAAAAABA/xAAJgADAAEAAAA9/w8AJgAAAAAAAAA9/xAAJgAAAAEAAAA+/w8AJgACAAAAAAA+/xAAJgACAAEAAAA//w8AJgACAAAAAAA//xAAJgACAAEAAAA=")
 tile_set = SubResource("TileSet_pwevm")
 
 [node name="Interior5" type="TileMapLayer" parent="CabinsInterior" unique_id=1911458248]
