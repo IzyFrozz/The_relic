@@ -958,6 +958,7 @@ func _check_combat_end_conditions() -> bool:
 			4: xp = 90
 			_: xp = 90 + ((enemy_level - 4) * 30)
 
+		xp = roundi(xp * 1.30)   # +30% global XP gain across all mob levels
 		QuestManager.gain_xp(xp)
 		QuestManager.player_health = QuestManager.MAX_HEALTH
 

@@ -2,7 +2,7 @@ extends CharacterBody2D
 
 signal life_changed(new_life)
 
-@export var max_speed: float = 100.0
+@export var max_speed: float = 85.0   # base overworld speed (sprint multiplies this)
 @export var acceleration: float = 600.0
 @export var friction: float = 900.0
 var life = 3
@@ -11,13 +11,37 @@ var is_knocked_back: bool = false
 @export var knockback_force: float = 300.0
 @export var knockback_duration: float = 0.25
 
-var is_dashing: bool = false
-var can_dash: bool = true
 var last_input_dir: Vector2 = Vector2.UP
 
-@export var dash_speed: float = 400.0
-@export var dash_duration: float = 0.2
-@export var dash_cooldown: float = 1.0
+# ── Sprint (overworld only) ─────────────────────────────────────────────────
+# Hold Sprint to move 30% faster with a 30% faster walk animation. A full
+# stamina bar drains in SPRINT_MAX seconds; once emptied the player is
+# "exhausted" and can't sprint again until the bar fully refills over
+# SPRINT_RECHARGE_TIME seconds. Sprint is gated to the overworld — the combat
+# guard at the top of _physics_process returns before any sprint logic runs.
+const SPRINT_SPEED_MULT := 1.30
+const SPRINT_ANIM_MULT := 1.30
+const SPRINT_MAX := 3.0             # seconds of sprint on a full bar
+const SPRINT_RECHARGE_TIME := 6.0   # seconds to refill from empty
+
+var stamina: float = SPRINT_MAX
+var is_sprinting: bool = false
+var sprint_exhausted: bool = false
+
+# Stamina bar drawn under the player (built in code, follows the player).
+# Styled to match the rest of the UI: dark rounded panel + border, like the
+# HUD stat panels / pop-ups, with a themed fill (green → gold when low → red
+# when exhausted).
+const STAMINA_BAR_SIZE := Vector2(38, 6)
+@export var stamina_bar_offset: Vector2 = Vector2(0, 22)
+const BAR_BG_COL       := Color(0.08, 0.09, 0.13, 0.92)   # COL_PANEL family
+const BAR_BORDER_COL   := Color(0.30, 0.35, 0.55, 1.0)    # COL_BORDER family
+const BAR_FILL_FULL    := Color(0.32, 0.85, 0.45, 1.0)    # COL_GREEN family
+const BAR_FILL_LOW     := Color(1.00, 0.80, 0.28, 1.0)    # COL_GOLD family
+const BAR_FILL_EMPTY   := Color(0.90, 0.34, 0.28, 1.0)    # exhausted red
+var _stamina_bar_bg: Panel = null
+var _stamina_bar_fill: Panel = null
+var _stamina_fill_style: StyleBoxFlat = null
 
 # Distance to stop short of the target when lunging — keeps the characters
 # standing next to each other instead of overlapping or stopping halfway.
@@ -29,6 +53,12 @@ const ATTACK_REACH := 28.0
 
 func _ready() -> void:
 	life_changed.emit(life)
+	_build_stamina_bar()
+
+func _process(_delta: float) -> void:
+	# Bar visibility/fill is updated here (not in _physics_process) so it still
+	# hides correctly while combat has the physics step returning early.
+	_update_stamina_bar()
 
 func _physics_process(delta: float) -> void:
 	if QuestManager.is_in_combat:
@@ -54,10 +84,6 @@ func _physics_process(delta: float) -> void:
 		move_and_slide()
 		return
 
-	if is_dashing:
-		move_and_slide()
-		return
-
 	if is_knocked_back:
 		velocity = velocity.move_toward(Vector2.ZERO, friction * delta)
 		move_and_slide()
@@ -67,12 +93,11 @@ func _physics_process(delta: float) -> void:
 	if input_dir != Vector2.ZERO:
 		last_input_dir = input_dir.normalized()
 
-	if Input.is_action_just_pressed("dash") and can_dash:
-		execute_dash()
-		return
+	_update_sprint(input_dir, delta)
 
 	if input_dir != Vector2.ZERO:
-		velocity = velocity.move_toward(input_dir * max_speed, acceleration * delta)
+		var target_speed = max_speed * (SPRINT_SPEED_MULT if is_sprinting else 1.0)
+		velocity = velocity.move_toward(input_dir * target_speed, acceleration * delta)
 		_play_walk_animation(input_dir)
 	else:
 		velocity = velocity.move_toward(Vector2.ZERO, friction * delta)
@@ -127,7 +152,8 @@ func face_right() -> void:
 	sprite.speed_scale = 0.0    # freeze without resetting frame
 
 func _play_walk_animation(dir: Vector2) -> void:
-	sprite.speed_scale = 1.0   # un-freeze in case we were idle/combat-frozen
+	# Un-freeze (in case we were idle/combat-frozen); sprint speeds the anim +30%.
+	sprite.speed_scale = SPRINT_ANIM_MULT if is_sprinting else 1.0
 	if abs(dir.x) >= abs(dir.y):
 		sprite.flip_h = dir.x < 0
 		sprite.play("WalkSide")
@@ -240,16 +266,60 @@ func _shake_node(node: Node2D, origin: Vector2, duration: float) -> void:
 		elapsed += 0.04
 	node.global_position = origin
 
-func execute_dash() -> void:
-	can_dash = false
-	is_dashing = true
-	velocity = last_input_dir * dash_speed
-	sprite.modulate.a = 0.5
-	await get_tree().create_timer(dash_duration).timeout
-	is_dashing = false
-	sprite.modulate.a = 1.0
-	await get_tree().create_timer(dash_cooldown).timeout
-	can_dash = true
+# ── Sprint helpers ─────────────────────────────────────────────────────────────
+func _update_sprint(input_dir: Vector2, delta: float) -> void:
+	var wants_sprint = Input.is_action_pressed("sprint") and input_dir != Vector2.ZERO and not sprint_exhausted and stamina > 0.0
+	if wants_sprint:
+		is_sprinting = true
+		stamina = maxf(0.0, stamina - delta)          # full bar drains in SPRINT_MAX secs
+		if stamina <= 0.0:
+			is_sprinting = false
+			sprint_exhausted = true                    # locked out until fully refilled
+	else:
+		is_sprinting = false
+		stamina = minf(SPRINT_MAX, stamina + (SPRINT_MAX / SPRINT_RECHARGE_TIME) * delta)
+		if sprint_exhausted and stamina >= SPRINT_MAX:
+			sprint_exhausted = false
+
+func _build_stamina_bar() -> void:
+	_stamina_bar_bg = Panel.new()
+	_stamina_bar_bg.size = STAMINA_BAR_SIZE
+	_stamina_bar_bg.position = stamina_bar_offset - Vector2(STAMINA_BAR_SIZE.x * 0.5, 0.0)
+	_stamina_bar_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_stamina_bar_bg.z_index = 50
+	_stamina_bar_bg.visible = false
+	var bg_style = StyleBoxFlat.new()
+	bg_style.bg_color = BAR_BG_COL
+	bg_style.set_corner_radius_all(3)
+	bg_style.set_border_width_all(1)
+	bg_style.border_color = BAR_BORDER_COL
+	_stamina_bar_bg.add_theme_stylebox_override("panel", bg_style)
+	add_child(_stamina_bar_bg)
+
+	# Fill is a child Panel (inset 1px) so it inherits position/visibility and
+	# gets its own rounded stylebox that we recolor as stamina changes.
+	_stamina_bar_fill = Panel.new()
+	_stamina_bar_fill.position = Vector2(1, 1)
+	_stamina_bar_fill.size = STAMINA_BAR_SIZE - Vector2(2, 2)
+	_stamina_bar_fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_stamina_fill_style = StyleBoxFlat.new()
+	_stamina_fill_style.bg_color = BAR_FILL_FULL
+	_stamina_fill_style.set_corner_radius_all(2)
+	_stamina_bar_fill.add_theme_stylebox_override("panel", _stamina_fill_style)
+	_stamina_bar_bg.add_child(_stamina_bar_fill)
+
+func _update_stamina_bar() -> void:
+	if not is_instance_valid(_stamina_bar_bg): return
+	# Only show in the overworld, and only when it matters (sprinting or refilling).
+	var show_bar = not QuestManager.is_in_combat and (is_sprinting or stamina < SPRINT_MAX)
+	_stamina_bar_bg.visible = show_bar
+	if not show_bar: return
+	var pct = clampf(stamina / SPRINT_MAX, 0.0, 1.0)
+	var inner_w = STAMINA_BAR_SIZE.x - 2.0
+	_stamina_bar_fill.size = Vector2(maxf(0.0, inner_w * pct), STAMINA_BAR_SIZE.y - 2.0)
+	if sprint_exhausted:   _stamina_fill_style.bg_color = BAR_FILL_EMPTY
+	elif pct < 0.34:       _stamina_fill_style.bg_color = BAR_FILL_LOW
+	else:                  _stamina_fill_style.bg_color = BAR_FILL_FULL
 
 func apply_velocity_knockback() -> void:
 	is_knocked_back = true
