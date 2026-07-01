@@ -152112,8 +152112,8 @@ sources/50 = SubResource("TileSetAtlasSource_d32wt")
 sources/51 = SubResource("TileSetAtlasSource_62et2")
 
 [node name="Map" type="Node2D" unique_id=1786850984]
-metadata/_edit_vertical_guides_ = [-2905.0]
-metadata/_edit_horizontal_guides_ = [-357.0, -296.0]
+metadata/_edit_vertical_guides_ = [-2904.0, -1630.0]
+metadata/_edit_horizontal_guides_ = [-357.0, -296.0, -1011.0]
 
 [node name="Main Level" type="TileMap" parent="." unique_id=1609469379]
 tile_set = SubResource("TileSet_13qfn")
