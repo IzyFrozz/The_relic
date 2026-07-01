@@ -9,9 +9,10 @@ func _ready() -> void:
 
 # ── Build full UI in code (resolution-independent) ───────────────────────────
 func _build() -> void:
-	# Full-screen semi-transparent black overlay
+	# Full-screen solid black overlay — fully opaque so nothing behind
+	# (the overworld's own background colour) bleeds through and tints it.
 	var bg = ColorRect.new()
-	bg.color = Color(0.0, 0.0, 0.0, 0.88)
+	bg.color = Color(0.0, 0.0, 0.0, 1.0)
 	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	bg.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(bg)

@@ -55,6 +55,13 @@ var _orig_collision_mask:  int = 1
 # =============================================================================
 #  FX SYSTEM
 # =============================================================================
+# NOTE: every fx function checks `is_in_combat` after each await. Combat can
+# end (and call _reset_sprite_modulates()) WHILE one of these coroutines is
+# still paused mid-await — e.g. a poison tick that hasn't finished its 0.38s
+# timer when the killing blow lands. Without this guard, the stale coroutine
+# resumes afterward and overwrites the freshly-reset white modulate with its
+# own (now-incorrect) "orig" colour, leaving the sprite tinted after the
+# fight ends. The guard makes every fx function a no-op once combat is over.
 
 func _get_sprite(target: String) -> AnimatedSprite2D:
 	if target == "player":
@@ -65,50 +72,61 @@ func _get_sprite(target: String) -> AnimatedSprite2D:
 	return null
 
 func _fx_heal(target: String) -> void:
+	if not is_in_combat: return
 	var s = _get_sprite(target)
 	if not is_instance_valid(s): return
 	var orig = s.modulate
 	for _i in 2:
 		s.modulate = Color(0.60, 1.45, 0.60, 1.0)
 		await get_tree().create_timer(0.15).timeout
+		if not is_in_combat: return
 		if is_instance_valid(s): s.modulate = orig
 		await get_tree().create_timer(0.10).timeout
+		if not is_in_combat: return
 	_float_icon(target, "✚", Color(0.35, 1.0, 0.45))
 	if is_instance_valid(s): s.modulate = orig
 
 func _fx_damage(target: String) -> void:
+	if not is_in_combat: return
 	var s = _get_sprite(target)
 	if not is_instance_valid(s): return
 	var orig = s.modulate
 	s.modulate = Color(1.75, 0.18, 0.18, 1.0)
 	await get_tree().create_timer(FX_TINT_DUR).timeout
+	if not is_in_combat: return
 	if is_instance_valid(s): s.modulate = orig
 
 func _fx_status(target: String, color: Color, icon: String = "") -> void:
+	if not is_in_combat: return
 	var s = _get_sprite(target)
 	if not is_instance_valid(s): return
 	var orig = s.modulate
 	s.modulate = color
 	if icon != "": _float_icon(target, icon, color)
 	await get_tree().create_timer(FX_TINT_DUR).timeout
+	if not is_in_combat: return
 	if is_instance_valid(s): s.modulate = orig
 
 func _fx_poison_tick(target: String) -> void:
+	if not is_in_combat: return
 	var s = _get_sprite(target)
 	if not is_instance_valid(s): return
 	var orig = s.modulate
 	s.modulate = Color(0.28, 0.82, 0.28, 1.0)
 	_float_icon(target, "☠", Color(0.3, 0.85, 0.3))
 	await get_tree().create_timer(0.38).timeout
+	if not is_in_combat: return
 	if is_instance_valid(s): s.modulate = orig
 
 func _fx_steal(from_target: String) -> void:
+	if not is_in_combat: return
 	var s = _get_sprite(from_target)
 	if not is_instance_valid(s): return
 	var orig = s.modulate
 	s.modulate = Color(0.95, 0.38, 1.12, 1.0)
 	_float_icon(from_target, "🧲", Color(0.9, 0.4, 1.0))
 	await get_tree().create_timer(FX_TINT_DUR).timeout
+	if not is_in_combat: return
 	if is_instance_valid(s): s.modulate = orig
 
 func _float_icon(target: String, icon: String, color: Color) -> void:
@@ -171,6 +189,10 @@ func _sync_ground_fx() -> void:
 	elif enemy_reflect_active:    _set_ground_fx("enemy", Color(0.90, 0.80, 0.10, 0.60))
 	else:                         _set_ground_fx("enemy", Color.TRANSPARENT)
 
+func _clear_ground_fx_visibility() -> void:
+	if is_instance_valid(_player_ground_fx): _player_ground_fx.visible = false
+	if is_instance_valid(_enemy_ground_fx):  _enemy_ground_fx.visible  = false
+
 # =============================================================================
 #  INIT
 # =============================================================================
@@ -196,9 +218,6 @@ func _process(_delta: float) -> void:
 			QuestManager.defeated_enemies.erase(enemy_id)
 			_respawn_enemy()
 
-# Called once at scene load. If this enemy was already defeated in a save file,
-# either restore it (cooldown expired while away) or hide it at the graveyard
-# and resume counting down from the saved timestamp.
 func _check_existing_defeat_state() -> void:
 	if not QuestManager.defeated_enemies.has(enemy_id):
 		return
@@ -287,6 +306,7 @@ func start_combat() -> void:
 	_initialize_mob_stats_by_character_tier()
 	player_inventory.clear(); enemy_inventory.clear()
 	_reset_all_combat_modifiers()
+	_clear_ground_fx_visibility()
 	drop_round_index = 0; cycles_until_drop = 1
 	QuestManager.player_health = QuestManager.MAX_HEALTH
 	_apply_supply_drop_rewards()
@@ -296,8 +316,6 @@ func start_combat() -> void:
 
 	# ── Fighter positioning ───────────────────────────────────────────────────
 	# Trust the scene's own authored markers exactly as placed in the editor.
-	# No forced gap, no camera repositioning — the markers and the
-	# CombatArenaCamera are already correctly set up by hand in character.tscn.
 	if is_instance_valid(battle_player_marker):
 		player_ref.global_position = battle_player_marker.global_position
 	if is_instance_valid(battle_enemy_marker):
@@ -863,18 +881,22 @@ func _switch_to_overworld_camera() -> void:
 
 func _check_combat_end_conditions() -> bool:
 	if QuestManager.player_health <= 0:
+		# Set is_in_combat false FIRST so any in-flight fx coroutines bail out
+		# on their next resume instead of re-applying a stale tint.
+		is_in_combat = false; QuestManager.is_in_combat = false
 		_reset_sprite_modulates()
+		_clear_ground_fx_visibility()
 		if is_instance_valid(combat_ui): combat_ui.visible = false
 		self.global_position = enemy_overworld_position
-		is_in_combat = false; QuestManager.is_in_combat = false
 		_switch_to_overworld_camera()
 		if is_instance_valid(lose_ui) and lose_ui.has_method("show_death_screen"):
 			lose_ui.show_death_screen()
 		return true
 
 	if enemy_health <= 0:
-		_reset_sprite_modulates()
 		is_in_combat = false; QuestManager.is_in_combat = false
+		_reset_sprite_modulates()
+		_clear_ground_fx_visibility()
 		if is_instance_valid(combat_ui): combat_ui.visible = false
 
 		var xp := 25
@@ -899,12 +921,11 @@ func _check_combat_end_conditions() -> bool:
 			player_ref.global_position = QuestManager.player_overworld_position
 		_switch_to_overworld_camera()
 
+		# Hard reset once more after the death-animation wait, defensive
+		# against anything that may have queued during that 1s window.
+		_reset_sprite_modulates()
+
 		# ── Graveyard respawn instead of permanent removal ─────────────────────
-		# Teleport to the graveyard marker, disable collisions/visibility, and
-		# record the defeat timestamp on QuestManager's persistent play timer.
-		# It silently respawns at its original overworld position once
-		# RESPAWN_COOLDOWN_SECONDS (5 min) has elapsed on that same clock —
-		# so kill counts and respawn state both survive save/reload.
 		QuestManager.defeated_enemies[enemy_id] = QuestManager.play_time_seconds
 		_is_defeated_waiting_respawn = true
 		_hide_and_disable_at_graveyard()

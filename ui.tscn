@@ -120,10 +120,8 @@ text = "Exit Game!"
 script = ExtResource("2_nltto")
 
 [node name="TopLeftCard" type="Panel" parent="CombatUI" unique_id=-2094967295]
-offset_left = 12.0
-offset_top = 12.0
-offset_right = 460.0
-offset_bottom = 168.0
+offset_right = 448.0
+offset_bottom = 156.0
 
 [node name="PlayerCardVBox" type="VBoxContainer" parent="CombatUI/TopLeftCard" unique_id=-2094967294]
 layout_mode = 1
@@ -447,9 +445,9 @@ anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
 offset_left = -110.0
-offset_top = 10.0
+offset_top = 50.0
 offset_right = -10.0
-offset_bottom = 46.0
+offset_bottom = 86.0
 grow_horizontal = 0
 text = "☰  Menu"
 
