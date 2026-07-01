@@ -25,6 +25,8 @@ extends CanvasLayer
 
 @onready var menu_button: Button = find_child("MenuButton") as Button
 
+var pause_timer_label: Label = null
+
 const COL_BG := Color(0.06, 0.07, 0.11, 0.97)
 const COL_BORDER := Color(0.35, 0.40, 0.55)
 const MASTER_BUS := 0
@@ -35,6 +37,22 @@ var combat_resume_button: Button = null
 
 var _prev_in_combat: bool = false
 
+# Captures whatever position/anchors the editor authored for the menu button
+# in the overworld (including any per-scene instance override, e.g. the
+# offset_top=41/offset_bottom=77 override set in main.tscn). Combat mode
+# temporarily moves the button to top-centre; leaving combat restores
+# exactly these captured values instead of a hardcoded guess.
+var _overworld_anchor_left: float = 1.0
+var _overworld_anchor_right: float = 1.0
+var _overworld_anchor_top: float = 0.0
+var _overworld_anchor_bottom: float = 0.0
+var _overworld_offset_left: float = -110.0
+var _overworld_offset_right: float = -10.0
+var _overworld_offset_top: float = 10.0
+var _overworld_offset_bottom: float = 46.0
+var _overworld_grow_horizontal: int = Control.GROW_DIRECTION_BEGIN
+var _captured_overworld_position: bool = false
+
 # ── Ready ─────────────────────────────────────────────────────────────────────
 func _ready() -> void:
 	if is_instance_valid(panel):
@@ -43,6 +61,8 @@ func _ready() -> void:
 	_style_buttons()
 	_style_menu_button()
 	_build_combat_overlay()
+	_build_pause_timer_label()
+	_capture_overworld_menu_position()
 
 	if is_instance_valid(volume_slider):
 		volume_slider.min_value = 0.0
@@ -96,11 +116,53 @@ func _ready() -> void:
 		menu_button.focus_mode = Control.FOCUS_NONE
 		menu_button.pressed.connect(_on_menu_button_pressed)
 
+func _capture_overworld_menu_position() -> void:
+	if not is_instance_valid(menu_button) or _captured_overworld_position:
+		return
+	_overworld_anchor_left      = menu_button.anchor_left
+	_overworld_anchor_right     = menu_button.anchor_right
+	_overworld_anchor_top       = menu_button.anchor_top
+	_overworld_anchor_bottom    = menu_button.anchor_bottom
+	_overworld_offset_left      = menu_button.offset_left
+	_overworld_offset_right     = menu_button.offset_right
+	_overworld_offset_top       = menu_button.offset_top
+	_overworld_offset_bottom    = menu_button.offset_bottom
+	_overworld_grow_horizontal  = menu_button.grow_horizontal
+	_captured_overworld_position = true
+
 func _process(_delta: float) -> void:
 	var in_combat = QuestManager.is_in_combat
 	if in_combat != _prev_in_combat:
 		_prev_in_combat = in_combat
 		_reposition_menu_button(in_combat)
+	if is_instance_valid(pause_timer_label) and pause_timer_label.visible:
+		pause_timer_label.text = "⏱  " + _fmt_time(QuestManager.play_time_seconds)
+
+# ── Play timer (moved here from OverworldHUD, top-right of the pause popup) ──
+func _build_pause_timer_label() -> void:
+	if not is_instance_valid(panel): return
+	pause_timer_label = Label.new()
+	pause_timer_label.name = "PauseTimerLabel"
+	pause_timer_label.add_theme_font_size_override("font_size", 14)
+	pause_timer_label.add_theme_color_override("font_color", Color(0.80, 0.80, 0.95, 1.0))
+	pause_timer_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	pause_timer_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	pause_timer_label.anchor_left   = 1.0
+	pause_timer_label.anchor_right  = 1.0
+	pause_timer_label.anchor_top    = 0.0
+	pause_timer_label.anchor_bottom = 0.0
+	pause_timer_label.offset_left   = -170.0
+	pause_timer_label.offset_right  = -18.0
+	pause_timer_label.offset_top    = 16.0
+	pause_timer_label.offset_bottom = 40.0
+	pause_timer_label.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	panel.add_child(pause_timer_label)
+
+# Same time format as the old OverworldHUD timer (H:MM:SS once past an hour).
+func _fmt_time(sec: float) -> String:
+	var t = int(sec)
+	var h = t / 3600; var m = (t % 3600) / 60; var s = t % 60
+	return "%d:%02d:%02d" % [h, m, s] if h > 0 else "%02d:%02d" % [m, s]
 
 func _reposition_menu_button(in_combat: bool) -> void:
 	if not is_instance_valid(menu_button): return
@@ -115,15 +177,17 @@ func _reposition_menu_button(in_combat: bool) -> void:
 		menu_button.offset_bottom =  46.0
 		menu_button.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	else:
-		menu_button.anchor_left   = 1.0
-		menu_button.anchor_right  = 1.0
-		menu_button.anchor_top    = 0.0
-		menu_button.anchor_bottom = 0.0
-		menu_button.offset_left   = -110.0
-		menu_button.offset_right  =  -10.0
-		menu_button.offset_top    =   10.0
-		menu_button.offset_bottom =   46.0
-		menu_button.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+		# Restore the exact position the editor authored (including any
+		# per-scene instance override), instead of a hardcoded guess.
+		menu_button.anchor_left   = _overworld_anchor_left
+		menu_button.anchor_right  = _overworld_anchor_right
+		menu_button.anchor_top    = _overworld_anchor_top
+		menu_button.anchor_bottom = _overworld_anchor_bottom
+		menu_button.offset_left   = _overworld_offset_left
+		menu_button.offset_right  = _overworld_offset_right
+		menu_button.offset_top    = _overworld_offset_top
+		menu_button.offset_bottom = _overworld_offset_bottom
+		menu_button.grow_horizontal = _overworld_grow_horizontal
 
 # ── Combat overlay ────────────────────────────────────────────────────────────
 func _build_combat_overlay() -> void:
@@ -291,9 +355,6 @@ func _other_menu_is_open() -> bool:
 			return true
 	return false
 
-# Checks whether CombatUI currently has its blocking confirm/magnet popup open.
-# Used to prevent the pause/combat menu from stacking on top of that popup
-# when both scripts react to the same Escape keypress in the same frame.
 func _combat_ui_popup_is_open() -> bool:
 	var combat_ui = get_tree().root.find_child("CombatUI", true, false)
 	if is_instance_valid(combat_ui) and "popup_overlay" in combat_ui:
@@ -313,16 +374,11 @@ func is_open() -> bool:
 
 # ── Input ─────────────────────────────────────────────────────────────────────
 func _input(event: InputEvent) -> void:
-	# If another script (e.g. CombatUI's confirm/magnet popup) already consumed
-	# this exact input event this frame, do not also act on it — this is what
-	# was causing the pause/combat menu to stack visually on top of the
-	# "USE ITEM" confirmation popup when Escape was pressed.
 	if get_viewport().is_input_handled():
 		return
 
 	if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE and not event.is_echo():
 		if _combat_ui_popup_is_open():
-			# Let CombatUI's own Escape handler deal with its popup instead.
 			return
 		if _is_combat_menu_open():
 			_close_combat_menu()

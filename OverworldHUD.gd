@@ -6,7 +6,6 @@ var xp_bar:         ProgressBar = null
 var xp_text:        Label       = null
 var roadmap_button: Button      = null
 var roadmap_popup:  CanvasLayer = null
-var timer_label:    Label       = null
 
 const COL_GOLD   := Color(1.00, 0.85, 0.30, 1.0)
 const COL_BORDER := Color(0.28, 0.33, 0.52, 1.0)
@@ -28,7 +27,6 @@ func _ready() -> void:
 	xp_bar         = find_child("XPBar",         true, false) as ProgressBar
 	xp_text        = find_child("XPText",        true, false) as Label
 	roadmap_button = find_child("RoadmapButton", true, false) as Button
-	timer_label    = find_child("TimerLabel",    true, false) as Label
 
 	var left_panel = find_child("LeftStatPanel", true, false) as Panel
 	if is_instance_valid(left_panel):
@@ -66,26 +64,12 @@ func _ready() -> void:
 		roadmap_button.add_theme_font_size_override("font_size", 14)
 		roadmap_button.pressed.connect(_on_roadmap_pressed)
 
-	# Build timer label if not already in scene
-	if not is_instance_valid(timer_label):
-		var root = Control.new()
-		root.name = "HUDTimerRoot"
-		root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		root.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		add_child(root)
-		timer_label = Label.new()
-		timer_label.name = "TimerLabel"
-		root.add_child(timer_label)
-
-	if is_instance_valid(timer_label):
-		timer_label.add_theme_font_size_override("font_size", 15)
-		timer_label.add_theme_color_override("font_color", Color(0.80, 0.80, 0.95, 1.0))
-		timer_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-		timer_label.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
-		timer_label.offset_left   = -170
-		timer_label.offset_right  = -10
-		timer_label.offset_top    = 10
-		timer_label.offset_bottom = 34
+# ── Play timer ────────────────────────────────────────────────────────────────
+# The visual timer display now lives in PauseMenu (top-right of the pause
+# popup) instead of the overworld HUD. This script still owns incrementing
+# QuestManager.play_time_seconds every frame since that's persistent game
+# state that needs to survive scene reloads / win / lose regardless of where
+# it's displayed.
 
 func _process(delta: float) -> void:
 	var in_combat  = QuestManager.is_in_combat
@@ -109,8 +93,6 @@ func _refresh() -> void:
 		xp_bar.value     = QuestManager.current_xp
 	if is_instance_valid(xp_text):
 		xp_text.text = "XP  %d / %d" % [QuestManager.current_xp, QuestManager.xp_required]
-	if is_instance_valid(timer_label):
-		timer_label.text = "⏱  " + _fmt(QuestManager.play_time_seconds)
 
 func _fmt(sec: float) -> String:
 	var t = int(sec)

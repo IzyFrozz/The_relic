@@ -19,6 +19,12 @@ var last_input_dir: Vector2 = Vector2.UP
 @export var dash_duration: float = 0.2
 @export var dash_cooldown: float = 1.0
 
+# Distance to stop short of the target when lunging — keeps the characters
+# standing next to each other instead of overlapping or stopping halfway.
+# Lowered from 70 -> 28 so both fighters actually close the gap and end up
+# standing right next to each other instead of stopping far apart.
+const ATTACK_REACH := 28.0
+
 @onready var sprite: AnimatedSprite2D = $AnimatedSprite2D
 
 func _ready() -> void:
@@ -70,13 +76,39 @@ func _physics_process(delta: float) -> void:
 		_play_walk_animation(input_dir)
 	else:
 		velocity = velocity.move_toward(Vector2.ZERO, friction * delta)
-		sprite.speed_scale = 1.0
-		sprite.stop()
-		sprite.animation = "default"
+		# Hold the last facing direction's idle frame instead of always
+		# snapping to "default" (which is the down-facing pose). This is what
+		# was causing the character to always look down on release no matter
+		# which way they were last walking.
+		_set_idle_facing(last_input_dir)
 
 	move_and_slide()
 
 # ── Facing ────────────────────────────────────────────────────────────────────
+
+# Freeze on frame 2 of the animation matching `dir`, without resetting modulate
+# or losing the direction. speed_scale = 0 freezes without using pause()
+# (AnimatedSprite2D has no pause() method in Godot 4). Frame 2 is used as the
+# idle pose for every walking direction (matches the confirmed best idle
+# frame in the sprite sheet) instead of frame 0.
+func _set_idle_facing(dir: Vector2) -> void:
+	if dir == Vector2.ZERO:
+		sprite.flip_h = false
+		sprite.play("default")
+		sprite.frame = 0
+	elif abs(dir.x) >= abs(dir.y):
+		sprite.flip_h = dir.x < 0
+		sprite.play("WalkSide")
+		sprite.frame = 2
+	elif dir.y < 0:
+		sprite.flip_h = false
+		sprite.play("WalkUp")
+		sprite.frame = 2
+	else:
+		sprite.flip_h = false
+		sprite.play("WalkDown")
+		sprite.frame = 2
+	sprite.speed_scale = 0.0
 
 func face_up() -> void:
 	last_input_dir = Vector2.UP
@@ -86,8 +118,7 @@ func face_up() -> void:
 	sprite.animation = "WalkUp"
 	sprite.frame = 0
 
-# Combat idle: freeze on frame 2 of WalkSide. AnimatedSprite2D has no pause()
-# method in Godot 4 — freezing is done by setting speed_scale to 0 instead.
+# Combat idle: freeze on frame 2 of WalkSide.
 func face_right() -> void:
 	last_input_dir = Vector2.RIGHT
 	sprite.flip_h  = false      # WalkSide natural dir = right
@@ -96,7 +127,7 @@ func face_right() -> void:
 	sprite.speed_scale = 0.0    # freeze without resetting frame
 
 func _play_walk_animation(dir: Vector2) -> void:
-	sprite.speed_scale = 1.0   # un-freeze in case we were in combat idle
+	sprite.speed_scale = 1.0   # un-freeze in case we were idle/combat-frozen
 	if abs(dir.x) >= abs(dir.y):
 		sprite.flip_h = dir.x < 0
 		sprite.play("WalkSide")
@@ -110,16 +141,21 @@ func _play_walk_animation(dir: Vector2) -> void:
 # ── Player attack lunge ───────────────────────────────────────────────────────
 func do_attack_lunge(enemy_pos: Vector2, enemy_node: Node2D = null, is_disarmed: bool = false) -> void:
 	var start_pos       = global_position
-	var lunge_target    = start_pos.lerp(enemy_pos, 0.45)
 	var enemy_start_pos = enemy_node.global_position if is_instance_valid(enemy_node) else enemy_pos
+
+	# Lunge to within ATTACK_REACH of the enemy — not a percentage of the gap.
+	# This way the player always ends up standing right next to the enemy
+	# regardless of how far apart the combat markers are.
+	var to_enemy   = enemy_pos - start_pos
+	var total_dist = to_enemy.length()
+	var travel_dist = max(total_dist - ATTACK_REACH, 0.0)
+	var lunge_target = start_pos + (to_enemy.normalized() * travel_dist if total_dist > 0.001 else Vector2.ZERO)
 
 	if is_disarmed:
 		await _shake_node(self, start_pos, 0.32)
 		face_right()
 		return
 
-	# The player's SpriteFrames DOES have a proper "AttackSide" animation —
-	# use it directly instead of faking the effect with WalkSide + a tween.
 	sprite.flip_h = false
 	sprite.speed_scale = 1.0
 	sprite.play("AttackSide")
@@ -159,7 +195,13 @@ func do_enemy_lunge(enemy_node: Node2D, player_pos: Vector2, is_disarmed: bool =
 		await _shake_node(enemy_node, enemy_start_pos, 0.32)
 		return
 
-	var lunge_target = enemy_start_pos.lerp(player_pos, 0.45)
+	# Same fixed-reach logic as the player lunge, mirrored: enemy walks to
+	# within ATTACK_REACH of the player instead of stopping at a percentage.
+	var to_player   = player_pos - enemy_start_pos
+	var total_dist  = to_player.length()
+	var travel_dist = max(total_dist - ATTACK_REACH, 0.0)
+	var lunge_target = enemy_start_pos + (to_player.normalized() * travel_dist if total_dist > 0.001 else Vector2.ZERO)
+
 	var espr = enemy_node.get_node_or_null("AnimatedSprite2D") as AnimatedSprite2D
 	if is_instance_valid(espr):
 		espr.flip_h = true

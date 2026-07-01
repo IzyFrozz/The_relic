@@ -7,8 +7,10 @@ func _ready() -> void:
 	_build()
 
 func _build() -> void:
+	# Full-screen solid black overlay — fully opaque so nothing behind
+	# (the overworld's own background colour) bleeds through and tints it.
 	var bg = ColorRect.new()
-	bg.color = Color(0.0, 0.0, 0.0, 0.88)
+	bg.color = Color(0.0, 0.0, 0.0, 1.0)
 	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	bg.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(bg)
