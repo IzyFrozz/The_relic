@@ -90,7 +90,7 @@ func _ready() -> void:
 		load_button.pressed.connect(_show_load_view)
 
 	if is_instance_valid(exit_button):
-		exit_button.text = "🚪  Exit to Desktop"
+		exit_button.text = "🏠  Main Menu"
 		exit_button.pressed.connect(_on_exit_pressed)
 
 	for i in range(3):
@@ -104,8 +104,8 @@ func _ready() -> void:
 		load_back_button.pressed.connect(_show_main_view)
 
 	if is_instance_valid(exit_anyway_button):
-		exit_anyway_button.text = "⚠️  Exit Anyway"
-		exit_anyway_button.pressed.connect(func(): get_tree().quit())
+		exit_anyway_button.text = "⚠️  Leave Anyway"
+		exit_anyway_button.pressed.connect(_go_to_main_menu)
 
 	if is_instance_valid(cancel_exit_button):
 		cancel_exit_button.text = "Cancel"
@@ -464,6 +464,13 @@ func _on_exit_pressed() -> void:
 		if is_instance_valid(load_view):    load_view.visible    = false
 		if is_instance_valid(confirm_view): confirm_view.visible = true
 		if is_instance_valid(confirm_label):
-			confirm_label.text = "Unsaved progress will be lost!\nVisit the Elder NPC to save before exiting."
+			confirm_label.text = "Unsaved progress will be lost!\nVisit the Elder NPC to save before returning to the Main Menu."
 	else:
-		get_tree().quit()
+		_go_to_main_menu()
+
+# Returning to the Main Menu instead of quitting the whole application —
+# resets time scale/combat state first so nothing carries over stale.
+func _go_to_main_menu() -> void:
+	Engine.time_scale = 1.0
+	QuestManager.is_in_combat = false
+	get_tree().change_scene_to_file("res://main_menu.tscn")
