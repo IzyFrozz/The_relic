@@ -30,6 +30,12 @@ func _ready() -> void:
 		s.content_margin_left = 18; s.content_margin_right = 18
 		s.content_margin_top = 16;  s.content_margin_bottom = 16
 		panel.add_theme_stylebox_override("panel", s)
+		# Dock as a left drawer BELOW the Roadmap/Quest buttons so it never
+		# overlaps them (overlay-proof), matching the Quest log.
+		panel.anchor_left = 0.0; panel.anchor_right = 0.0
+		panel.anchor_top = 0.0;  panel.anchor_bottom = 1.0
+		panel.offset_left = 14;  panel.offset_right = 560
+		panel.offset_top = 172;  panel.offset_bottom = -118   # stop above the stat panel
 
 	if is_instance_valid(rich_text):
 		rich_text.add_theme_font_size_override("normal_font_size", 14)

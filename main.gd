@@ -10,4 +10,18 @@ extends Node2D
 
 
 func _ready() -> void:
-	pass
+	_apply_respawn_position()
+
+# On any scene (re)load, drop the player in front of their last-saved Wizard
+# checkpoint. ZERO means no checkpoint yet (fresh game) — keep the scene's
+# authored player spawn.
+func _apply_respawn_position() -> void:
+	if QuestManager.player_spawn_position == Vector2.ZERO:
+		return
+	var player = get_node_or_null("mainplayer")
+	if not is_instance_valid(player):
+		player = get_tree().root.find_child("mainplayer", true, false)
+	if is_instance_valid(player):
+		player.global_position = QuestManager.player_spawn_position
+		if "velocity" in player:
+			player.velocity = Vector2.ZERO
