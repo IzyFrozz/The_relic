@@ -342,11 +342,24 @@ func _style_buttons() -> void:
 
 func _style_menu_button() -> void:
 	if not is_instance_valid(menu_button): return
+	# Same size as the left-side overworld buttons (Roadmap/Quest), docked to the
+	# top-right corner. This runs before _capture_overworld_menu_position() so the
+	# captured "overworld" pose is this new one.
+	menu_button.custom_minimum_size = Vector2(150, 46)
+	menu_button.anchor_left = 1.0; menu_button.anchor_right = 1.0
+	menu_button.anchor_top = 0.0;  menu_button.anchor_bottom = 0.0
+	menu_button.offset_left = -164; menu_button.offset_right = -14
+	menu_button.offset_top = 14;    menu_button.offset_bottom = 60
+	menu_button.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	menu_button.add_theme_font_size_override("font_size", 15)
 	var s = StyleBoxFlat.new()
-	s.bg_color = Color(0.10, 0.11, 0.16, 0.9)
-	s.set_corner_radius_all(8); s.set_border_width_all(1)
+	s.bg_color = Color(0.12, 0.14, 0.20, 0.95)
+	s.set_corner_radius_all(7); s.set_border_width_all(2)
 	s.border_color = COL_BORDER
 	menu_button.add_theme_stylebox_override("normal", s)
+	var sh = s.duplicate()
+	sh.bg_color = Color(0.20, 0.22, 0.32); sh.border_color = Color(1.0, 0.85, 0.30)
+	menu_button.add_theme_stylebox_override("hover", sh)
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 func _load_slot_button(slot: int) -> Button:
@@ -357,7 +370,7 @@ func _load_slot_button(slot: int) -> Button:
 	return null
 
 func _other_menu_is_open() -> bool:
-	for n in ["EquipmentMenu", "RoadmapPopup", "SavePopup"]:
+	for n in ["EquipmentMenu", "RoadmapPopup", "SavePopup", "QuestLogPanel"]:
 		var node = get_tree().root.find_child(n, true, false)
 		if is_instance_valid(node) and node.visible:
 			return true

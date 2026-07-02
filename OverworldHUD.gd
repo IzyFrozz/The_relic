@@ -20,6 +20,12 @@ var quest_log_text: RichTextLabel = null
 var _side_buttons: Array = []
 var _sel_index: int = -1
 
+# Themed bottom-left stat panel (replaces the plain LV/HP labels).
+var stat_panel: Panel = null
+var stat_lv: Label = null
+var stat_hp: Label = null
+
+const BTN_SIZE   := Vector2(150, 46)   # shared size for every overworld button
 const COL_GOLD   := Color(1.00, 0.85, 0.30, 1.0)
 const COL_BORDER := Color(0.28, 0.33, 0.52, 1.0)
 const COL_PANEL  := Color(0.08, 0.09, 0.13, 0.90)
@@ -69,7 +75,7 @@ func _ready() -> void:
 			xp_container.anchor_left = 0.5; xp_container.anchor_right = 0.5
 			xp_container.anchor_top = 1.0;  xp_container.anchor_bottom = 1.0
 			xp_container.offset_left = -260; xp_container.offset_right = 260
-			xp_container.offset_top = -86;   xp_container.offset_bottom = -42
+			xp_container.offset_top = -58;   xp_container.offset_bottom = -18
 			xp_container.grow_horizontal = Control.GROW_DIRECTION_BOTH
 			xp_container.grow_vertical = Control.GROW_DIRECTION_BEGIN
 
@@ -81,16 +87,27 @@ func _ready() -> void:
 	if is_instance_valid(roadmap_button):
 		roadmap_button.text = "📜  Roadmap"
 		roadmap_button.focus_mode = Control.FOCUS_NONE
-		roadmap_button.custom_minimum_size = Vector2(140, 44)
+		roadmap_button.custom_minimum_size = BTN_SIZE
 		roadmap_button.add_theme_stylebox_override("normal", _s(Color(0.12, 0.14, 0.20), COL_BORDER, 7))
 		roadmap_button.add_theme_stylebox_override("hover",  _s(Color(0.20, 0.22, 0.32), COL_GOLD,   7))
 		roadmap_button.add_theme_color_override("font_color", Color(0.85, 0.85, 1.0))
-		roadmap_button.add_theme_font_size_override("font_size", 14)
+		roadmap_button.add_theme_font_size_override("font_size", 15)
 		roadmap_button.pressed.connect(_on_roadmap_pressed)
+		# Dock the button column tight to the top-left corner, unscaled, so every
+		# overworld button shares BTN_SIZE.
+		var container = roadmap_button.get_parent()
+		if container is Control:
+			container.scale = Vector2(1, 1)
+			container.anchor_top = 0.0; container.anchor_bottom = 0.0
+			container.anchor_left = 0.0; container.anchor_right = 0.0
+			container.offset_left = 14; container.offset_right = 14 + BTN_SIZE.x
+			container.offset_top = 14; container.offset_bottom = 14 + BTN_SIZE.y * 2 + 30
+			container.grow_vertical = Control.GROW_DIRECTION_END
+			container.add_theme_constant_override("separation", 8)
 
-	_build_quest_tracker()
 	_build_quest_button()
 	_build_quest_log()
+	_build_stat_panel()
 	_side_buttons = [roadmap_button, quest_button]
 
 # ── Quest objective banner ─────────────────────────────────────────────────────
@@ -175,7 +192,43 @@ func _refresh() -> void:
 		xp_bar.value     = QuestManager.current_xp
 	if is_instance_valid(xp_text):
 		xp_text.text = "XP  %d / %d" % [QuestManager.current_xp, QuestManager.xp_required]
-	_refresh_quest_tracker()
+	if is_instance_valid(stat_lv):
+		stat_lv.text = "⭐  LV. %d" % QuestManager.player_level
+	if is_instance_valid(stat_hp):
+		stat_hp.text = "❤️  %d HP" % QuestManager.MAX_HEALTH
+	if is_instance_valid(quest_log) and quest_log.visible:
+		_refresh_quest_log()
+
+# ── Bottom-left stat panel ─────────────────────────────────────────────────────
+func _build_stat_panel() -> void:
+	# Hide the old plain labels; show a themed panel instead.
+	if is_instance_valid(level_label):  level_label.visible = false
+	if is_instance_valid(max_hp_label): max_hp_label.visible = false
+
+	stat_panel = Panel.new()
+	stat_panel.anchor_left = 0.0; stat_panel.anchor_right = 0.0
+	stat_panel.anchor_top = 1.0;  stat_panel.anchor_bottom = 1.0
+	stat_panel.offset_left = 16;  stat_panel.offset_right = 196
+	stat_panel.offset_top = -104; stat_panel.offset_bottom = -18
+	stat_panel.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	stat_panel.add_theme_stylebox_override("panel", _s(COL_PANEL, COL_BORDER, 9))
+	add_child(stat_panel)
+
+	var vb = VBoxContainer.new()
+	vb.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT, Control.PRESET_MODE_MINSIZE, 14)
+	vb.add_theme_constant_override("separation", 6)
+	vb.alignment = BoxContainer.ALIGNMENT_CENTER
+	stat_panel.add_child(vb)
+
+	stat_lv = Label.new()
+	stat_lv.add_theme_font_size_override("font_size", 22)
+	stat_lv.add_theme_color_override("font_color", COL_GOLD)
+	vb.add_child(stat_lv)
+
+	stat_hp = Label.new()
+	stat_hp.add_theme_font_size_override("font_size", 18)
+	stat_hp.add_theme_color_override("font_color", Color(0.96, 0.48, 0.48))
+	vb.add_child(stat_hp)
 
 func _fmt(sec: float) -> String:
 	var t = int(sec)
@@ -191,6 +244,9 @@ func _is_end_screen_active() -> bool:
 func _on_roadmap_pressed() -> void:
 	if not is_instance_valid(roadmap_popup):
 		roadmap_popup = get_tree().root.find_child("RoadmapPopup", true, false) as CanvasLayer
+	# Close the Quest log so only one side panel is open at a time.
+	if is_instance_valid(quest_log):
+		quest_log.visible = false
 	if is_instance_valid(roadmap_popup):
 		roadmap_popup.visible = true
 		if roadmap_popup.has_method("refresh_display"):
@@ -203,11 +259,11 @@ func _build_quest_button() -> void:
 	quest_button = Button.new()
 	quest_button.text = "🗒️  Quest"
 	quest_button.focus_mode = Control.FOCUS_NONE
-	quest_button.custom_minimum_size = Vector2(140, 44)
+	quest_button.custom_minimum_size = BTN_SIZE
 	quest_button.add_theme_stylebox_override("normal", _s(Color(0.12, 0.14, 0.20), COL_BORDER, 7))
 	quest_button.add_theme_stylebox_override("hover",  _s(Color(0.20, 0.22, 0.32), COL_GOLD,   7))
 	quest_button.add_theme_color_override("font_color", Color(0.85, 0.85, 1.0))
-	quest_button.add_theme_font_size_override("font_size", 14)
+	quest_button.add_theme_font_size_override("font_size", 15)
 	quest_button.pressed.connect(_on_quest_pressed)
 	# Add it into Roadmap's own VBoxContainer so it flows directly below it,
 	# with matching width/alignment/scale — no manual offsets to get wrong.
@@ -219,29 +275,39 @@ func _build_quest_button() -> void:
 		add_child(quest_button)
 
 func _on_quest_pressed() -> void:
+	if not is_instance_valid(quest_log):
+		return
+	# Toggle, and close the Roadmap so only one side panel is open at a time.
+	if quest_log.visible:
+		quest_log.visible = false
+		return
+	_close_roadmap()
 	_refresh_quest_log()
-	if is_instance_valid(quest_log):
-		quest_log.visible = true
+	quest_log.visible = true
+
+func _close_roadmap() -> void:
+	if not is_instance_valid(roadmap_popup):
+		roadmap_popup = get_tree().root.find_child("RoadmapPopup", true, false) as CanvasLayer
+	if is_instance_valid(roadmap_popup):
+		roadmap_popup.visible = false
 
 # ── Quest log popup ─────────────────────────────────────────────────────────────
 func _build_quest_log() -> void:
+	# Non-blocking left drawer (like the Roadmap): no dim, docked below the
+	# Roadmap/Quest buttons so it never overlaps them, and the player can keep
+	# moving while it's open. Esc (handled in _input) closes it.
 	quest_log = Control.new()
+	quest_log.name = "QuestLogPanel"
 	quest_log.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	quest_log.visible = false
-	quest_log.mouse_filter = Control.MOUSE_FILTER_STOP
+	quest_log.mouse_filter = Control.MOUSE_FILTER_IGNORE   # clicks pass through except on the panel
 	add_child(quest_log)
 
-	var dim = ColorRect.new()
-	dim.color = Color(0, 0, 0, 0.55)
-	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	quest_log.add_child(dim)
-
 	var panel = Panel.new()
-	panel.custom_minimum_size = Vector2(620, 460)
-	panel.set_anchors_preset(Control.PRESET_CENTER)
-	panel.set_offsets_preset(Control.PRESET_CENTER)
-	panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	panel.grow_vertical   = Control.GROW_DIRECTION_BOTH
+	panel.anchor_left = 0.0; panel.anchor_right = 0.0
+	panel.anchor_top = 0.0;  panel.anchor_bottom = 1.0
+	panel.offset_left = 14;  panel.offset_right = 474
+	panel.offset_top = 172;  panel.offset_bottom = -118   # stop above the stat panel
 	var ps = StyleBoxFlat.new()
 	ps.bg_color = Color(0.07, 0.08, 0.12, 0.98)
 	ps.set_corner_radius_all(12); ps.set_border_width_all(2)
@@ -286,20 +352,32 @@ func _refresh_quest_log() -> void:
 	if not is_instance_valid(quest_log_text):
 		return
 	var qm = QuestManager
+	# Each step: [text, done?]. Steps are revealed one at a time — completed
+	# steps get a ✓, the first unfinished one is the current objective, and
+	# everything after it stays hidden until unlocked.
+	var steps = [
+		["Seek out and talk to the Street Kid", qm.quest_accepted],
+		["Collect %d coins   (%d / %d)" % [qm.COINS_NEEDED, mini(qm.coins_collected, qm.COINS_NEEDED), qm.COINS_NEEDED],
+			qm.has_key or qm.chest_unlocked or qm.game_won],
+		["Trade the coins to the Street Kid for the key", qm.has_key or qm.chest_unlocked or qm.game_won],
+		["Open the ancient chest to claim the relic", qm.chest_unlocked or qm.game_won],
+		["Return the relic to the Street Kid", qm.game_won],
+	]
 	var out = "[b][color=#FFD84D]The Village Relic[/color][/b]\n"
 	out += "[color=#9aa]A dragon sealed the village relic in an ancient chest. Help the Street Kid get it back.[/color]\n\n"
-	out += _step("Talk to the Street Kid to accept the quest", qm.quest_accepted)
-	out += _step("Collect %d coins  (%d / %d)" % [qm.COINS_NEEDED, mini(qm.coins_collected, qm.COINS_NEEDED), qm.COINS_NEEDED],
-			qm.has_key or qm.chest_unlocked or qm.game_won)
-	out += _step("Trade the coins to the Street Kid for the key", qm.has_key or qm.chest_unlocked or qm.game_won)
-	out += _step("Open the ancient chest to claim the relic", qm.chest_unlocked or qm.game_won)
-	out += _step("Return the relic to the Street Kid", qm.game_won)
+	# Reveal completed steps and the single current objective only — never show
+	# how many steps remain (no locked "???" lines).
+	for step in steps:
+		var text: String = step[0]
+		var done: bool = step[1]
+		if done:
+			out += "  [color=#44FF88]✓[/color]  [color=#8a8f9c]%s[/color]\n" % text
+		else:
+			out += "  [color=#FFD84D]➤[/color]  [b]%s[/b]\n" % text   # current objective
+			break
+	if qm.game_won:
+		out += "\n[color=#44FF88]Quest complete — the village is saved![/color]\n"
 	quest_log_text.text = out
-
-func _step(text: String, done: bool) -> String:
-	if done:
-		return "  [color=#44FF88]✓[/color]  [color=#8a8f9c]%s[/color]\n" % text
-	return "  [color=#FFAA44]▢[/color]  %s\n" % text
 
 # ── Tab navigation between the left panels ──────────────────────────────────────
 func _input(event: InputEvent) -> void:

@@ -54,6 +54,8 @@ const ATTACK_REACH := 28.0
 func _ready() -> void:
 	life_changed.emit(life)
 	_build_stamina_bar()
+	# Apply the character-creation body stretch (one sprite, tweaked proportions).
+	sprite.scale *= Vector2(QuestManager.player_scale_x, QuestManager.player_scale_y)
 
 func _process(_delta: float) -> void:
 	# Bar visibility/fill is updated here (not in _physics_process) so it still
@@ -295,9 +297,10 @@ func _build_stamina_bar() -> void:
 	_stamina_bar_bg.visible = false
 	var bg_style = StyleBoxFlat.new()
 	bg_style.bg_color = BAR_BG_COL
-	bg_style.set_corner_radius_all(3)
+	bg_style.set_corner_radius_all(0)          # sharp — rounded corners blur when the camera scales the bar 6x
 	bg_style.set_border_width_all(1)
 	bg_style.border_color = BAR_BORDER_COL
+	bg_style.anti_aliasing = false             # keep edges crisp at zoom
 	_stamina_bar_bg.add_theme_stylebox_override("panel", bg_style)
 	add_child(_stamina_bar_bg)
 
@@ -309,7 +312,8 @@ func _build_stamina_bar() -> void:
 	_stamina_bar_fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_stamina_fill_style = StyleBoxFlat.new()
 	_stamina_fill_style.bg_color = BAR_FILL_FULL
-	_stamina_fill_style.set_corner_radius_all(2)
+	_stamina_fill_style.set_corner_radius_all(0)
+	_stamina_fill_style.anti_aliasing = false
 	_stamina_bar_fill.add_theme_stylebox_override("panel", _stamina_fill_style)
 	_stamina_bar_bg.add_child(_stamina_bar_fill)
 

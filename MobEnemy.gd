@@ -962,7 +962,12 @@ func _check_combat_end_conditions() -> bool:
 			_: xp = 90 + ((enemy_level - 4) * 30)
 
 		xp = roundi(xp * 1.30)   # +30% global XP gain across all mob levels
+		var _lvl_before = QuestManager.player_level
 		QuestManager.gain_xp(xp)
+		var _victory_toast = "⚔️  Victory!  +%d XP" % xp
+		if QuestManager.player_level > _lvl_before:
+			_victory_toast += "     ⭐  LV %d!" % QuestManager.player_level
+		Toast.show_toast(_victory_toast)
 		QuestManager.player_health = QuestManager.MAX_HEALTH
 
 		var spr = get_node_or_null("AnimatedSprite2D") as AnimatedSprite2D

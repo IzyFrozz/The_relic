@@ -15,6 +15,15 @@ const COL_GOLD    := Color(1.00, 0.85, 0.30, 1.0)
 var main_view:     VBoxContainer
 var load_view:      VBoxContainer
 var settings_view:  VBoxContainer
+var customize_view: VBoxContainer
+
+var name_input:    LineEdit
+var width_slider:  HSlider
+var height_slider: HSlider
+var preview_sprite: TextureRect
+var card_panel:    Panel
+
+const PLAYER_TEX_PATH := "res://Asset/sprites/characters/player.png"
 
 var load_slot_buttons: Array = []
 var load_status_label: Label
@@ -45,6 +54,7 @@ func _build() -> void:
 
 	var card = Panel.new()
 	card.custom_minimum_size = Vector2(600, 700)
+	card_panel = card
 	_style_panel(card, COL_CARD_BG, COL_BORDER)
 	centre_root.add_child(card)
 	card.set_anchors_preset(Control.PRESET_CENTER)
@@ -60,7 +70,7 @@ func _build() -> void:
 
 	# ── Placeholder art banner — swap for real key art later ────────────────
 	var art_panel = Panel.new()
-	art_panel.custom_minimum_size = Vector2(0, 200)
+	art_panel.custom_minimum_size = Vector2(0, 150)
 	art_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var art_style = StyleBoxFlat.new()
 	art_style.bg_color = Color(0.13, 0.14, 0.20, 1.0)
@@ -115,12 +125,19 @@ func _build() -> void:
 	vbox.add_child(settings_view)
 	_build_settings_view()
 
+	customize_view = VBoxContainer.new()
+	customize_view.visible = false
+	customize_view.add_theme_constant_override("separation", 12)
+	customize_view.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	vbox.add_child(customize_view)
+	_build_customize_view()
+
 # ── Main view ────────────────────────────────────────────────────────────────
 func _build_main_view() -> void:
 	var start_btn = Button.new()
 	start_btn.text = "▶  Start New Game"
 	_style_btn(start_btn, Color(0.07, 0.18, 0.07), Color(0.20, 0.62, 0.20))
-	start_btn.pressed.connect(_on_start_new_pressed)
+	start_btn.pressed.connect(func(): _show_view("customize"))
 	main_view.add_child(start_btn)
 
 	var load_btn = Button.new()
@@ -206,11 +223,122 @@ func _build_settings_view() -> void:
 	back_btn.pressed.connect(func(): _show_view("main"))
 	settings_view.add_child(back_btn)
 
+# ── Character creation ───────────────────────────────────────────────────────
+func _build_customize_view() -> void:
+	var title = Label.new()
+	title.text = "🧙  Create Your Hero"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 20)
+	title.add_theme_color_override("font_color", COL_GOLD)
+	customize_view.add_child(title)
+
+	# ── Live character preview ──
+	var preview_box = Panel.new()
+	preview_box.custom_minimum_size = Vector2(0, 116)
+	var pstyle = StyleBoxFlat.new()
+	pstyle.bg_color = Color(0.10, 0.12, 0.18, 1.0)
+	pstyle.set_corner_radius_all(8); pstyle.set_border_width_all(2)
+	pstyle.border_color = Color(0.30, 0.33, 0.48)
+	preview_box.add_theme_stylebox_override("panel", pstyle)
+	customize_view.add_child(preview_box)
+
+	var preview_center = CenterContainer.new()
+	preview_center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	preview_box.add_child(preview_center)
+
+	preview_sprite = TextureRect.new()
+	var atlas = AtlasTexture.new()
+	atlas.atlas = load(PLAYER_TEX_PATH)
+	atlas.region = Rect2(0, 144, 48, 48)   # a front-facing idle frame
+	preview_sprite.texture = atlas
+	preview_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST   # crisp pixels
+	# STRETCH_SCALE so the size (driven by the sliders) distorts the sprite,
+	# previewing the exact width/height build the player picked.
+	preview_sprite.stretch_mode = TextureRect.STRETCH_SCALE
+	preview_center.add_child(preview_sprite)
+
+	var name_cap = Label.new()
+	name_cap.text = "Name  (permanent for this run)"
+	name_cap.add_theme_color_override("font_color", Color(0.8, 0.82, 0.92))
+	customize_view.add_child(name_cap)
+
+	name_input = LineEdit.new()
+	name_input.placeholder_text = "Enter your hero's name…"
+	name_input.text = "Hero"
+	name_input.max_length = 16
+	name_input.custom_minimum_size = Vector2(0, 44)
+	customize_view.add_child(name_input)
+
+	var build_cap = Label.new()
+	build_cap.text = "Build"
+	build_cap.add_theme_color_override("font_color", Color(0.8, 0.82, 0.92))
+	customize_view.add_child(build_cap)
+
+	width_slider  = _build_stat_slider("Width", customize_view)
+	height_slider = _build_stat_slider("Height", customize_view)
+
+	var confirm = Button.new()
+	confirm.text = "▶  Begin Adventure"
+	_style_btn(confirm, Color(0.07, 0.18, 0.07), Color(0.20, 0.62, 0.20))
+	confirm.pressed.connect(_on_confirm_customize)
+	customize_view.add_child(confirm)
+
+	var back = Button.new()
+	back.text = "↩  Back"
+	_style_btn(back, Color(0.12, 0.12, 0.14), Color(0.40, 0.40, 0.48))
+	back.pressed.connect(func(): _show_view("main"))
+	customize_view.add_child(back)
+
+	_update_preview()
+
+func _build_stat_slider(caption: String, parent: Node) -> HSlider:
+	var row = HBoxContainer.new()
+	row.add_theme_constant_override("separation", 10)
+	var cap = Label.new()
+	cap.text = caption
+	cap.custom_minimum_size = Vector2(70, 0)
+	cap.add_theme_color_override("font_color", Color(0.85, 0.85, 1.0))
+	row.add_child(cap)
+	var slider = HSlider.new()
+	# Subtle stretch — noticeable but never too distorted.
+	slider.min_value = 0.9; slider.max_value = 1.1; slider.step = 0.02; slider.value = 1.0
+	slider.custom_minimum_size = Vector2(0, 26)
+	slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	slider.value_changed.connect(func(_v): _update_preview())
+	row.add_child(slider)
+	parent.add_child(row)
+	return slider
+
+func _update_preview() -> void:
+	if not is_instance_valid(preview_sprite):
+		return
+	var w = width_slider.value if is_instance_valid(width_slider) else 1.0
+	var h = height_slider.value if is_instance_valid(height_slider) else 1.0
+	# Size-driven (not scale) so the container lays it out reliably.
+	preview_sprite.custom_minimum_size = Vector2(48.0 * w, 48.0 * h) * 1.9
+
+func _on_confirm_customize() -> void:
+	QuestManager.reset_to_defaults()
+	var nm = name_input.text.strip_edges()
+	QuestManager.player_name = nm if nm != "" else "Hero"
+	QuestManager.player_scale_x = width_slider.value
+	QuestManager.player_scale_y = height_slider.value
+	QuestManager.play_time_seconds = 0.0
+	QuestManager.is_in_combat = false
+	Engine.time_scale = 1.0
+	get_tree().change_scene_to_file("res://main.tscn")
+
 # ── View switching ───────────────────────────────────────────────────────────
 func _show_view(which: String) -> void:
 	main_view.visible     = which == "main"
 	load_view.visible     = which == "load"
 	settings_view.visible = which == "settings"
+	customize_view.visible = which == "customize"
+	# The customize view has more content — grow the card so nothing spills out.
+	if is_instance_valid(card_panel):
+		card_panel.custom_minimum_size.y = 880 if which == "customize" else 700
+	if which == "customize":
+		_update_preview()
 	if which == "load":
 		_refresh_load_slots()
 		load_status_label.text = "Choose a slot to load:"

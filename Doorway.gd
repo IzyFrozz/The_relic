@@ -39,6 +39,11 @@ func _process(_delta: float) -> void:
 		else:
 			print("⚠️ DOORWAY WARNING: Target Marker is empty in the Inspector!")
 
+# The doorway's own origin is at its trigger zone (on the path), not the door,
+# so anchor the "[E]" chip above the player standing at the door instead.
+func get_prompt_target() -> Node2D:
+	return player_ref
+
 func _on_body_entered(body: Node2D) -> void:
 	if body.name == "mainplayer":
 		player_ref = body

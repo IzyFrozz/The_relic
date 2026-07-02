@@ -392,7 +392,7 @@ height = 18.0
 radius = 11.045361
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_htxhm"]
-radius = 49.09175
+radius = 23.0
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_jq2sk"]
 radius = 23.021729
@@ -694,6 +694,68 @@ visible = false
 shape = SubResource("CircleShape2D_qsp4k")
 debug_color = Color(0.1767202, 0.64351225, 0, 0.41960785)
 
+[node name="ElderNPC2" type="CharacterBody2D" parent="." unique_id=1976935503]
+position = Vector2(532, 458)
+script = ExtResource("23_1u8w0")
+
+[node name="InteractPrompt" type="Label" parent="ElderNPC2" unique_id=220691380]
+offset_left = -25.0
+offset_top = 18.0
+offset_right = 80.0
+offset_bottom = 41.0
+scale = Vector2(0.5, 0.5)
+text = "[E] to interact"
+horizontal_alignment = 1
+
+[node name="WinUI" type="CanvasLayer" parent="ElderNPC2" unique_id=1395602487]
+visible = false
+
+[node name="ColorRect" type="ColorRect" parent="ElderNPC2/WinUI" unique_id=1989481482]
+offset_right = 1162.0
+offset_bottom = 664.0
+color = Color(0, 0, 0, 1)
+
+[node name="Label" type="Label" parent="ElderNPC2/WinUI/ColorRect" unique_id=488732461]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.4492255
+anchor_top = 0.39759037
+anchor_right = 0.4492255
+anchor_bottom = 0.39759037
+offset_right = 68.0
+offset_bottom = 23.0
+scale = Vector2(2, 2)
+text = "You Win!"
+metadata/_edit_use_anchors_ = true
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="ElderNPC2" unique_id=1421694944]
+shape = SubResource("CapsuleShape2D_0cp0l")
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="ElderNPC2" unique_id=474795218]
+modulate = Color(0.737193, 0.7371929, 0.7371929, 1)
+position = Vector2(0.9999962, 1.0000039)
+scale = Vector2(0.90624976, 0.90624976)
+sprite_frames = SubResource("SpriteFrames_0arob")
+autoplay = "default"
+frame_progress = 0.095246404
+flip_h = true
+
+[node name="DialogueBox" type="Label" parent="ElderNPC2" unique_id=751508160]
+visible = false
+offset_left = -40.0
+offset_top = 19.0
+offset_right = 74.0
+offset_bottom = 42.0
+scale = Vector2(0.7, 0.7)
+text = "Hello Sir Lance"
+
+[node name="InteractionArea" type="Area2D" parent="ElderNPC2" unique_id=1008953010]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="ElderNPC2/InteractionArea" unique_id=1431165760]
+visible = false
+shape = SubResource("CircleShape2D_qsp4k")
+debug_color = Color(0.1767202, 0.64351225, 0, 0.41960785)
+
 [node name="mainplayer" type="CharacterBody2D" parent="." unique_id=1827658377]
 position = Vector2(-268, 387)
 script = ExtResource("3_82xsv")
@@ -760,7 +822,7 @@ script = ExtResource("30_kq58d")
 target_marker = NodePath("CollisionShape2D/PromptLabel/InsideSpawnMarker")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="OutsideDoor" unique_id=328411846]
-position = Vector2(-32, -72)
+position = Vector2(-35, -73)
 shape = SubResource("CircleShape2D_htxhm")
 
 [node name="PromptLabel" type="Label" parent="OutsideDoor/CollisionShape2D" unique_id=838512896]
@@ -841,6 +903,8 @@ text = "..."
 
 [connection signal="body_entered" from="ElderNPC/InteractionArea" to="ElderNPC" method="_on_interaction_area_body_entered"]
 [connection signal="body_exited" from="ElderNPC/InteractionArea" to="ElderNPC" method="_on_interaction_area_body_exited"]
+[connection signal="body_entered" from="ElderNPC2/InteractionArea" to="ElderNPC2" method="_on_interaction_area_body_entered"]
+[connection signal="body_exited" from="ElderNPC2/InteractionArea" to="ElderNPC2" method="_on_interaction_area_body_exited"]
 [connection signal="body_entered" from="DeliveryPoint" to="DeliveryPoint" method="_on_body_entered"]
 [connection signal="body_exited" from="DeliveryPoint" to="DeliveryPoint" method="_on_body_exited"]
 [connection signal="body_entered" from="OutsideDoor" to="OutsideDoor" method="_on_body_entered"]

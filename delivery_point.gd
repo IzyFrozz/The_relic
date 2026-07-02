@@ -7,7 +7,6 @@ extends Area2D
 
 const CHEST_CLOSED := preload("res://Asset/Meta data assets files/Visuals/OBJECTS/sprites/chest-closed.png")
 const CHEST_OPENED := preload("res://Asset/Meta data assets files/Visuals/OBJECTS/sprites/chest-opened.png")
-const HERO_NAME := "Sir Lance"
 
 @onready var chest_sprite: Sprite2D = get_node_or_null("Sprite2D")
 
@@ -31,13 +30,13 @@ func _process(_delta: float) -> void:
 	if DialogueManager.is_active:
 		return
 	if QuestManager.chest_unlocked:
-		DialogueManager.say(HERO_NAME, "The chest is empty now — the relic is already mine.")
+		DialogueManager.say(QuestManager.player_name, "The chest is empty now — the relic is already mine.")
 		return
 	if not QuestManager.has_key:
 		if QuestManager.quest_accepted:
-			DialogueManager.say(HERO_NAME, "Locked tight. I need the key the Street Kid promised.")
+			DialogueManager.say(QuestManager.player_name, "Locked tight. I need the key the Street Kid promised.")
 		else:
-			DialogueManager.say(HERO_NAME, "An ancient chest, locked fast. Perhaps someone in the village knows of it.")
+			DialogueManager.say(QuestManager.player_name, "An ancient chest, locked fast. Perhaps someone in the village knows of it.")
 		return
 	# Has the key → open it.
 	QuestManager.chest_unlocked = true
@@ -47,9 +46,10 @@ func _process(_delta: float) -> void:
 	_update_chest_sprite()
 	if player_nearby:
 		PromptHUD.request(self, _prompt_text())
+	Toast.show_toast("🏺  Obtained the Ancient Relic — return it to the Street Kid!")
 	DialogueManager.start([
-		{ "name": HERO_NAME, "text": "The key turns... [i]click.[/i]" },
-		{ "name": HERO_NAME, "text": "The [b]🏺 Ancient Relic![/b] I must bring this back to the Street Kid." },
+		{ "name": QuestManager.player_name, "text": "The key turns... [i]click.[/i]" },
+		{ "name": QuestManager.player_name, "text": "The [b]🏺 Ancient Relic![/b] I must bring this back to the Street Kid." },
 	])
 
 func _prompt_text() -> String:

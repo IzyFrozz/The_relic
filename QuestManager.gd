@@ -9,6 +9,11 @@ var quest_accepted: bool = false   # true once the QuestNPC gives the quest
 var has_key: bool = false           # got from the QuestNPC after delivering 10 coins; opens the chest
 var has_unsaved_progress: bool = true
 
+# Character creation — chosen at "Start New Game", permanent for the run, saved.
+var player_name: String = "Hero"
+var player_scale_x: float = 1.0
+var player_scale_y: float = 1.0
+
 var player_health: int = 100
 var MAX_HEALTH: int = 100
 var player_shield: int = 3
@@ -127,6 +132,9 @@ func save_game(slot: int = 1) -> void:
 		"game_won":          game_won,
 		"quest_accepted":    quest_accepted,
 		"has_key":           has_key,
+		"player_name":       player_name,
+		"player_scale_x":    player_scale_x,
+		"player_scale_y":    player_scale_y,
 		"spawn_x":           player_spawn_position.x,   # Vector2 isn't JSON-native; store components
 		"spawn_y":           player_spawn_position.y,
 		"play_time_seconds": play_time_seconds,
@@ -158,6 +166,9 @@ func load_game(slot: int = 1) -> bool:
 	game_won          = parsed.get("game_won",           false)
 	quest_accepted    = parsed.get("quest_accepted",     false)
 	has_key           = parsed.get("has_key",            false)
+	player_name       = parsed.get("player_name",        "Hero")
+	player_scale_x    = parsed.get("player_scale_x",     1.0)
+	player_scale_y    = parsed.get("player_scale_y",     1.0)
 	player_spawn_position = Vector2(parsed.get("spawn_x", 0.0), parsed.get("spawn_y", 0.0))
 	play_time_seconds = parsed.get("play_time_seconds",  0.0)
 	var raw_defeated  = parsed.get("defeated_enemies",   {})

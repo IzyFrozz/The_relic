@@ -61,36 +61,38 @@ func _build() -> void:
 
 	_panel = Panel.new()
 	# Anchored to the bottom of the safe area (kept clear of the screen edges).
+	# Taller box, extended upward.
 	_panel.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
 	_panel.offset_left = 210; _panel.offset_right = -210
-	_panel.offset_top = -232; _panel.offset_bottom = -96
+	_panel.offset_top = -300; _panel.offset_bottom = -96
 	_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var ps = StyleBoxFlat.new()
 	ps.bg_color = COL_BG
 	ps.set_corner_radius_all(14); ps.set_border_width_all(2)
 	ps.border_color = COL_BORDER
-	ps.content_margin_left = 28; ps.content_margin_right = 28
-	ps.content_margin_top = 40;  ps.content_margin_bottom = 18
 	_panel.add_theme_stylebox_override("panel", ps)
 	_root.add_child(_panel)
 
-	# Speaker name tag — sits on the top-left edge of the panel.
+	# Speaker name tag — sits on the top-left edge, clear of the body text.
 	_name_label = Label.new()
-	_name_label.position = Vector2(20, -16)
-	_name_label.add_theme_font_size_override("font_size", 17)
+	_name_label.position = Vector2(26, -20)
+	_name_label.add_theme_font_size_override("font_size", 19)
 	_name_label.add_theme_color_override("font_color", COL_GOLD)
 	var ns = StyleBoxFlat.new()
 	ns.bg_color = Color(0.12, 0.14, 0.22, 1.0)
-	ns.set_corner_radius_all(8); ns.set_border_width_all(1)
+	ns.set_corner_radius_all(8); ns.set_border_width_all(2)
 	ns.border_color = COL_GOLD
-	ns.content_margin_left = 14; ns.content_margin_right = 14
-	ns.content_margin_top = 5;   ns.content_margin_bottom = 5
+	ns.content_margin_left = 16; ns.content_margin_right = 16
+	ns.content_margin_top = 6;   ns.content_margin_bottom = 6
 	_name_label.add_theme_stylebox_override("normal", ns)
 	_panel.add_child(_name_label)
 
+	# Body text — explicitly inset from the panel so it sits BELOW the name tag.
 	var vb = VBoxContainer.new()
-	vb.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	vb.add_theme_constant_override("separation", 8)
+	vb.set_anchors_preset(Control.PRESET_FULL_RECT)
+	vb.offset_left = 28; vb.offset_right = -28
+	vb.offset_top = 42;  vb.offset_bottom = -14
+	vb.add_theme_constant_override("separation", 10)
 	vb.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_panel.add_child(vb)
 
@@ -99,15 +101,15 @@ func _build() -> void:
 	_body_label.fit_content = true
 	_body_label.scroll_active = false
 	_body_label.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_body_label.add_theme_font_size_override("normal_font_size", 19)
+	_body_label.add_theme_font_size_override("normal_font_size", 23)
 	_body_label.add_theme_color_override("default_color", COL_TEXT)
 	vb.add_child(_body_label)
 
 	_hint_label = Label.new()
 	_hint_label.text = "▸  Space"
 	_hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	_hint_label.add_theme_font_size_override("font_size", 13)
-	_hint_label.add_theme_color_override("font_color", Color(0.58, 0.64, 0.82))
+	_hint_label.add_theme_font_size_override("font_size", 16)
+	_hint_label.add_theme_color_override("font_color", Color(0.62, 0.68, 0.86))
 	vb.add_child(_hint_label)
 
 # ── Line flow ────────────────────────────────────────────────────────────────

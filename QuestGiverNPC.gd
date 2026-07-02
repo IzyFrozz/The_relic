@@ -12,7 +12,6 @@ extends CharacterBody2D
 # Messages go through DialogueManager; the "[E] …" prompt goes through PromptHUD.
 
 const NPC_NAME := "Street Kid"
-const HERO_NAME := "Sir Lance"
 
 var _scene_label: Label = null
 var player_nearby: bool = false
@@ -42,10 +41,11 @@ func _handle_interact() -> void:
 		QuestManager.quest_accepted = true
 		QuestManager.has_unsaved_progress = true
 		_update_prompt()
+		Toast.show_toast("📜  New objective: collect %d coins" % QuestManager.COINS_NEEDED)
 		DialogueManager.start([
 			{ "name": NPC_NAME,  "text": "Please, hero! A dragon sealed our village's relic inside an ancient chest." },
 			{ "name": NPC_NAME,  "text": "Bring me [b]%d gold coins[/b] and I'll trade you the key to that chest." % QuestManager.COINS_NEEDED },
-			{ "name": HERO_NAME, "text": "Ten coins for a key? ...Fine. I'll gather them." },
+			{ "name": QuestManager.player_name, "text": "Ten coins for a key? ...Fine. I'll gather them." },
 		])
 		return
 
@@ -55,7 +55,7 @@ func _handle_interact() -> void:
 		QuestManager.game_won = true
 		PromptHUD.release(self)
 		await _say_and_wait([
-			{ "name": HERO_NAME, "text": "Here — your village's relic, safe and sound." },
+			{ "name": QuestManager.player_name, "text": "Here — your village's relic, safe and sound." },
 			{ "name": NPC_NAME,  "text": "You did it! You truly saved us all. Thank you, hero!" },
 		])
 		_trigger_win_screen()
@@ -74,8 +74,9 @@ func _handle_interact() -> void:
 		QuestManager.has_key = true
 		QuestManager.has_unsaved_progress = true
 		_update_prompt()
+		Toast.show_toast("🔑  Received the chest key — open the ancient chest!")
 		DialogueManager.start([
-			{ "name": HERO_NAME, "text": "Here — ten coins, as promised." },
+			{ "name": QuestManager.player_name, "text": "Here — ten coins, as promised." },
 			{ "name": NPC_NAME,  "text": "You actually did it! Take this [b]🔑 key[/b] — open the chest and claim the relic." },
 		])
 	else:
