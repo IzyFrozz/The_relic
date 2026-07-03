@@ -76,7 +76,7 @@ func _process(_delta: float) -> void:
 		_skin_mat.set_shader_parameter("recolor_on", 1.0 if is_white else 0.0)
 
 func _physics_process(delta: float) -> void:
-	if QuestManager.is_in_combat:
+	if QuestManager.is_in_combat or QuestManager.is_fishing:
 		velocity = Vector2.ZERO
 		move_and_slide()
 		return

@@ -19,6 +19,7 @@
 [ext_resource type="Script" uid="uid://iujueewjbunt" path="res://delivery_point.gd" id="28_kq58d"]
 [ext_resource type="Script" uid="uid://c0yq6db10h3yi" path="res://Doorway.gd" id="30_kq58d"]
 [ext_resource type="Script" uid="uid://tmmvyr5pr6j4" path="res://QuestGiverNPC.gd" id="31_qnpc"]
+[ext_resource type="Script" uid="uid://honwlwck108r" path="res://FishermanNPC.gd" id="32_fish"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_cegan"]
 size = Vector2(48, 29)
@@ -908,6 +909,32 @@ offset_top = 118.33333
 offset_right = 108.99991
 offset_bottom = 141.33333
 text = "Relic Gained!!!"
+
+[node name="Fisherman" type="Area2D" parent="." unique_id=743001922]
+position = Vector2(-152, 545)
+script = ExtResource("32_fish")
+
+[node name="Emoji" type="Label" parent="Fisherman" unique_id=743001923]
+offset_left = -16.0
+offset_top = -20.0
+offset_right = 16.0
+offset_bottom = 12.0
+scale = Vector2(0.5, 0.5)
+text = "🎣"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="NameTag" type="Label" parent="Fisherman" unique_id=743001924]
+offset_left = -40.0
+offset_top = -34.0
+offset_right = 40.0
+offset_bottom = -22.0
+scale = Vector2(0.35, 0.35)
+text = "Fisherman"
+horizontal_alignment = 1
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Fisherman" unique_id=743001925]
+shape = SubResource("CircleShape2D_htxhm")
 
 [node name="OutsideDoor" type="Area2D" parent="." unique_id=1871006764 node_paths=PackedStringArray("target_marker")]
 position = Vector2(-516, 178)

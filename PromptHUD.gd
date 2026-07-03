@@ -81,7 +81,7 @@ func _process(_delta: float) -> void:
 # True while combat, dialogue, or any menu/popup is up — so the chip never
 # sits on top of those panels.
 func _blocking() -> bool:
-	if QuestManager.is_in_combat or DialogueManager.is_active:
+	if QuestManager.is_in_combat or QuestManager.is_fishing or DialogueManager.is_active:
 		return true
 	if not is_instance_valid(_pause): _pause = get_tree().root.find_child("PauseMenu", true, false)
 	if is_instance_valid(_pause) and _pause.has_method("is_open") and _pause.is_open():

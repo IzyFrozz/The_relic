@@ -39,6 +39,9 @@ var is_in_combat: bool = false
 # quest log). Overworld "interact" handlers check this so pressing E/Q to page a
 # popup can't also enter a house or talk to an NPC. Movement/combat stay allowed.
 var ui_arrow_nav_open: bool = false
+# True while the fishing minigame is on screen — freezes overworld movement and
+# hides the HUD/interact prompt, like combat does.
+var is_fishing: bool = false
 
 var player_level := 1
 var current_xp := 0
@@ -265,6 +268,20 @@ func record_fish_caught() -> void:
 	fish_caught += 1
 	has_unsaved_progress = true
 	notify_quest_event("fish_caught")
+
+# Unlocks one random combat item the player doesn't own yet (the "rare catch").
+# Returns the item id, or "" if everything is already unlocked.
+func unlock_random_new_item() -> String:
+	var pool: Array = []
+	for id in ITEM_META:
+		if not unlocked_items.has(id):
+			pool.append(id)
+	if pool.is_empty():
+		return ""
+	var pick: String = pool[randi() % pool.size()]
+	unlocked_items.append(pick)
+	has_unsaved_progress = true
+	return pick
 
 func collect_coin() -> void:
 	coins_collected += 1

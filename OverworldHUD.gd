@@ -186,7 +186,7 @@ func _refresh_quest_tracker() -> void:
 func _process(delta: float) -> void:
 	var in_combat  = QuestManager.is_in_combat
 	var end_active = _is_end_screen_active()
-	visible = not (in_combat or end_active)
+	visible = not (in_combat or end_active or QuestManager.is_fishing)
 
 	# Keep the global "a Q/E popup is open" flag in sync so overworld interact
 	# handlers can ignore E/Q while the quest log is up (see QuestManager).

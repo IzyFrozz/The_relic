@@ -39,10 +39,18 @@ func _process(_delta: float) -> void:
 		else:
 			print("⚠️ DOORWAY WARNING: Target Marker is empty in the Inspector!")
 
-# The doorway's own origin is at its trigger zone (on the path), not the door,
-# so anchor the "[E]" chip above the player standing at the door instead.
+var _prompt_anchor: Node2D = null
+
+# Anchor the "[E]" chip on the door itself (the interaction CollisionShape2D,
+# which is placed on the door) so it stays put on the door instead of trailing
+# the player. Falls back to this node's origin if no collision child is found.
 func get_prompt_target() -> Node2D:
-	return player_ref
+	if not is_instance_valid(_prompt_anchor):
+		for c in get_children():
+			if c is CollisionShape2D:
+				_prompt_anchor = c
+				break
+	return _prompt_anchor if is_instance_valid(_prompt_anchor) else self
 
 func _on_body_entered(body: Node2D) -> void:
 	if body.name == "mainplayer":
