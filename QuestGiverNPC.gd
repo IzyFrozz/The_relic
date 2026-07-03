@@ -22,7 +22,7 @@ func _ready() -> void:
 		_scene_label.visible = false
 
 func _process(_delta: float) -> void:
-	if not (player_nearby and Input.is_action_just_pressed("interact")):
+	if not (player_nearby and Input.is_action_just_pressed("interact")) or QuestManager.ui_arrow_nav_open:
 		return
 	if DialogueManager.is_active:
 		return
@@ -32,6 +32,7 @@ func _process(_delta: float) -> void:
 	_handle_interact()
 
 func _handle_interact() -> void:
+	QuestManager.record_npc_talk("street_kid")   # side-quest "Meet the Locals"
 	if QuestManager.game_won:
 		DialogueManager.say(NPC_NAME, "Our whole village is safe because of you. Thank you, hero!")
 		return

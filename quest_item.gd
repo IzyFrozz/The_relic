@@ -20,7 +20,7 @@ func _ready() -> void:
 			break
 
 func _process(_delta: float) -> void:
-	if player_nearby and Input.is_action_just_pressed("interact"):
+	if player_nearby and Input.is_action_just_pressed("interact") and not QuestManager.ui_arrow_nav_open:
 		QuestManager.collect_coin()
 		_spawn_pickup_feedback()
 		PromptHUD.release(self)

@@ -31,7 +31,7 @@ var player_dodge_active:   bool = false;  var enemy_dodge_active:   bool = false
 var player_items_locked:   bool = false;  var enemy_items_locked:   bool = false
 var player_lifesteal_active: bool = false; var enemy_lifesteal_active: bool = false
 var player_god_pierce:       bool = false; var enemy_god_pierce:       bool = false
-
+var player_rally:            bool = false; var enemy_rally:            bool = false   # War Banner: next attack ×2
 var player_damage_bonus: int = 0;  var enemy_damage_bonus: int = 0
 
 var player_regen_rounds:     int = 0;  var enemy_regen_rounds:     int = 0
@@ -470,6 +470,15 @@ func use_player_item(item_type: String) -> void:
 			await _fx_status("player", Color(1.0, 0.45, 0.05, 1.0), "🔥")
 			if combat_ui: combat_ui.display_round_history(
 				"🔥 Overcharge — +20 damage, GUARANTEED hit (pierces shield/dodge/reflect entirely, bonus: +%d)" % player_damage_bonus, true)
+		"phoenix_feather":
+			QuestManager.player_health = QuestManager.MAX_HEALTH
+			player_regen_rounds = 3
+			await _fx_heal("player")
+			if combat_ui: combat_ui.display_round_history("🪶 Phoenix Feather — full heal + regen ×3!", true)
+		"war_banner":
+			player_rally = true
+			await _fx_status("player", Color(0.95, 0.30, 0.30, 1.0), "🚩")
+			if combat_ui: combat_ui.display_round_history("🚩 War Banner — next attack deals DOUBLE damage!", true)
 
 	_sync_ground_fx()
 	if combat_ui: combat_ui._refresh_ui_states()
@@ -503,6 +512,10 @@ func process_player_attack_phase() -> void:
 	if player_weakened:
 		dmg = maxi(0, dmg - 20)
 		player_weakened = false
+	# War Banner: double the final damage (applied after all other modifiers).
+	if player_rally:
+		dmg *= 2
+		player_rally = false
 
 	var actual_dmg_dealt := 0
 
@@ -912,6 +925,7 @@ func _reset_all_combat_modifiers() -> void:
 	player_items_locked   = false;  enemy_items_locked   = false
 	player_lifesteal_active = false; enemy_lifesteal_active = false
 	player_god_pierce      = false; enemy_god_pierce      = false
+	player_rally           = false; enemy_rally           = false
 	player_damage_bonus   = 0;      enemy_damage_bonus   = 0
 	player_regen_rounds   = 0;      enemy_regen_rounds   = 0
 	player_poison_rounds  = 0;      enemy_poison_rounds  = 0
@@ -963,6 +977,9 @@ func _check_combat_end_conditions() -> bool:
 
 		xp = roundi(xp * 1.30)   # +30% global XP gain across all mob levels
 		var _lvl_before = QuestManager.player_level
+		# Fire the side-quest hook BEFORE gain_xp so an "underdog" check sees the
+		# pre-level-up player level (beating a foe 2+ levels above you).
+		QuestManager.notify_quest_event("enemy_defeated", {"enemy_level": enemy_level})
 		QuestManager.gain_xp(xp)
 		var _victory_toast = "⚔️  Victory!  +%d XP" % xp
 		if QuestManager.player_level > _lvl_before:

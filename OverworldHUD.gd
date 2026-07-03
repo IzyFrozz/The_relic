@@ -17,6 +17,10 @@ const KEY_TEX_PATH := "res://Asset/Meta data assets files/Visuals/OBJECTS/items/
 var quest_button: Button = null
 var quest_log: Control = null
 var quest_log_text: RichTextLabel = null
+var quest_page_title: Label = null       # header showing the current page name
+var quest_accept_box: VBoxContainer = null   # holds per-quest Accept buttons (Rumors page)
+var _quest_page: int = 0                 # 0 Main · 1 Available · 2 Active · 3 Rumors · 4 Completed
+const QUEST_PAGES := ["Main Quest", "Available", "Active", "Rumors", "Completed"]
 var _side_buttons: Array = []
 var _sel_index: int = -1
 
@@ -110,6 +114,15 @@ func _ready() -> void:
 	_build_stat_panel()
 	_side_buttons = [roadmap_button, quest_button]
 
+	# Live-refresh the quest log whenever side-quest state changes (accept,
+	# progress, completion, unlock) — but only while it's open.
+	if not QuestManager.side_quests_changed.is_connected(_on_side_quests_changed):
+		QuestManager.side_quests_changed.connect(_on_side_quests_changed)
+
+func _on_side_quests_changed() -> void:
+	if is_instance_valid(quest_log) and quest_log.visible:
+		_refresh_quest_log()
+
 # ── Quest objective banner ─────────────────────────────────────────────────────
 func _build_quest_tracker() -> void:
 	quest_panel = Panel.new()
@@ -175,6 +188,10 @@ func _process(delta: float) -> void:
 	var end_active = _is_end_screen_active()
 	visible = not (in_combat or end_active)
 
+	# Keep the global "a Q/E popup is open" flag in sync so overworld interact
+	# handlers can ignore E/Q while the quest log is up (see QuestManager).
+	QuestManager.ui_arrow_nav_open = is_instance_valid(quest_log) and quest_log.visible
+
 	# Timer increments on QuestManager so it survives scene reloads / win / lose
 	if not in_combat and not end_active and Engine.time_scale > 0.0:
 		QuestManager.play_time_seconds += delta
@@ -196,8 +213,8 @@ func _refresh() -> void:
 		stat_lv.text = "⭐  LV. %d" % QuestManager.player_level
 	if is_instance_valid(stat_hp):
 		stat_hp.text = "❤️  %d HP" % QuestManager.MAX_HEALTH
-	if is_instance_valid(quest_log) and quest_log.visible:
-		_refresh_quest_log()
+	# NOTE: the quest log is refreshed on open, on page change, and via the
+	# side_quests_changed signal — NOT every frame (it builds Accept buttons).
 
 # ── Bottom-left stat panel ─────────────────────────────────────────────────────
 func _build_stat_panel() -> void:
@@ -328,15 +345,49 @@ func _build_quest_log() -> void:
 	title.add_theme_font_size_override("font_size", 22)
 	title.add_theme_color_override("font_color", COL_GOLD)
 	vb.add_child(title)
+
+	# ── Page navigation:  ◀   Page Name   ▶   (cycles Main/Active/Rumors/Done) ──
+	var nav = HBoxContainer.new()
+	nav.alignment = BoxContainer.ALIGNMENT_CENTER
+	nav.add_theme_constant_override("separation", 10)
+	var prev = _make_nav_btn("Q ◀")
+	prev.pressed.connect(func(): _cycle_quest_page(-1))
+	nav.add_child(prev)
+	quest_page_title = Label.new()
+	quest_page_title.custom_minimum_size = Vector2(220, 0)
+	quest_page_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	quest_page_title.add_theme_font_size_override("font_size", 17)
+	quest_page_title.add_theme_color_override("font_color", Color(0.85, 0.88, 1.0))
+	nav.add_child(quest_page_title)
+	var next = _make_nav_btn("▶ E")
+	next.pressed.connect(func(): _cycle_quest_page(1))
+	nav.add_child(next)
+	vb.add_child(nav)
 	vb.add_child(HSeparator.new())
+
+	# Scrollable body so long side-quest lists never overflow the drawer.
+	var scroll = ScrollContainer.new()
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	vb.add_child(scroll)
+	var body = VBoxContainer.new()
+	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	body.add_theme_constant_override("separation", 10)
+	scroll.add_child(body)
 
 	quest_log_text = RichTextLabel.new()
 	quest_log_text.bbcode_enabled = true
 	quest_log_text.fit_content = true
 	quest_log_text.scroll_active = false
-	quest_log_text.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	quest_log_text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	quest_log_text.add_theme_font_size_override("normal_font_size", 15)
-	vb.add_child(quest_log_text)
+	body.add_child(quest_log_text)
+
+	# Accept buttons for the Rumors page live here (rebuilt on each refresh).
+	quest_accept_box = VBoxContainer.new()
+	quest_accept_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	quest_accept_box.add_theme_constant_override("separation", 8)
+	body.add_child(quest_accept_box)
 
 	var close = Button.new()
 	close.text = "✖  Close  (Esc)"
@@ -348,13 +399,49 @@ func _build_quest_log() -> void:
 	close.pressed.connect(func(): quest_log.visible = false)
 	vb.add_child(close)
 
+func _make_nav_btn(txt: String) -> Button:
+	var b = Button.new()
+	b.text = txt
+	b.focus_mode = Control.FOCUS_NONE
+	b.custom_minimum_size = Vector2(40, 34)
+	b.add_theme_stylebox_override("normal", _s(Color(0.14, 0.16, 0.24), COL_BORDER, 6))
+	b.add_theme_stylebox_override("hover",  _s(Color(0.22, 0.25, 0.36), COL_GOLD, 6))
+	b.add_theme_color_override("font_color", Color(0.9, 0.9, 1.0))
+	return b
+
+func _cycle_quest_page(dir: int) -> void:
+	_quest_page = (_quest_page + dir + QUEST_PAGES.size()) % QUEST_PAGES.size()
+	_refresh_quest_log()
+
 func _refresh_quest_log() -> void:
 	if not is_instance_valid(quest_log_text):
 		return
+	# Clear any accept buttons from a previous refresh.
+	if is_instance_valid(quest_accept_box):
+		for c in quest_accept_box.get_children():
+			c.queue_free()
+	# Badge each page title with a count so the player sees there's more to see.
+	# The Active badge doubles as the "X/3" quest-slot indicator.
+	var avail_n  = QuestManager.side_quest_ids_in_state("available").size()
+	var active_n = QuestManager.active_quest_count()
+	var rumor_n  = QuestManager.side_quest_ids_in_state("rumour").size()
+	var done_n   = QuestManager.side_quest_ids_in_state("done").size()
+	var counts = ["",
+		"  (%d)" % avail_n,
+		"  (%d/%d)" % [active_n, QuestManager.MAX_ACTIVE_QUESTS],
+		"  (%d)" % rumor_n,
+		"  (%d)" % done_n]
+	if is_instance_valid(quest_page_title):
+		quest_page_title.text = "◈  %s%s" % [QUEST_PAGES[_quest_page], counts[_quest_page]]
+	match _quest_page:
+		0: quest_log_text.text = _main_quest_bbcode()
+		1: quest_log_text.text = _available_bbcode()
+		2: quest_log_text.text = _side_list_bbcode("active")
+		3: quest_log_text.text = _rumors_bbcode()
+		4: quest_log_text.text = _side_list_bbcode("done")
+
+func _main_quest_bbcode() -> String:
 	var qm = QuestManager
-	# Each step: [text, done?]. Steps are revealed one at a time — completed
-	# steps get a ✓, the first unfinished one is the current objective, and
-	# everything after it stays hidden until unlocked.
 	var steps = [
 		["Seek out and talk to the Street Kid", qm.quest_accepted],
 		["Collect %d coins   (%d / %d)" % [qm.COINS_NEEDED, mini(qm.coins_collected, qm.COINS_NEEDED), qm.COINS_NEEDED],
@@ -365,19 +452,98 @@ func _refresh_quest_log() -> void:
 	]
 	var out = "[b][color=#FFD84D]The Village Relic[/color][/b]\n"
 	out += "[color=#9aa]A dragon sealed the village relic in an ancient chest. Help the Street Kid get it back.[/color]\n\n"
-	# Reveal completed steps and the single current objective only — never show
-	# how many steps remain (no locked "???" lines).
 	for step in steps:
-		var text: String = step[0]
-		var done: bool = step[1]
-		if done:
-			out += "  [color=#44FF88]✓[/color]  [color=#8a8f9c]%s[/color]\n" % text
+		if step[1]:
+			out += "  [color=#44FF88]✓[/color]  [color=#8a8f9c]%s[/color]\n" % step[0]
 		else:
-			out += "  [color=#FFD84D]➤[/color]  [b]%s[/b]\n" % text   # current objective
+			out += "  [color=#FFD84D]➤[/color]  [b]%s[/b]\n" % step[0]
 			break
 	if qm.game_won:
 		out += "\n[color=#44FF88]Quest complete — the village is saved![/color]\n"
-	quest_log_text.text = out
+	return out
+
+# Shared renderer for the Active and Completed side-quest pages.
+func _side_list_bbcode(state: String) -> String:
+	var ids = QuestManager.side_quest_ids_in_state(state)
+	if ids.is_empty():
+		if state == "active":
+			return "[color=#9aa]No active side quests.\n\nCheck the [b]Available[/b] page (◀) to start one.[/color]"
+		return "[color=#9aa]No completed side quests yet.[/color]"
+	var out = ""
+	for id in ids:
+		var d = SideQuestDB.get_def(id)
+		var prog = QuestManager.side_quest_progress.get(id, 0)
+		if state == "done":
+			out += "[color=#44FF88]✓[/color]  [b]%s %s[/b]\n" % [d.get("emoji", "•"), d.get("title", id)]
+			out += "     [color=#7a8f7a]Reward claimed: %s[/color]\n\n" % SideQuestDB.reward_text(id)
+		else:
+			out += "[color=#FFD84D]➤[/color]  [b]%s %s[/b]   [color=#8fb4ff]%s[/color]\n" % [
+				d.get("emoji", "•"), d.get("title", id), SideQuestDB.progress_text(id, prog)]
+			out += "     [color=#9aa]%s[/color]\n" % d.get("how", "")
+			out += "     [color=#c9a24d]Reward: %s[/color]\n\n" % SideQuestDB.reward_text(id)
+	return out
+
+const SideQuestDB = preload("res://SideQuestDB.gd")
+
+# Available page: revealed, startable quests. Each gets an "Activate" button,
+# subject to the MAX_ACTIVE_QUESTS cap (buttons disable and a note shows when
+# the log is full).
+func _available_bbcode() -> String:
+	var ids = QuestManager.side_quest_ids_in_state("available")
+	var active_n = QuestManager.active_quest_count()
+	var cap = QuestManager.MAX_ACTIVE_QUESTS
+	var at_cap = active_n >= cap
+	var out = ""
+	if ids.is_empty():
+		out = "[color=#9aa]Nothing ready to start.\n\nChase down [b]Rumors[/b] (▶) to reveal new quests.[/color]"
+	else:
+		out = "[color=#c9a24d]Ready to take on — %d / %d quest slots used:[/color]\n" % [active_n, cap]
+		if at_cap:
+			out += "[color=#e07a5a]⚠ Quest log full — finish an active quest before starting another.[/color]\n"
+		# One Activate button per available quest (full details), below the text.
+		if is_instance_valid(quest_accept_box):
+			for id in ids:
+				var d = SideQuestDB.get_def(id)
+				var card = Button.new()
+				card.focus_mode = Control.FOCUS_NONE
+				card.custom_minimum_size = Vector2(0, 66)
+				card.clip_text = true
+				card.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+				card.disabled = at_cap
+				card.add_theme_stylebox_override("normal",   _s(Color(0.12, 0.13, 0.20), COL_GOLD, 8))
+				card.add_theme_stylebox_override("hover",    _s(Color(0.20, 0.22, 0.32), COL_GOLD, 8))
+				card.add_theme_stylebox_override("disabled", _s(Color(0.10, 0.10, 0.13), Color(0.3, 0.3, 0.35), 8))
+				card.add_theme_color_override("font_color", Color(0.92, 0.92, 1.0))
+				card.add_theme_color_override("font_disabled_color", Color(0.5, 0.5, 0.55))
+				card.add_theme_font_size_override("font_size", 14)
+				card.text = "%s  %s   ·   Reward: %s\n%s\n%s" % [
+					d.get("emoji", "📜"), d.get("title", id), SideQuestDB.reward_text(id),
+					d.get("how", ""), ("🔒 Log full" if at_cap else "▶ Activate")]
+				var qid := String(id)
+				card.pressed.connect(func():
+					QuestManager.accept_side_quest(qid)   # available → active (enforces cap)
+					_quest_page = 2   # jump to Active so they see it start tracking
+					_refresh_quest_log())
+				quest_accept_box.add_child(card)
+	return out
+
+# Rumors page: vague hints only, no buttons. The player must chase the hint
+# down in the world (fight / collect / talk) to reveal the quest, at which point
+# it moves to the Available page. Item-reward rumors flag their prize.
+func _rumors_bbcode() -> String:
+	var ids = QuestManager.side_quest_ids_in_state("rumour")
+	if ids.is_empty():
+		return "[color=#9aa]No rumors circulating.\n\nExplore, fight and talk to folk to stir up more.[/color]"
+	var out = "[color=#8a8f9c]Whispers around the village — chase one down to reveal a quest:[/color]\n\n"
+	for id in ids:
+		var d = SideQuestDB.get_def(id)
+		var reward_note = ""
+		if d.get("reward", {}).has("item"):
+			var meta = QuestManager.ITEM_META.get(d["reward"]["item"], {})
+			reward_note = "   [color=#c9a24d](rumoured reward: %s %s)[/color]" % [meta.get("emoji", "🎁"), meta.get("label", "a special item")]
+		out += "  🔎  [i]\"%s\"[/i]%s\n" % [SideQuestDB.teaser(id), reward_note]
+		out += "        [color=#8fb4ff]↳ %s[/color]\n\n" % SideQuestDB.rumour_hint(id)
+	return out
 
 # ── Tab navigation between the left panels ──────────────────────────────────────
 func _input(event: InputEvent) -> void:
@@ -388,6 +554,16 @@ func _input(event: InputEvent) -> void:
 		quest_log.visible = false
 		get_viewport().set_input_as_handled()
 		return
+	# Q / E mirror the ◀ ▶ page arrows while the quest log is open.
+	if is_instance_valid(quest_log) and quest_log.visible:
+		if event.keycode == KEY_Q:
+			get_viewport().set_input_as_handled()
+			_cycle_quest_page(-1)
+			return
+		if event.keycode == KEY_E:
+			get_viewport().set_input_as_handled()
+			_cycle_quest_page(1)
+			return
 	if not _can_navigate():
 		return
 	match event.keycode:

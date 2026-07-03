@@ -13,6 +13,15 @@ var has_unsaved_progress: bool = true
 var player_name: String = "Hero"
 var player_scale_x: float = 1.0
 var player_scale_y: float = 1.0
+# Palette-swap colours (default = the sprite's original shades).
+# Five independent groups on the repainted sprite — hair and shoes share the
+# same browns on the sheet but are split by the region mask, so they can be
+# recolored separately.
+var hair_color: Color = Color("573a23")
+var shirt_color: Color = Color("8f0303")
+var pants_color: Color = Color("2c65b5")
+var shoes_color: Color = Color("573a23")
+var skin_color: Color = Color("ac7b5d")
 
 var player_health: int = 100
 var MAX_HEALTH: int = 100
@@ -26,6 +35,10 @@ var player_overworld_position: Vector2 = Vector2.ZERO
 # "no checkpoint yet" — the scene's authored player position is used instead.
 var player_spawn_position: Vector2 = Vector2.ZERO
 var is_in_combat: bool = false
+# True while a UI popup that steals Q/E for arrow-navigation is open (e.g. the
+# quest log). Overworld "interact" handlers check this so pressing E/Q to page a
+# popup can't also enter a house or talk to an NPC. Movement/combat stay allowed.
+var ui_arrow_nav_open: bool = false
 
 var player_level := 1
 var current_xp := 0
@@ -78,10 +91,185 @@ const ITEM_META := {
 	"static_field": { "emoji": "⚡", "label": "Static Field",    "desc": "Target cannot use any items on their next turn — basic attack only." },
 	"time_warp":    { "emoji": "⏳", "label": "Time Warp",       "desc": "Target skips their next TWO turns." },
 	"overcharge":   { "emoji": "🔥", "label": "Overcharge",      "desc": "Adds +20 damage AND pierces armor on next attack. Stacks with Grindstone." },
+	# ── Side-quest reward items (not level-gated; earned by completing quests) ──
+	"phoenix_feather": { "emoji": "🪶", "label": "Phoenix Feather", "desc": "Heals you to FULL HP instantly and grants +10 HP regen for 3 rounds." },
+	"war_banner":      { "emoji": "🚩", "label": "War Banner",      "desc": "Your next attack deals DOUBLE damage. Applied after other damage buffs." },
 }
+
+# ── Side quest state (see SideQuestDB.gd for definitions) ────────────────────
+# Everything here saves/loads. States: rumour / available / active / done.
+#   rumour    — a vague hint; the player must trigger it in the world (fight,
+#               collect, talk…) before it reveals and can be activated
+#   available — revealed & startable (basic quests begin here); has Activate
+#   active    — accepted & tracking progress (capped at MAX_ACTIVE_QUESTS)
+#   done      — completed, reward granted
+const SideQuestDB = preload("res://SideQuestDB.gd")
+const MAX_ACTIVE_QUESTS := 3              # how many side quests can be active at once
+var side_quest_states: Dictionary = {}    # id -> state string
+var side_quest_progress: Dictionary = {}  # id -> int progress
+var coins_lifetime: int = 0               # never decreases (coin_hoarder)
+var potions_lifetime: int = 0             # never decreases (herbalist)
+var fish_caught: int = 0                  # total fish reeled in
+var enemies_defeated: int = 0             # lifetime kills (drives rumour reveals)
+var talked_npcs: Array = []               # distinct npc ids the player has talked to
+signal side_quests_changed               # HUD listens to refresh the quest log
+
+# Called once at character creation and defensively on load: seed any quest
+# that has no recorded state yet. Basic quests start "available"; everything
+# else starts "rumour" (a hint the player must trigger in the world).
+func init_side_quests() -> void:
+	for id in SideQuestDB.QUESTS:
+		if not side_quest_states.has(id):
+			side_quest_states[id] = "available" if id in SideQuestDB.INITIALLY_AVAILABLE else "rumour"
+		# Legacy saves used "locked" for un-revealed quests — migrate to "rumour".
+		elif side_quest_states[id] == "locked":
+			side_quest_states[id] = "rumour"
+		if not side_quest_progress.has(id):
+			side_quest_progress[id] = 0
+	side_quests_changed.emit()
+
+func side_quest_ids_in_state(state: String) -> Array:
+	var out: Array = []
+	for id in SideQuestDB.QUESTS:            # iterate defs for stable order
+		if side_quest_states.get(id, "rumour") == state:
+			out.append(id)
+	return out
+
+func active_quest_count() -> int:
+	return side_quest_ids_in_state("active").size()
+
+func accept_side_quest(id: String) -> void:
+	if side_quest_states.get(id, "rumour") != "available":
+		return
+	if active_quest_count() >= MAX_ACTIVE_QUESTS:
+		Toast.show_toast("📋  Quest log full (%d/%d) — finish one first." % [MAX_ACTIVE_QUESTS, MAX_ACTIVE_QUESTS])
+		return
+	side_quest_states[id] = "active"
+	has_unsaved_progress = true
+	var d = SideQuestDB.get_def(id)
+	Toast.show_toast("%s  Quest activated: %s" % [d.get("emoji", "📜"), d.get("title", id)])
+	side_quests_changed.emit()
+
+# Central event hook. Gameplay code calls this with an event key and optional
+# context; every ACTIVE quest of a matching type advances or completes, and any
+# RUMOUR whose reveal trigger just fired is revealed to "available".
+func notify_quest_event(event: String, ctx: Dictionary = {}) -> void:
+	if event == "enemy_defeated":
+		enemies_defeated += 1
+	var changed := false
+	for id in side_quest_ids_in_state("active"):
+		var d = SideQuestDB.get_def(id)
+		if _event_matches_quest(event, d, ctx):
+			changed = _advance_side_quest(id, d) or changed
+	changed = _check_rumour_reveals() or changed
+	if changed:
+		side_quests_changed.emit()
+
+# Reveal any rumour whose trigger condition is now met. Returns true if any
+# rumour flipped to "available".
+func _check_rumour_reveals() -> bool:
+	var revealed := false
+	for id in side_quest_ids_in_state("rumour"):
+		if _rumour_reveal_met(id):
+			side_quest_states[id] = "available"
+			has_unsaved_progress = true
+			revealed = true
+			var d = SideQuestDB.get_def(id)
+			Toast.show_toast("❗ New quest available: %s %s" % [d.get("emoji", "📜"), d.get("title", id)])
+	return revealed
+
+func _rumour_reveal_met(id: String) -> bool:
+	var rv: Dictionary = SideQuestDB.get_def(id).get("reveal", {})
+	var need: int = int(rv.get("count", 1))
+	match rv.get("event", ""):
+		"enemy_defeated":   return enemies_defeated >= need
+		"coin_lifetime":    return coins_lifetime >= need
+		"potion_collected": return potions_lifetime >= need
+		"fish_caught":      return fish_caught >= need
+		"npc_talked":       return talked_npcs.has(rv.get("npc", ""))
+	return false
+
+func _event_matches_quest(event: String, d: Dictionary, ctx: Dictionary) -> bool:
+	var qtype: String = d.get("type", "")
+	match qtype:
+		"kill_count":
+			return event == "enemy_defeated"
+		"loadout_kill":
+			if event != "enemy_defeated": return false
+			for it in d.get("params", {}).get("items", []):
+				if not equipped_items.has(it): return false
+			return true
+		"underdog_kill":
+			if event != "enemy_defeated": return false
+			var diff: int = d.get("params", {}).get("level_diff", 1)
+			return ctx.get("enemy_level", 0) - player_level >= diff
+		"coin_lifetime":
+			return event == "coin_lifetime"
+		"potion_count":
+			return event == "potion_collected"
+		"fish_count":
+			return event == "fish_caught"
+		"talk_npcs":
+			return event == "npc_talked"
+	return false
+
+# Returns true if the quest's tracked count changed.
+func _advance_side_quest(id: String, d: Dictionary) -> bool:
+	var qtype: String = d.get("type", "")
+	var goal: int = d.get("goal", 1)
+	var new_progress: int
+	match qtype:
+		"coin_lifetime":  new_progress = coins_lifetime
+		"potion_count":   new_progress = potions_lifetime
+		"fish_count":     new_progress = fish_caught
+		"talk_npcs":
+			var need: Array = d.get("params", {}).get("npcs", [])
+			var hit := 0
+			for n in need:
+				if talked_npcs.has(n): hit += 1
+			new_progress = hit
+		_:                new_progress = side_quest_progress.get(id, 0) + 1   # per-event counters
+	if new_progress == side_quest_progress.get(id, 0):
+		return false
+	side_quest_progress[id] = new_progress
+	has_unsaved_progress = true
+	if new_progress >= goal:
+		_complete_side_quest(id, d)
+	return true
+
+func _complete_side_quest(id: String, d: Dictionary) -> void:
+	side_quest_states[id] = "done"
+	var reward: Dictionary = d.get("reward", {})
+	var parts: Array = []
+	if reward.has("xp"):
+		gain_xp(reward["xp"])          # may itself level up / announce unlocks
+		parts.append("+%d XP" % reward["xp"])
+	if reward.has("item"):
+		var item_id: String = reward["item"]
+		if not unlocked_items.has(item_id):
+			unlocked_items.append(item_id)
+		var meta = ITEM_META.get(item_id, {})
+		parts.append("%s %s unlocked" % [meta.get("emoji", "🎁"), meta.get("label", item_id)])
+	Toast.show_toast("✅  Quest complete: %s   (%s)" % [d.get("title", id), "  ".join(parts)])
+	has_unsaved_progress = true
+
+# Record talking to an npc (drives talk_npcs quests + village_census).
+func record_npc_talk(npc_id: String) -> void:
+	if not talked_npcs.has(npc_id):
+		talked_npcs.append(npc_id)
+		has_unsaved_progress = true
+		notify_quest_event("npc_talked", {"npc": npc_id})
+
+# Called by the fishing minigame each time a fish is successfully reeled in.
+func record_fish_caught() -> void:
+	fish_caught += 1
+	has_unsaved_progress = true
+	notify_quest_event("fish_caught")
 
 func collect_coin() -> void:
 	coins_collected += 1
+	coins_lifetime += 1
+	notify_quest_event("coin_lifetime")
 	has_unsaved_progress = true
 
 const HP_PER_HEART := 20
@@ -135,10 +323,22 @@ func save_game(slot: int = 1) -> void:
 		"player_name":       player_name,
 		"player_scale_x":    player_scale_x,
 		"player_scale_y":    player_scale_y,
+		"hair_color":        hair_color.to_html(false),
+		"shirt_color":       shirt_color.to_html(false),
+		"pants_color":       pants_color.to_html(false),
+		"shoes_color":       shoes_color.to_html(false),
+		"skin_color":        skin_color.to_html(false),
 		"spawn_x":           player_spawn_position.x,   # Vector2 isn't JSON-native; store components
 		"spawn_y":           player_spawn_position.y,
 		"play_time_seconds": play_time_seconds,
 		"defeated_enemies":  defeated_enemies,   # persists mob kill/respawn state across saves
+		"side_quest_states":   side_quest_states,
+		"side_quest_progress": side_quest_progress,
+		"coins_lifetime":      coins_lifetime,
+		"potions_lifetime":    potions_lifetime,
+		"fish_caught":         fish_caught,
+		"enemies_defeated":    enemies_defeated,
+		"talked_npcs":         talked_npcs,
 	}
 	var f = FileAccess.open(_slot_path(slot), FileAccess.WRITE)
 	if f:
@@ -169,10 +369,34 @@ func load_game(slot: int = 1) -> bool:
 	player_name       = parsed.get("player_name",        "Hero")
 	player_scale_x    = parsed.get("player_scale_x",     1.0)
 	player_scale_y    = parsed.get("player_scale_y",     1.0)
+	# Legacy saves stored Outfit/Sash/Skin — map them onto the new five groups
+	# (old Outfit covered hair+tunic+pants browns; old Sash was the blue accent).
+	var legacy_outfit: String = parsed.get("outfit_color", "573a23")
+	var legacy_sash: String   = parsed.get("sash_color",   "2c65b5")
+	hair_color        = Color(parsed.get("hair_color",  legacy_outfit))
+	shirt_color       = Color(parsed.get("shirt_color", "8f0303"))
+	pants_color       = Color(parsed.get("pants_color", legacy_sash))
+	shoes_color       = Color(parsed.get("shoes_color", legacy_outfit))
+	skin_color        = Color(parsed.get("skin_color",  "ac7b5d"))
 	player_spawn_position = Vector2(parsed.get("spawn_x", 0.0), parsed.get("spawn_y", 0.0))
 	play_time_seconds = parsed.get("play_time_seconds",  0.0)
 	var raw_defeated  = parsed.get("defeated_enemies",   {})
 	defeated_enemies  = raw_defeated if typeof(raw_defeated) == TYPE_DICTIONARY else {}
+	# ── Side quests ──
+	var raw_states    = parsed.get("side_quest_states",   {})
+	side_quest_states = raw_states if typeof(raw_states) == TYPE_DICTIONARY else {}
+	var raw_prog      = parsed.get("side_quest_progress", {})
+	side_quest_progress = raw_prog if typeof(raw_prog) == TYPE_DICTIONARY else {}
+	# JSON restores dict int values as floats — coerce progress back to int.
+	for k in side_quest_progress:
+		side_quest_progress[k] = int(side_quest_progress[k])
+	coins_lifetime    = int(parsed.get("coins_lifetime",   0))
+	potions_lifetime  = int(parsed.get("potions_lifetime", 0))
+	fish_caught       = int(parsed.get("fish_caught",      0))
+	enemies_defeated  = int(parsed.get("enemies_defeated", 0))
+	var raw_talked    = parsed.get("talked_npcs", [])
+	talked_npcs       = raw_talked if typeof(raw_talked) == TYPE_ARRAY else []
+	init_side_quests()   # seed any quests missing from an older save
 	player_health     = MAX_HEALTH
 	player_shield     = MAX_SHIELD
 	has_unsaved_progress = false
@@ -198,6 +422,11 @@ func reset_to_defaults() -> void:
 	quest_accepted = false; has_key = false; player_spawn_position = Vector2.ZERO
 	player_health = MAX_HEALTH; player_shield = MAX_SHIELD
 	defeated_enemies.clear()
+	# Side quests — fresh slate for a new run.
+	side_quest_states.clear(); side_quest_progress.clear()
+	coins_lifetime = 0; potions_lifetime = 0; fish_caught = 0; enemies_defeated = 0
+	talked_npcs.clear()
+	init_side_quests()
 	has_unsaved_progress = false
 
 func get_max_equip_slots() -> int:
@@ -220,9 +449,14 @@ func gain_xp(amount: int) -> void:
 	while current_xp >= xp_required:
 		current_xp -= xp_required
 		player_level += 1
-		MAX_HEALTH += 20
+		MAX_HEALTH += 20   # keeps growing forever — no level cap
 		if item_unlocks.has(player_level):
 			var new_item = item_unlocks[player_level]
 			if not unlocked_items.has(new_item):
 				unlocked_items.append(new_item)
-		xp_required = int(xp_required * 1.35)
+		# Announce any level-gated mechanic that just opened up (LevelGate.gd).
+		preload("res://LevelGate.gd").announce_unlocks_at(player_level)
+		# Two-stage XP curve: steep early (1.35x) so the first unlocks feel
+		# earned, then gentler (1.18x) from level 8 so 20+ stays reachable —
+		# with the old flat 1.35x, level 19→20 needed ~30 same-level kills.
+		xp_required = int(xp_required * (1.35 if player_level < 8 else 1.18))

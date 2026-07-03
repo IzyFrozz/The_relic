@@ -20,10 +20,17 @@ var customize_view: VBoxContainer
 var name_input:    LineEdit
 var width_slider:  HSlider
 var height_slider: HSlider
-var preview_sprite: TextureRect
+var preview_sprites: Array[Sprite2D] = []   # 4 direction previews (down/up/left/right), inside a SubViewport
 var card_panel:    Panel
+var hair_picker:  ColorPickerButton
+var shirt_picker: ColorPickerButton
+var pants_picker: ColorPickerButton
+var shoes_picker: ColorPickerButton
+var skin_picker:  ColorPickerButton
+var _preview_mat:  ShaderMaterial
 
 const PLAYER_TEX_PATH := "res://Asset/sprites/characters/player.png"
+const PlayerSkin = preload("res://PlayerSkin.gd")
 
 var load_slot_buttons: Array = []
 var load_status_label: Label
@@ -234,7 +241,7 @@ func _build_customize_view() -> void:
 
 	# ── Live character preview ──
 	var preview_box = Panel.new()
-	preview_box.custom_minimum_size = Vector2(0, 116)
+	preview_box.custom_minimum_size = Vector2(0, 168)
 	var pstyle = StyleBoxFlat.new()
 	pstyle.bg_color = Color(0.10, 0.12, 0.18, 1.0)
 	pstyle.set_corner_radius_all(8); pstyle.set_border_width_all(2)
@@ -246,16 +253,45 @@ func _build_customize_view() -> void:
 	preview_center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	preview_box.add_child(preview_center)
 
-	preview_sprite = TextureRect.new()
-	var atlas = AtlasTexture.new()
-	atlas.atlas = load(PLAYER_TEX_PATH)
-	atlas.region = Rect2(0, 144, 48, 48)   # a front-facing idle frame
-	preview_sprite.texture = atlas
-	preview_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST   # crisp pixels
-	# STRETCH_SCALE so the size (driven by the sliders) distorts the sprite,
-	# previewing the exact width/height build the player picked.
-	preview_sprite.stretch_mode = TextureRect.STRETCH_SCALE
-	preview_center.add_child(preview_sprite)
+	# The recolor shader needs the group mask aligned to the sprite 1:1, which
+	# only holds for Node2D sprites (sheet-normalized UV) — a TextureRect with an
+	# AtlasTexture gives region-local UV and the mask misaligns (no recolor). So
+	# the four direction previews are Sprite2D nodes rendered inside a SubViewport.
+	const VW := 452
+	const VH := 150
+	var svc := SubViewportContainer.new()
+	svc.stretch = false
+	svc.custom_minimum_size = Vector2(VW, VH)
+	preview_center.add_child(svc)
+	var sv := SubViewport.new()
+	sv.size = Vector2i(VW, VH)
+	sv.transparent_bg = true
+	sv.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	svc.add_child(sv)
+
+	# One shared recolor material drives all four direction previews at once.
+	_preview_mat = PlayerSkin.make_material(PlayerSkin.DEF_HAIR, PlayerSkin.DEF_SHIRT, PlayerSkin.DEF_PANTS, PlayerSkin.DEF_SHOES, PlayerSkin.DEF_SKIN)
+	var player_tex = load(PLAYER_TEX_PATH)
+	# Down / Up / Left / Right idle frames (left = the side frame mirrored).
+	var dirs = [
+		{ "region": Rect2(0, 144, 48, 48), "flip": false },   # Down (front)
+		{ "region": Rect2(0,  96, 48, 48), "flip": false },   # Up (back)
+		{ "region": Rect2(0,  48, 48, 48), "flip": true  },   # Left (side, mirrored)
+		{ "region": Rect2(0,  48, 48, 48), "flip": false },   # Right (side)
+	]
+	preview_sprites.clear()
+	for i in dirs.size():
+		var dcfg = dirs[i]
+		var spr = Sprite2D.new()
+		spr.texture = player_tex
+		spr.region_enabled = true
+		spr.region_rect = dcfg["region"]
+		spr.flip_h = dcfg["flip"]
+		spr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST   # crisp pixels
+		spr.material = _preview_mat
+		spr.position = Vector2(VW * (i + 0.5) / dirs.size(), VH * 0.5)
+		sv.add_child(spr)
+		preview_sprites.append(spr)
 
 	var name_cap = Label.new()
 	name_cap.text = "Name  (permanent for this run)"
@@ -277,6 +313,22 @@ func _build_customize_view() -> void:
 	width_slider  = _build_stat_slider("Width", customize_view)
 	height_slider = _build_stat_slider("Height", customize_view)
 
+	var colors_cap = Label.new()
+	colors_cap.text = "Colours"
+	colors_cap.add_theme_color_override("font_color", Color(0.8, 0.82, 0.92))
+	customize_view.add_child(colors_cap)
+
+	# All five groups on a single row.
+	var colors_row = HBoxContainer.new()
+	colors_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	colors_row.add_theme_constant_override("separation", 10)
+	hair_picker  = _add_color_picker(colors_row, "Hair",  PlayerSkin.DEF_HAIR)
+	shirt_picker = _add_color_picker(colors_row, "Shirt", PlayerSkin.DEF_SHIRT)
+	pants_picker = _add_color_picker(colors_row, "Pants", PlayerSkin.DEF_PANTS)
+	shoes_picker = _add_color_picker(colors_row, "Shoes", PlayerSkin.DEF_SHOES)
+	skin_picker  = _add_color_picker(colors_row, "Skin",  PlayerSkin.DEF_SKIN)
+	customize_view.add_child(colors_row)
+
 	var confirm = Button.new()
 	confirm.text = "▶  Begin Adventure"
 	_style_btn(confirm, Color(0.07, 0.18, 0.07), Color(0.20, 0.62, 0.20))
@@ -290,6 +342,7 @@ func _build_customize_view() -> void:
 	customize_view.add_child(back)
 
 	_update_preview()
+	_update_colors()
 
 func _build_stat_slider(caption: String, parent: Node) -> HSlider:
 	var row = HBoxContainer.new()
@@ -310,12 +363,35 @@ func _build_stat_slider(caption: String, parent: Node) -> HSlider:
 	return slider
 
 func _update_preview() -> void:
-	if not is_instance_valid(preview_sprite):
-		return
 	var w = width_slider.value if is_instance_valid(width_slider) else 1.0
 	var h = height_slider.value if is_instance_valid(height_slider) else 1.0
-	# Size-driven (not scale) so the container lays it out reliably.
-	preview_sprite.custom_minimum_size = Vector2(48.0 * w, 48.0 * h) * 1.9
+	# Size-driven (not scale) so the container lays it out reliably. Bigger
+	# scale now that four directions share the row.
+	for spr in preview_sprites:
+		if is_instance_valid(spr):
+			spr.scale = Vector2(w, h) * 2.2
+
+func _add_color_picker(row: HBoxContainer, caption: String, def: Color) -> ColorPickerButton:
+	var vb = VBoxContainer.new()
+	vb.add_theme_constant_override("separation", 4)
+	var lbl = Label.new()
+	lbl.text = caption
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl.add_theme_font_size_override("font_size", 12)
+	lbl.add_theme_color_override("font_color", Color(0.85, 0.85, 1.0))
+	vb.add_child(lbl)
+	var btn = ColorPickerButton.new()
+	btn.custom_minimum_size = Vector2(62, 34)
+	btn.color = def
+	btn.edit_alpha = false
+	btn.color_changed.connect(func(_c): _update_colors())
+	vb.add_child(btn)
+	row.add_child(vb)
+	return btn
+
+func _update_colors() -> void:
+	if is_instance_valid(_preview_mat) and is_instance_valid(hair_picker):
+		PlayerSkin.apply_colors(_preview_mat, hair_picker.color, shirt_picker.color, pants_picker.color, shoes_picker.color, skin_picker.color)
 
 func _on_confirm_customize() -> void:
 	QuestManager.reset_to_defaults()
@@ -323,6 +399,11 @@ func _on_confirm_customize() -> void:
 	QuestManager.player_name = nm if nm != "" else "Hero"
 	QuestManager.player_scale_x = width_slider.value
 	QuestManager.player_scale_y = height_slider.value
+	QuestManager.hair_color = hair_picker.color
+	QuestManager.shirt_color = shirt_picker.color
+	QuestManager.pants_color = pants_picker.color
+	QuestManager.shoes_color = shoes_picker.color
+	QuestManager.skin_color = skin_picker.color
 	QuestManager.play_time_seconds = 0.0
 	QuestManager.is_in_combat = false
 	Engine.time_scale = 1.0
@@ -336,7 +417,7 @@ func _show_view(which: String) -> void:
 	customize_view.visible = which == "customize"
 	# The customize view has more content — grow the card so nothing spills out.
 	if is_instance_valid(card_panel):
-		card_panel.custom_minimum_size.y = 880 if which == "customize" else 700
+		card_panel.custom_minimum_size.y = 1010 if which == "customize" else 700
 	if which == "customize":
 		_update_preview()
 	if which == "load":

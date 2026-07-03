@@ -21,10 +21,11 @@ func _ready() -> void:
 		prompt_label.visible = false
 
 func _process(_delta: float) -> void:
-	if player_nearby and Input.is_action_just_pressed("interact"):
+	if player_nearby and Input.is_action_just_pressed("interact") and not QuestManager.ui_arrow_nav_open:
 		var pause_menu = get_tree().root.find_child("PauseMenu", true, false)
 		if is_instance_valid(pause_menu) and pause_menu.has_method("is_open") and pause_menu.is_open():
 			return
+		QuestManager.record_npc_talk("wizard")   # side-quest "Meet the Locals"
 		_open_save()
 
 func _open_save() -> void:

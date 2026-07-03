@@ -33,7 +33,7 @@ func _find_label_deep_scan(current_node: Node) -> void:
 
 func _process(_delta: float) -> void:
 	# Teleport loop when hitting E inside the zone
-	if player_ref and Input.is_action_just_pressed("interact"):
+	if player_ref and Input.is_action_just_pressed("interact") and not QuestManager.ui_arrow_nav_open:
 		if target_marker:
 			player_ref.global_position = target_marker.global_position
 		else:

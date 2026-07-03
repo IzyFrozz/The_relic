@@ -25,7 +25,7 @@ func _ready() -> void:
 	_update_chest_sprite()
 
 func _process(_delta: float) -> void:
-	if not (player_nearby and Input.is_action_just_pressed("interact")):
+	if not (player_nearby and Input.is_action_just_pressed("interact")) or QuestManager.ui_arrow_nav_open:
 		return
 	if DialogueManager.is_active:
 		return

@@ -1,6 +1,10 @@
 extends CharacterBody2D
 
+const PlayerSkin = preload("res://PlayerSkin.gd")
+
 signal life_changed(new_life)
+
+var _skin_mat: ShaderMaterial = null
 
 @export var max_speed: float = 85.0   # base overworld speed (sprint multiplies this)
 @export var acceleration: float = 600.0
@@ -56,11 +60,20 @@ func _ready() -> void:
 	_build_stamina_bar()
 	# Apply the character-creation body stretch (one sprite, tweaked proportions).
 	sprite.scale *= Vector2(QuestManager.player_scale_x, QuestManager.player_scale_y)
+	# Apply the chosen Hair / Shirt / Pants / Shoes / Skin colours via the
+	# mask-driven palette-swap shader.
+	_skin_mat = PlayerSkin.make_material(QuestManager.hair_color, QuestManager.shirt_color, QuestManager.pants_color, QuestManager.shoes_color, QuestManager.skin_color)
+	sprite.material = _skin_mat
 
 func _process(_delta: float) -> void:
 	# Bar visibility/fill is updated here (not in _physics_process) so it still
 	# hides correctly while combat has the physics step returning early.
 	_update_stamina_bar()
+	# Disable the recolor while a combat FX tints the sprite (modulate ≠ white)
+	# so the FX plays on the base colours, then snap back to the customization.
+	if is_instance_valid(_skin_mat):
+		var is_white = sprite.modulate.is_equal_approx(Color.WHITE)
+		_skin_mat.set_shader_parameter("recolor_on", 1.0 if is_white else 0.0)
 
 func _physics_process(delta: float) -> void:
 	if QuestManager.is_in_combat:
@@ -118,12 +131,29 @@ func _physics_process(delta: float) -> void:
 
 # ── Facing ────────────────────────────────────────────────────────────────────
 
-# Freeze on frame 2 of the animation matching `dir`, without resetting modulate
-# or losing the direction. speed_scale = 0 freezes without using pause()
-# (AnimatedSprite2D has no pause() method in Godot 4). Frame 2 is used as the
-# idle pose for every walking direction (matches the confirmed best idle
-# frame in the sprite sheet) instead of frame 0.
+# Play the idle animation matching the last facing direction (`default` is the
+# down-facing idle, plus IdleSide / IdleUp). Falls back to the old behaviour —
+# freezing on frame 2 of the matching Walk animation — if the Idle animations
+# haven't been added to this AnimatedSprite2D's frames yet, so the scene can
+# be saved from the editor at any time without breaking movement.
 func _set_idle_facing(dir: Vector2) -> void:
+	var frames := sprite.sprite_frames
+	var has_idles: bool = frames != null and frames.has_animation("IdleSide") and frames.has_animation("IdleUp")
+	if has_idles:
+		sprite.speed_scale = 1.0
+		if dir != Vector2.ZERO and abs(dir.x) >= abs(dir.y):
+			sprite.flip_h = dir.x < 0
+			_play_if_changed("IdleSide")
+		elif dir != Vector2.ZERO and dir.y < 0:
+			sprite.flip_h = false
+			_play_if_changed("IdleUp")
+		else:
+			# Down (and the "no direction yet" spawn case) both use `default`,
+			# which holds the down-facing idle frames.
+			sprite.flip_h = false
+			_play_if_changed("default")
+		return
+	# Fallback: freeze on frame 2 of the matching Walk animation.
 	if dir == Vector2.ZERO:
 		sprite.flip_h = false
 		sprite.play("default")
@@ -141,6 +171,12 @@ func _set_idle_facing(dir: Vector2) -> void:
 		sprite.play("WalkDown")
 		sprite.frame = 2
 	sprite.speed_scale = 0.0
+
+# play() only when switching animations so the idle loop isn't restarted every
+# physics frame while the player stands still.
+func _play_if_changed(anim: StringName) -> void:
+	if sprite.animation != anim or not sprite.is_playing():
+		sprite.play(anim)
 
 func face_up() -> void:
 	last_input_dir = Vector2.UP
