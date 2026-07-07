@@ -578,17 +578,29 @@ text = "                                                                "
 
 [node name="ui" parent="." unique_id=560062949 instance=ExtResource("2_ryguw")]
 
-[node name="TopRightCard" parent="ui/CombatUI" parent_id_path=PackedInt32Array(560062949, 313349406) index="1" unique_id=-2094967291]
+[node name="CombatUI" parent="ui" index="2" unique_id=313349406]
+visible = false
+
+[node name="TopRightCard" parent="ui/CombatUI" index="1" unique_id=-2094967291]
 offset_left = -448.0
 offset_top = 0.0
 offset_right = 0.0
 offset_bottom = 156.0
 
-[node name="Panel" parent="ui/RoadmapPopup" parent_id_path=PackedInt32Array(560062949, 3717834) index="0" unique_id=1727531082]
+[node name="RoadmapPopup" parent="ui" index="4" unique_id=3717834]
+visible = false
+
+[node name="Panel" parent="ui/RoadmapPopup" index="0" unique_id=1727531082]
 offset_left = -950.0
 offset_top = -428.0
 offset_right = -330.0
 offset_bottom = 252.0
+
+[node name="EquipmentMenu" parent="ui" index="5" unique_id=2021918082]
+visible = false
+
+[node name="SavePopup" parent="ui" index="6" unique_id=-1894967295]
+visible = false
 
 [node name="MenuButton" parent="ui/PauseMenu" parent_id_path=PackedInt32Array(560062949, -1894967195) index="0" unique_id=-1894967096]
 offset_top = 41.0

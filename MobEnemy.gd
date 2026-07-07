@@ -15,6 +15,12 @@ var enemy_inventory:  Array[String] = []
 var player_inventory: Array[String] = []
 var enemy_item_pool:  Array = []
 
+# Each non-healing item may be used only ONCE per player turn (reset every turn).
+# Different buff items still stack — you just can't spam the same one. Healing
+# items are exempt (see HEAL_ITEMS).
+var items_used_this_turn: Dictionary = {}
+const HEAL_ITEMS := ["potion", "bandage", "phoenix_feather"]
+
 var cycles_until_drop:    int = 1
 var drop_round_index:     int = 0
 var current_items_per_deal: int = 1

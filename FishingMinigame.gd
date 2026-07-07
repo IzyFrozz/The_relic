@@ -4,40 +4,56 @@ extends CanvasLayer
 # A vertical "tank": the player raises a green catch-bar by HOLDING interact
 # (gravity pulls it down when released) and tries to keep the bar over a bobbing
 # fish. While the fish is inside the bar the catch meter fills; when it slips out
-# the meter drains. Fill to full → caught. Drain to empty → it got away.
+# the meter drains. Fill to full → caught; drain to empty → it got away.
+#
+# The fish has a hidden SIZE (small/medium/large) that only changes how fast and
+# erratically it moves — the player never sees it, they just feel the difficulty.
+# A bigger fish is worth more XP (revealed only after the catch).
 #
 # Fully procedural (emoji + coloured rects, no art). Instanced by the fisherman:
 #     var mg = preload("res://FishingMinigame.gd").new()
 #     mg.difficulty = 1.0
 #     get_tree().current_scene.add_child(mg)
 #     mg.finished.connect(_on_fish_result)
-# Emits `finished(success)` then frees itself.
+# Emits `finished(success, size_name, xp_mult)` then frees itself.
 
-signal finished(success: bool)
+signal finished(success: bool, size_name: String, xp_mult: float)
 
-# Difficulty scales fish speed and how often it darts. 1.0 = normal.
+# Extra difficulty from the fisherman (nudges fish speed up as the player levels).
 var difficulty: float = 1.0
 
 const TANK_H := 360.0
 const TANK_W := 96.0
-const BAR_FRAC := 0.24          # catch-bar height as a fraction of the tank
-const GRAVITY := -1.7           # normalized units / s^2 while not lifting
-const LIFT := 3.3               # upward accel while holding interact
-const MAX_VEL := 1.7
-const BOUNCE := -0.35
-const GAIN := 0.42              # meter fill rate while on the fish
-const LOSS := 0.34              # meter drain rate while off the fish
+const BAR_FRAC := 0.30           # catch-bar height as a fraction of the tank (generous)
+const GRAVITY := -1.05           # normalized units / s^2 while not lifting
+const LIFT := 2.0                # upward accel while holding interact
+const MAX_VEL := 1.15
+const BOUNCE := -0.30
+const GAIN := 0.55               # meter fill rate while on the fish
+const LOSS := 0.20               # meter drain rate while off the fish (forgiving)
 
-var _bar_pos := 0.08            # bottom edge of the catch bar, 0..(1-BAR_FRAC)
+# Hidden fish sizes: [speed, retarget_min, retarget_max, xp_mult, weight]
+const SIZES := {
+	"small":  { "speed": 0.55, "rt_min": 0.75, "rt_max": 1.5, "xp": 1.0, "weight": 45 },
+	"medium": { "speed": 0.85, "rt_min": 0.55, "rt_max": 1.1, "xp": 1.5, "weight": 38 },
+	"large":  { "speed": 1.20, "rt_min": 0.35, "rt_max": 0.8, "xp": 2.2, "weight": 17 },
+}
+
+var _bar_pos := 0.08             # bottom edge of the catch bar, 0..(1-BAR_FRAC)
 var _bar_vel := 0.0
 var _fish_pos := 0.5
 var _fish_target := 0.5
 var _fish_retarget := 0.6
-var _progress := 0.35
+var _progress := 0.45
 var _ended := false
 
+var _size_name := "small"
+var _fish_speed := 0.6
+var _rt_min := 0.7
+var _rt_max := 1.4
+var _xp_mult := 1.0
+
 var _tank: Control
-var _water: Panel
 var _bar: Panel
 var _fish: Label
 var _prog_fill: ColorRect
@@ -47,6 +63,7 @@ func _ready() -> void:
 	layer = 80
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	QuestManager.is_fishing = true
+	_pick_size()
 
 	var dim := ColorRect.new()
 	dim.color = Color(0, 0, 0, 0.58)
@@ -75,20 +92,19 @@ func _ready() -> void:
 	row.add_theme_constant_override("separation", 14)
 	col.add_child(row)
 
-	# The tank (water column) with the catch bar + fish as absolute children.
 	_tank = Control.new()
 	_tank.custom_minimum_size = Vector2(TANK_W, TANK_H)
 	row.add_child(_tank)
 
-	_water = Panel.new()
-	_water.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	var water := Panel.new()
+	water.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	var ws := StyleBoxFlat.new()
 	ws.bg_color = Color(0.08, 0.20, 0.34, 1.0)
 	ws.set_corner_radius_all(10)
 	ws.set_border_width_all(3)
 	ws.border_color = Color(0.25, 0.45, 0.65)
-	_water.add_theme_stylebox_override("panel", ws)
-	_tank.add_child(_water)
+	water.add_theme_stylebox_override("panel", ws)
+	_tank.add_child(water)
 
 	_bar = Panel.new()
 	var bs := StyleBoxFlat.new()
@@ -101,10 +117,9 @@ func _ready() -> void:
 
 	_fish = Label.new()
 	_fish.text = "🐟"
-	_fish.add_theme_font_size_override("font_size", 30)
+	_fish.add_theme_font_size_override("font_size", 30)   # constant: never reveals size
 	_tank.add_child(_fish)
 
-	# Catch meter (vertical) to the right.
 	var meter := Panel.new()
 	meter.custom_minimum_size = Vector2(24, TANK_H)
 	var ms := StyleBoxFlat.new()
@@ -131,11 +146,28 @@ func _ready() -> void:
 
 	_layout()
 
+func _pick_size() -> void:
+	var total := 0
+	for k in SIZES:
+		total += int(SIZES[k]["weight"])
+	var roll := randi() % total
+	var acc := 0
+	for k in SIZES:
+		acc += int(SIZES[k]["weight"])
+		if roll < acc:
+			_size_name = k
+			break
+	var s: Dictionary = SIZES[_size_name]
+	_fish_speed = float(s["speed"]) * (1.0 + max(0.0, difficulty - 1.0))
+	_rt_min = float(s["rt_min"])
+	_rt_max = float(s["rt_max"])
+	_xp_mult = float(s["xp"])
+	_fish_retarget = randf_range(_rt_min, _rt_max)
+
 func _process(delta: float) -> void:
 	if _ended:
 		return
 
-	# ── Catch bar physics ──
 	var lifting := Input.is_action_pressed("interact") or Input.is_action_pressed("ui_accept")
 	_bar_vel += (LIFT if lifting else GRAVITY) * delta
 	_bar_vel = clamp(_bar_vel, -MAX_VEL, MAX_VEL)
@@ -148,15 +180,12 @@ func _process(delta: float) -> void:
 		_bar_pos = bar_max
 		_bar_vel *= BOUNCE
 
-	# ── Fish movement: drift toward a target, re-pick target periodically ──
 	_fish_retarget -= delta
 	if _fish_retarget <= 0.0:
 		_fish_target = randf()
-		_fish_retarget = randf_range(0.35, 1.0) / difficulty
-	var fish_speed := 1.7 * difficulty
-	_fish_pos = move_toward(_fish_pos, _fish_target, fish_speed * delta)
+		_fish_retarget = randf_range(_rt_min, _rt_max)
+	_fish_pos = move_toward(_fish_pos, _fish_target, _fish_speed * delta)
 
-	# ── Meter ──
 	var on_fish: bool = _fish_pos >= _bar_pos and _fish_pos <= _bar_pos + BAR_FRAC
 	_progress += (GAIN if on_fish else -LOSS) * delta
 	_progress = clamp(_progress, 0.0, 1.0)
@@ -169,15 +198,12 @@ func _process(delta: float) -> void:
 		_finish(false)
 
 func _layout() -> void:
-	# Catch bar rect within the tank (y grows downward, position is bottom-anchored).
 	var bar_h := TANK_H * BAR_FRAC
 	var bar_top := TANK_H * (1.0 - (_bar_pos + BAR_FRAC))
 	_bar.position = Vector2(4, bar_top)
 	_bar.size = Vector2(TANK_W - 8, bar_h)
-	# Fish centered on its position.
 	_fish.reset_size()
 	_fish.position = Vector2((TANK_W - _fish.size.x) * 0.5, TANK_H * (1.0 - _fish_pos) - _fish.size.y * 0.5)
-	# Meter fill from the bottom.
 	var fh := TANK_H * _progress
 	_prog_fill.position = Vector2(0, TANK_H - fh)
 	_prog_fill.size = Vector2(24, fh)
@@ -194,7 +220,7 @@ func _finish(success: bool) -> void:
 	else:
 		_result.text = "…it got away."
 		_result.add_theme_color_override("font_color", Color(1.0, 0.6, 0.5))
-	await get_tree().create_timer(1.1).timeout
+	await get_tree().create_timer(1.0).timeout
 	QuestManager.is_fishing = false
-	finished.emit(success)
+	finished.emit(success, _size_name, _xp_mult)
 	queue_free()

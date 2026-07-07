@@ -113,6 +113,7 @@ var side_quest_progress: Dictionary = {}  # id -> int progress
 var coins_lifetime: int = 0               # never decreases (coin_hoarder)
 var potions_lifetime: int = 0             # never decreases (herbalist)
 var fish_caught: int = 0                  # total fish reeled in
+var fishing_tutorial_done: bool = false   # fisherman's how-to shown once
 var enemies_defeated: int = 0             # lifetime kills (drives rumour reveals)
 var talked_npcs: Array = []               # distinct npc ids the player has talked to
 signal side_quests_changed               # HUD listens to refresh the quest log
@@ -354,6 +355,7 @@ func save_game(slot: int = 1) -> void:
 		"coins_lifetime":      coins_lifetime,
 		"potions_lifetime":    potions_lifetime,
 		"fish_caught":         fish_caught,
+		"fishing_tutorial_done": fishing_tutorial_done,
 		"enemies_defeated":    enemies_defeated,
 		"talked_npcs":         talked_npcs,
 	}
@@ -410,6 +412,7 @@ func load_game(slot: int = 1) -> bool:
 	coins_lifetime    = int(parsed.get("coins_lifetime",   0))
 	potions_lifetime  = int(parsed.get("potions_lifetime", 0))
 	fish_caught       = int(parsed.get("fish_caught",      0))
+	fishing_tutorial_done = bool(parsed.get("fishing_tutorial_done", false))
 	enemies_defeated  = int(parsed.get("enemies_defeated", 0))
 	var raw_talked    = parsed.get("talked_npcs", [])
 	talked_npcs       = raw_talked if typeof(raw_talked) == TYPE_ARRAY else []
@@ -442,6 +445,7 @@ func reset_to_defaults() -> void:
 	# Side quests — fresh slate for a new run.
 	side_quest_states.clear(); side_quest_progress.clear()
 	coins_lifetime = 0; potions_lifetime = 0; fish_caught = 0; enemies_defeated = 0
+	fishing_tutorial_done = false
 	talked_npcs.clear()
 	init_side_quests()
 	has_unsaved_progress = false

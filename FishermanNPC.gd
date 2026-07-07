@@ -49,7 +49,24 @@ func _interact() -> void:
 		DialogueManager.say(NPC_NAME,
 			"Fishin's a patient art. Get a bit more road behind you first, then I'll teach you.  " + LevelGate.hint("fishing"))
 		return
+	# First time fishing is unlocked → the old man walks you through it, THEN casts.
+	if not QuestManager.fishing_tutorial_done:
+		_run_tutorial()
+		return
 	_start_fishing()
+
+func _run_tutorial() -> void:
+	QuestManager.fishing_tutorial_done = true
+	QuestManager.has_unsaved_progress = true
+	DialogueManager.start([
+		{ "name": NPC_NAME, "text": "So you're ready to learn the line at last! Sit tight, it's simple enough." },
+		{ "name": NPC_NAME, "text": "When a fish bites, a green [b]bar[/b] appears in the water. [b]Hold E[/b] to raise it; let go and it sinks." },
+		{ "name": NPC_NAME, "text": "Keep that bar [b]over the fish[/b] and the catch meter on the right fills up. Let the fish slip out and it drains." },
+		{ "name": NPC_NAME, "text": "Fill the meter to the top and she's yours. Some fish are friskier than others — you'll feel it. Now — cast!" },
+	])
+	await DialogueManager.dialogue_finished
+	if is_instance_valid(self):
+		_start_fishing()
 
 func _start_fishing() -> void:
 	_fishing_active = true
@@ -60,7 +77,7 @@ func _start_fishing() -> void:
 	mg.finished.connect(_on_fish_result)
 	get_tree().current_scene.add_child(mg)
 
-func _on_fish_result(success: bool) -> void:
+func _on_fish_result(success: bool, size_name: String, xp_mult: float) -> void:
 	_fishing_active = false
 	if player_nearby:
 		PromptHUD.request(self, "[E]  Fish")
@@ -68,9 +85,15 @@ func _on_fish_result(success: bool) -> void:
 		Toast.show_toast("🎣  The fish slipped the line — cast again!")
 		return
 	QuestManager.record_fish_caught()   # progresses the "Gone Fishing" quest
-	var xp := randi_range(20, 45)
+	# Bigger (harder) fish are worth proportionally more XP.
+	var xp := int(round(randi_range(18, 30) * xp_mult))
 	QuestManager.gain_xp(xp)
-	var msg := "🐟  Nice catch!   +%d XP" % xp
+	var lead := "🐟  Nice catch!"
+	if size_name == "large":
+		lead = "🐠  What a whopper!"
+	elif size_name == "medium":
+		lead = "🐟  Solid catch!"
+	var msg := "%s   +%d XP" % [lead, xp]
 	if randf() < 0.05:
 		# Rare catch: reel up a brand-new combat item.
 		var item := QuestManager.unlock_random_new_item()
