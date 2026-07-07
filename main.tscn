@@ -782,7 +782,7 @@ position = Vector2(118.999985, 76)
 scale = Vector2(0.90624976, 0.90624976)
 sprite_frames = SubResource("SpriteFrames_0arob")
 autoplay = "default"
-frame_progress = 0.97666246
+frame_progress = 0.53754735
 offset = Vector2(-132.41382, -82.75864)
 
 [node name="DialogueBox" type="Label" parent="ElderNPC" unique_id=1123502031]
