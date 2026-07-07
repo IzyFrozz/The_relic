@@ -515,11 +515,11 @@ animations = [{
 }]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_1u8w0"]
-radius = 6.0
-height = 16.0
+radius = 8.0
+height = 28.0
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_cegan"]
-radius = 18.027756
+radius = 30.0
 
 [node name="main" type="Node2D" unique_id=821692882]
 script = ExtResource("1_074og")
@@ -864,7 +864,7 @@ shape = SubResource("CircleShape2D_qsp4k")
 debug_color = Color(0.1767202, 0.64351225, 0, 0.41960785)
 
 [node name="mainplayer" type="CharacterBody2D" parent="." unique_id=1827658377]
-position = Vector2(-268, 387)
+position = Vector2(-554, 182)
 script = ExtResource("3_82xsv")
 
 [node name="Camera2D" type="Camera2D" parent="mainplayer" unique_id=1520419372]
@@ -989,7 +989,7 @@ text = "[E] Exit"
 position = Vector2(4948, -222)
 
 [node name="QuestNPC" type="CharacterBody2D" parent="." unique_id=1660870351]
-position = Vector2(-180, 387)
+position = Vector2(-504, 179)
 script = ExtResource("31_qnpc")
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="QuestNPC" unique_id=1683887389]
