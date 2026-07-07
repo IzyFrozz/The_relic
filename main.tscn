@@ -714,7 +714,7 @@ lose_ui = NodePath("../../ui/LoseUI")
 [node name="QuestSystem" parent="." unique_id=636915324 instance=ExtResource("5_dg77c")]
 
 [node name="ItemsStation" type="CharacterBody2D" parent="." unique_id=1343851479]
-position = Vector2(-377, 160)
+position = Vector2(-2927, 248)
 script = ExtResource("9_lswn8")
 
 [node name="Sprite2D" type="Sprite2D" parent="ItemsStation" unique_id=1235821130]
@@ -740,7 +740,7 @@ shape = SubResource("RectangleShape2D_82xsv")
 debug_color = Color(0.61802286, 0.35644442, 1, 0.41960785)
 
 [node name="ElderNPC" type="CharacterBody2D" parent="." unique_id=1109828738]
-position = Vector2(-2912, 316)
+position = Vector2(-3090, 263)
 script = ExtResource("23_1u8w0")
 
 [node name="InteractPrompt" type="Label" parent="ElderNPC" unique_id=1761656827]
@@ -778,12 +778,12 @@ shape = SubResource("CapsuleShape2D_0cp0l")
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="ElderNPC" unique_id=1474654494]
 modulate = Color(0.737193, 0.7371929, 0.7371929, 1)
-position = Vector2(0.9999962, 1.0000039)
+position = Vector2(118.999985, 76)
 scale = Vector2(0.90624976, 0.90624976)
 sprite_frames = SubResource("SpriteFrames_0arob")
 autoplay = "default"
-frame_progress = 0.095246404
-flip_h = true
+frame_progress = 0.97666246
+offset = Vector2(-132.41382, -82.75864)
 
 [node name="DialogueBox" type="Label" parent="ElderNPC" unique_id=1123502031]
 visible = false
