@@ -802,7 +802,7 @@ shape = SubResource("CircleShape2D_qsp4k")
 debug_color = Color(0.1767202, 0.64351225, 0, 0.41960785)
 
 [node name="ElderNPC2" type="CharacterBody2D" parent="." unique_id=1976935503]
-position = Vector2(532, 458)
+position = Vector2(902, 276)
 script = ExtResource("23_1u8w0")
 
 [node name="InteractPrompt" type="Label" parent="ElderNPC2" unique_id=220691380]
