@@ -1,4 +1,4 @@
-extends Area2D
+extends CharacterBody2D
 
 # ── Old Fisherman ────────────────────────────────────────────────────────────
 # Interact (E) to fish. Gated behind level 5 via LevelGate("fishing"): below
@@ -16,11 +16,11 @@ const FishingMinigame = preload("res://FishingMinigame.gd")
 var player_nearby: bool = false
 var _fishing_active: bool = false
 
-func _ready() -> void:
-	if not body_entered.is_connected(_on_body_entered):
-		body_entered.connect(_on_body_entered)
-	if not body_exited.is_connected(_on_body_exited):
-		body_exited.connect(_on_body_exited)
+#func _ready() -> void:
+	#if not body_entered.is_connected(_on_body_entered):
+		#body_entered.connect(_on_body_entered)
+	#if not body_exited.is_connected(_on_body_exited):
+		#body_exited.connect(_on_body_exited)
 
 func _on_body_entered(body: Node2D) -> void:
 	if body.name == "mainplayer":
