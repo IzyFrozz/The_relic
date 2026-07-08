@@ -911,7 +911,7 @@ shape = SubResource("CapsuleShape2D_f6a44")
 [node name="Foreground" parent="." unique_id=473946262 instance=ExtResource("15_074og")]
 
 [node name="DeliveryPoint" type="Area2D" parent="." unique_id=1638160122]
-position = Vector2(312, -234)
+position = Vector2(834, 245)
 script = ExtResource("28_kq58d")
 
 [node name="PromptLabel" type="Label" parent="DeliveryPoint" unique_id=864984630]

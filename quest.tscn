@@ -219,7 +219,7 @@ texture = ExtResource("2_0m6oi")
 
 [node name="HealingPotion" type="Area2D" parent="." unique_id=192408140]
 visible = false
-position = Vector2(-260, 81)
+position = Vector2(-251, 100)
 script = ExtResource("3_mtwby")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="HealingPotion" unique_id=6742836]
