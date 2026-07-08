@@ -713,6 +713,32 @@ lose_ui = NodePath("../../ui/LoseUI")
 
 [node name="QuestSystem" parent="." unique_id=636915324 instance=ExtResource("5_dg77c")]
 
+[node name="ItemsStation2" type="CharacterBody2D" parent="." unique_id=1869977081]
+position = Vector2(925, 224)
+script = ExtResource("9_lswn8")
+
+[node name="Sprite2D" type="Sprite2D" parent="ItemsStation2" unique_id=727475979]
+texture = ExtResource("18_074og")
+
+[node name="Label" type="Label" parent="ItemsStation2" unique_id=15399838]
+offset_left = -21.0
+offset_top = -34.0
+offset_right = 67.0
+offset_bottom = -11.0
+scale = Vector2(0.5, 0.5)
+text = "[E] Loadout"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="ItemsStation2" unique_id=663245034]
+position = Vector2(1, -4.5)
+shape = SubResource("RectangleShape2D_cegan")
+
+[node name="InteractArea" type="Area2D" parent="ItemsStation2" unique_id=1157811241]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="ItemsStation2/InteractArea" unique_id=1339065678]
+position = Vector2(1.5, 16.5)
+shape = SubResource("RectangleShape2D_82xsv")
+debug_color = Color(0.61802286, 0.35644442, 1, 0.41960785)
+
 [node name="ItemsStation" type="CharacterBody2D" parent="." unique_id=1343851479]
 position = Vector2(-2927, 248)
 script = ExtResource("9_lswn8")
