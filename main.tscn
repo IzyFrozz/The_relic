@@ -714,7 +714,7 @@ lose_ui = NodePath("../../ui/LoseUI")
 [node name="QuestSystem" parent="." unique_id=636915324 instance=ExtResource("5_dg77c")]
 
 [node name="ItemsStation2" type="CharacterBody2D" parent="." unique_id=1869977081]
-position = Vector2(930, 229)
+position = Vector2(924, 221)
 script = ExtResource("9_lswn8")
 
 [node name="Sprite2D" type="Sprite2D" parent="ItemsStation2" unique_id=727475979]
