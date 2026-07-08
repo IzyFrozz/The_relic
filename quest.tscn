@@ -1,6 +1,7 @@
 [gd_scene format=3 uid="uid://bthp4nwyq6ewh"]
 
 [ext_resource type="Script" uid="uid://dsadsi3vkxgu7" path="res://quest_item.gd" id="1_k6fxs"]
+[ext_resource type="PackedScene" uid="uid://d4g0bdlo6sbss" path="res://map.tscn" id="1_mtwby"]
 [ext_resource type="Texture2D" uid="uid://f55hikcsiv8g" path="res://Asset/Meta data assets files/Visuals/OBJECTS/coin/coin1.png" id="2_0m6oi"]
 [ext_resource type="Script" uid="uid://mmgbpo2ji13k" path="res://HealingItem.gd" id="3_mtwby"]
 [ext_resource type="Texture2D" uid="uid://r6g0mj8q30ep" path="res://Asset/Meta data assets files/Visuals/FX/shot.png" id="4_lujm5"]
@@ -13,8 +14,11 @@ radius = 8.0
 
 [node name="QuestSystem" type="Node2D" unique_id=636915324]
 
+[node name="Map" parent="." unique_id=1786850984 instance=ExtResource("1_mtwby")]
+visible = false
+
 [node name="QuestItem" type="Area2D" parent="." unique_id=686129129]
-position = Vector2(-170, 167)
+position = Vector2(-161, 249)
 script = ExtResource("1_k6fxs")
 
 [node name="Label" type="Label" parent="QuestItem" unique_id=1400593140]
@@ -34,7 +38,7 @@ scale = Vector2(0.7, 0.7)
 texture = ExtResource("2_0m6oi")
 
 [node name="QuestItem2" type="Area2D" parent="." unique_id=121284780]
-position = Vector2(-358, 7)
+position = Vector2(-383, 175)
 script = ExtResource("1_k6fxs")
 
 [node name="Label" type="Label" parent="QuestItem2" unique_id=663040469]
@@ -54,7 +58,7 @@ scale = Vector2(0.7, 0.7)
 texture = ExtResource("2_0m6oi")
 
 [node name="QuestItem3" type="Area2D" parent="." unique_id=1956589706]
-position = Vector2(-73, -265)
+position = Vector2(30, 273)
 script = ExtResource("1_k6fxs")
 
 [node name="Label" type="Label" parent="QuestItem3" unique_id=252338516]
@@ -74,7 +78,7 @@ scale = Vector2(0.7, 0.7)
 texture = ExtResource("2_0m6oi")
 
 [node name="QuestItem4" type="Area2D" parent="." unique_id=961203095]
-position = Vector2(-606, -370)
+position = Vector2(-328, 448)
 script = ExtResource("1_k6fxs")
 
 [node name="Label" type="Label" parent="QuestItem4" unique_id=847858455]
@@ -94,7 +98,7 @@ scale = Vector2(0.7, 0.7)
 texture = ExtResource("2_0m6oi")
 
 [node name="QuestItem5" type="Area2D" parent="." unique_id=299110873]
-position = Vector2(-606, -370)
+position = Vector2(370, 262)
 script = ExtResource("1_k6fxs")
 
 [node name="Label" type="Label" parent="QuestItem5" unique_id=723421388]
@@ -114,7 +118,7 @@ scale = Vector2(0.7, 0.7)
 texture = ExtResource("2_0m6oi")
 
 [node name="QuestItem6" type="Area2D" parent="." unique_id=942836682]
-position = Vector2(-606, -370)
+position = Vector2(531, -207)
 script = ExtResource("1_k6fxs")
 
 [node name="Label" type="Label" parent="QuestItem6" unique_id=238033655]
@@ -134,7 +138,7 @@ scale = Vector2(0.7, 0.7)
 texture = ExtResource("2_0m6oi")
 
 [node name="QuestItem7" type="Area2D" parent="." unique_id=1795054188]
-position = Vector2(-606, -370)
+position = Vector2(813, 190)
 script = ExtResource("1_k6fxs")
 
 [node name="Label" type="Label" parent="QuestItem7" unique_id=1236315824]
@@ -154,7 +158,7 @@ scale = Vector2(0.7, 0.7)
 texture = ExtResource("2_0m6oi")
 
 [node name="QuestItem8" type="Area2D" parent="." unique_id=793524220]
-position = Vector2(-606, -370)
+position = Vector2(1107, 631)
 script = ExtResource("1_k6fxs")
 
 [node name="Label" type="Label" parent="QuestItem8" unique_id=1886619570]
@@ -174,7 +178,7 @@ scale = Vector2(0.7, 0.7)
 texture = ExtResource("2_0m6oi")
 
 [node name="QuestItem9" type="Area2D" parent="." unique_id=1809527125]
-position = Vector2(-606, -370)
+position = Vector2(474, 376)
 script = ExtResource("1_k6fxs")
 
 [node name="Label" type="Label" parent="QuestItem9" unique_id=1423130703]
@@ -194,7 +198,7 @@ scale = Vector2(0.7, 0.7)
 texture = ExtResource("2_0m6oi")
 
 [node name="QuestItem10" type="Area2D" parent="." unique_id=446069766]
-position = Vector2(-606, -370)
+position = Vector2(733, 371)
 script = ExtResource("1_k6fxs")
 
 [node name="Label" type="Label" parent="QuestItem10" unique_id=1131884656]
