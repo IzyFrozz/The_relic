@@ -1,11 +1,14 @@
-extends Area2D
+extends CharacterBody2D
 
 # ── Starting Sign ────────────────────────────────────────────────────────────
 # Replaces the auto-playing intro dialogue. A readable signpost near the player's
-# spawn: press [E] to read the "how to play" notes. Re-readable any time. Detection
-# is via this Area2D's body_entered/exited; a child Label carries the 🪧 emoji.
+# spawn: press [E] to read the "how to play" notes. Re-readable any time.
+#
+# CharacterBody2D so it blocks the player like other NPCs. Its Sprite2D is a
+# PLACEHOLDER (the "?" help icon) — swap the sprite's texture later for real sign
+# art. Player detection comes from a child Area2D wired here in code.
 
-const NPC_NAME := "🪧  Signpost"
+const NPC_NAME := "Signpost"
 
 var player_nearby: bool = false
 
@@ -20,10 +23,13 @@ const LINES := [
 ]
 
 func _ready() -> void:
-	if not body_entered.is_connected(_on_body_entered):
-		body_entered.connect(_on_body_entered)
-	if not body_exited.is_connected(_on_body_exited):
-		body_exited.connect(_on_body_exited)
+	# Detection via the child Area2D (the body itself just blocks the player).
+	var area := get_node_or_null("Area2D") as Area2D
+	if is_instance_valid(area):
+		if not area.body_entered.is_connected(_on_body_entered):
+			area.body_entered.connect(_on_body_entered)
+		if not area.body_exited.is_connected(_on_body_exited):
+			area.body_exited.connect(_on_body_exited)
 
 func _on_body_entered(body: Node2D) -> void:
 	if body.name == "mainplayer":

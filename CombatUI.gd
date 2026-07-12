@@ -388,7 +388,12 @@ func _refresh_ui_states() -> void:
 		var meta     = QuestManager.ITEM_META.get(item_id, {"emoji":"❓","label":item_id.capitalize(),"desc":""})
 		var count    = current_enemy.player_inventory.count(item_id)
 		var slot_key = SLOT_KEYS[i] if i < SLOT_KEYS.size() else ""
-		btn.text         = "%s  %s\n[%s]  ×%d" % [meta["emoji"], meta["label"], slot_key, count]
+		# Show a real icon when we have one; otherwise keep the emoji in the text.
+		var icon_tex = IconDB.tex(item_id)
+		btn.icon = icon_tex
+		if icon_tex: btn.add_theme_constant_override("icon_max_width", 46)
+		var em = "" if icon_tex else meta["emoji"] + "  "
+		btn.text         = "%s%s\n[%s]  ×%d" % [em, meta["label"], slot_key, count]
 		btn.tooltip_text = "%s %s\n%s" % [meta["emoji"], meta["label"], meta["desc"]]
 		var usable = count > 0 and not is_disarmed
 		if "player_items_locked" in current_enemy and current_enemy.player_items_locked: usable = false
@@ -420,22 +425,22 @@ func _refresh_ui_states() -> void:
 			var chg  = current_enemy.player_relic_charge if "player_relic_charge" in current_enemy else 0
 			var need = current_enemy.relic_charge_needed() if current_enemy.has_method("relic_charge_needed") else 999
 			if count <= 0:
-				btn.text = "%s  %s\n[%s] ×0  — not held —" % [meta["emoji"], meta["label"], slot_key]
+				btn.text = "%s%s\n[%s] ×0  — not held —" % [em, meta["label"], slot_key]
 			elif relic_charged:
-				btn.text = "%s  %s\n[%s] ×%d  ✨ READY" % [meta["emoji"], meta["label"], slot_key, count]
+				btn.text = "%s%s\n[%s] ×%d  ✨ READY" % [em, meta["label"], slot_key, count]
 				btn.modulate = Color(1.75, 1.35, 2.3, 1.0)   # unique radiant glow when charged
 			else:
-				btn.text = "%s  %s\n[%s] ×%d  ⚡ %d/%d" % [meta["emoji"], meta["label"], slot_key, count, mini(chg, need), need]
+				btn.text = "%s%s\n[%s] ×%d  ⚡ %d/%d" % [em, meta["label"], slot_key, count, mini(chg, need), need]
 		elif item_id == "phoenix_feather":
 			var cd = current_enemy.player_phoenix_cd if "player_phoenix_cd" in current_enemy else 0
 			if count <= 0:
-				btn.text = "%s  %s\n[%s] ×0  — spent —" % [meta["emoji"], meta["label"], slot_key]
+				btn.text = "%s%s\n[%s] ×0  — spent —" % [em, meta["label"], slot_key]
 			elif cd > 0:
-				btn.text = "%s  %s\n[%s] ×%d  ⏳ %d" % [meta["emoji"], meta["label"], slot_key, count, cd]
+				btn.text = "%s%s\n[%s] ×%d  ⏳ %d" % [em, meta["label"], slot_key, count, cd]
 			else:
-				btn.text = "%s  %s\n[%s] ×%d  🛡 auto" % [meta["emoji"], meta["label"], slot_key, count]
+				btn.text = "%s%s\n[%s] ×%d  🛡 auto" % [em, meta["label"], slot_key, count]
 		elif item_id == "clone" and "player_clone_active" in current_enemy and current_enemy.player_clone_active:
-			btn.text = "%s  %s\n[%s] ×%d  👥 active" % [meta["emoji"], meta["label"], slot_key, count]
+			btn.text = "%s%s\n[%s] ×%d  👥 active" % [em, meta["label"], slot_key, count]
 
 	_update_enemy_inventory_grid()
 	_apply_status_tints()

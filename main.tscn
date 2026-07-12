@@ -24,6 +24,7 @@
 [ext_resource type="Script" uid="uid://bdwyr087x63tp" path="res://FishingSpot.gd" id="33_fspot"]
 [ext_resource type="Script" uid="uid://c3ky81fomi5c2" path="res://NavigatorNPC.gd" id="34_navig"]
 [ext_resource type="Script" uid="uid://bd1jjl3pnuicv" path="res://Sign.gd" id="35_sign"]
+[ext_resource type="Texture2D" uid="uid://cembjhrh4yaor" path="res://Asset/Selected Icon/help.png" id="36_help"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_cegan"]
 size = Vector2(48, 29)
@@ -500,6 +501,9 @@ height = 34.0
 [sub_resource type="CircleShape2D" id="CircleShape2D_htxhm"]
 radius = 34.0
 
+[sub_resource type="CircleShape2D" id="CircleShape2D_signbody"]
+radius = 9.0
+
 [sub_resource type="AtlasTexture" id="AtlasTexture_kkkcx"]
 atlas = ExtResource("17_getpj")
 region = Rect2(0, 0, 64, 64)
@@ -933,24 +937,24 @@ visible = false
 shape = SubResource("CircleShape2D_qsp4k")
 debug_color = Color(0.1767202, 0.64351225, 0, 0.41960785)
 
-[node name="StartSign" type="Area2D" parent="." unique_id=770033001]
+[node name="StartSign" type="CharacterBody2D" parent="." unique_id=770033001]
 position = Vector2(-504, 173)
 script = ExtResource("35_sign")
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="StartSign" unique_id=770033002]
-position = Vector2(-8, -19)
-shape = SubResource("CircleShape2D_1u8w0")
-debug_color = Color(0.9, 0.8, 0.3, 0.35)
+[node name="Sprite2D" type="Sprite2D" parent="StartSign" unique_id=770033006]
+position = Vector2(0, -8)
+scale = Vector2(0.7, 0.7)
+texture = ExtResource("36_help")
 
-[node name="Emoji" type="Label" parent="StartSign" unique_id=770033003]
-offset_left = -16.0
-offset_top = -34.0
-offset_right = 16.0
-offset_bottom = -2.0
-scale = Vector2(0.5, 0.5)
-text = "🪧"
-horizontal_alignment = 1
-vertical_alignment = 1
+[node name="CollisionShape2D" type="CollisionShape2D" parent="StartSign" unique_id=770033002]
+shape = SubResource("CircleShape2D_signbody")
+
+[node name="Area2D" type="Area2D" parent="StartSign" unique_id=770033004]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="StartSign/Area2D" unique_id=770033003]
+position = Vector2(0, -8)
+shape = SubResource("CircleShape2D_htxhm")
+debug_color = Color(0.9, 0.8, 0.3, 0.35)
 
 [node name="mainplayer" type="CharacterBody2D" parent="." unique_id=1827658377]
 position = Vector2(-554, 182)

@@ -181,7 +181,11 @@ func _build_unlocked_list() -> void:
 		var full    = QuestManager.equipped_items.size() >= QuestManager.get_max_equip_slots()
 
 		var btn = Button.new()
-		btn.text = "%s  %s%s" % [meta["emoji"], meta["label"], "  ✓" if already else ""]
+		var icon_tex = IconDB.tex(item)
+		btn.icon = icon_tex
+		if icon_tex: btn.add_theme_constant_override("icon_max_width", 40)
+		var em = "" if icon_tex else meta["emoji"] + "  "
+		btn.text = "%s%s%s" % [em, meta["label"], "  ✓" if already else ""]
 		btn.tooltip_text = meta["desc"] + ("\n(Already in loadout)" if already else "\nClick to equip")
 		btn.disabled = already or full
 		btn.focus_mode = Control.FOCUS_NONE
@@ -211,7 +215,11 @@ func _build_equipped_list() -> void:
 		var meta   = QuestManager.ITEM_META.get(item, {"emoji":"❓","label":item.capitalize(),"desc":""})
 
 		var btn = Button.new()
-		btn.text = "[%d]  %s  %s  ✕" % [i + 1, meta["emoji"], meta["label"]]
+		var icon_tex = IconDB.tex(item)
+		btn.icon = icon_tex
+		if icon_tex: btn.add_theme_constant_override("icon_max_width", 40)
+		var em = "" if icon_tex else meta["emoji"] + "  "
+		btn.text = "[%d]  %s%s  ✕" % [i + 1, em, meta["label"]]
 		btn.tooltip_text = "Slot %d — %s\nClick to remove" % [i + 1, meta["desc"]]
 		btn.focus_mode = Control.FOCUS_NONE
 		btn.custom_minimum_size = Vector2(175, 50)

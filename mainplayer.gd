@@ -32,20 +32,12 @@ var stamina: float = SPRINT_MAX
 var is_sprinting: bool = false
 var sprint_exhausted: bool = false
 
-# Stamina bar drawn under the player (built in code, follows the player).
-# Styled to match the rest of the UI: dark rounded panel + border, like the
-# HUD stat panels / pop-ups, with a themed fill (green → gold when low → red
-# when exhausted).
-const STAMINA_BAR_SIZE := Vector2(26, 4)
+# Stamina STATE ICON under the player (built in code, follows the player). Rather
+# than a fill bar, a single icon swaps colour by state: green (fine) → yellow
+# (running low) → red (exhausted). Icons come from IconDB (stamina_full/low/empty).
 @export var stamina_bar_offset: Vector2 = Vector2(0, 20)
-const BAR_BG_COL       := Color(0.08, 0.09, 0.13, 0.92)   # COL_PANEL family
-const BAR_BORDER_COL   := Color(0.30, 0.35, 0.55, 1.0)    # COL_BORDER family
-const BAR_FILL_FULL    := Color(0.32, 0.85, 0.45, 1.0)    # COL_GREEN family
-const BAR_FILL_LOW     := Color(1.00, 0.80, 0.28, 1.0)    # COL_GOLD family
-const BAR_FILL_EMPTY   := Color(0.90, 0.34, 0.28, 1.0)    # exhausted red
-var _stamina_bar_bg: Panel = null
-var _stamina_bar_fill: Panel = null
-var _stamina_fill_style: StyleBoxFlat = null
+var _stamina_icon: Sprite2D = null
+var _stamina_state: String = ""   # last-applied icon id, to avoid re-setting the texture
 
 # Distance to stop short of the target when lunging — keeps the characters
 # standing next to each other instead of overlapping or stopping halfway.
@@ -325,46 +317,28 @@ func _update_sprint(input_dir: Vector2, delta: float) -> void:
 			sprint_exhausted = false
 
 func _build_stamina_bar() -> void:
-	_stamina_bar_bg = Panel.new()
-	_stamina_bar_bg.size = STAMINA_BAR_SIZE
-	_stamina_bar_bg.position = stamina_bar_offset - Vector2(STAMINA_BAR_SIZE.x * 0.5, 0.0)
-	_stamina_bar_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_stamina_bar_bg.z_index = 50
-	_stamina_bar_bg.visible = false
-	var bg_style = StyleBoxFlat.new()
-	bg_style.bg_color = BAR_BG_COL
-	bg_style.set_corner_radius_all(0)          # sharp — rounded corners blur when the camera scales the bar 6x
-	bg_style.set_border_width_all(1)
-	bg_style.border_color = BAR_BORDER_COL
-	bg_style.anti_aliasing = false             # keep edges crisp at zoom
-	_stamina_bar_bg.add_theme_stylebox_override("panel", bg_style)
-	add_child(_stamina_bar_bg)
-
-	# Fill is a child Panel (inset 1px) so it inherits position/visibility and
-	# gets its own rounded stylebox that we recolor as stamina changes.
-	_stamina_bar_fill = Panel.new()
-	_stamina_bar_fill.position = Vector2(1, 1)
-	_stamina_bar_fill.size = STAMINA_BAR_SIZE - Vector2(2, 2)
-	_stamina_bar_fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_stamina_fill_style = StyleBoxFlat.new()
-	_stamina_fill_style.bg_color = BAR_FILL_FULL
-	_stamina_fill_style.set_corner_radius_all(0)
-	_stamina_fill_style.anti_aliasing = false
-	_stamina_bar_fill.add_theme_stylebox_override("panel", _stamina_fill_style)
-	_stamina_bar_bg.add_child(_stamina_bar_fill)
+	_stamina_icon = Sprite2D.new()
+	_stamina_icon.position = stamina_bar_offset
+	_stamina_icon.z_index = 50
+	_stamina_icon.visible = false
+	_stamina_icon.scale = Vector2(0.4, 0.4)   # 32px icon -> ~13px indicator under the player
+	add_child(_stamina_icon)
 
 func _update_stamina_bar() -> void:
-	if not is_instance_valid(_stamina_bar_bg): return
+	if not is_instance_valid(_stamina_icon): return
 	# Only show in the overworld, and only when it matters (sprinting or refilling).
-	var show_bar = not QuestManager.is_in_combat and (is_sprinting or stamina < SPRINT_MAX)
-	_stamina_bar_bg.visible = show_bar
-	if not show_bar: return
+	var show_icon = not QuestManager.is_in_combat and (is_sprinting or stamina < SPRINT_MAX)
+	_stamina_icon.visible = show_icon
+	if not show_icon: return
+	# Single icon that swaps by state: green (fine) -> yellow (low) -> red (spent).
 	var pct = clampf(stamina / SPRINT_MAX, 0.0, 1.0)
-	var inner_w = STAMINA_BAR_SIZE.x - 2.0
-	_stamina_bar_fill.size = Vector2(maxf(0.0, inner_w * pct), STAMINA_BAR_SIZE.y - 2.0)
-	if sprint_exhausted:   _stamina_fill_style.bg_color = BAR_FILL_EMPTY
-	elif pct < 0.34:       _stamina_fill_style.bg_color = BAR_FILL_LOW
-	else:                  _stamina_fill_style.bg_color = BAR_FILL_FULL
+	var id := "stamina_full"
+	if sprint_exhausted:   id = "stamina_empty"
+	elif pct < 0.34:       id = "stamina_low"
+	if id != _stamina_state:
+		_stamina_state = id
+		var tex = IconDB.tex(id)
+		if tex: _stamina_icon.texture = tex
 
 func apply_velocity_knockback() -> void:
 	is_knocked_back = true
