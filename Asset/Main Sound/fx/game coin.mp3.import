@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://bpkrtd81keywi"
+path="res://.godot/imported/game coin.mp3-43d49c283ed30861e9bd5f272c73e1a1.mp3str"
+
+[deps]
+
+source_file="res://Asset/Main Sound/fx/game coin.mp3"
+dest_files=["res://.godot/imported/game coin.mp3-43d49c283ed30861e9bd5f272c73e1a1.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

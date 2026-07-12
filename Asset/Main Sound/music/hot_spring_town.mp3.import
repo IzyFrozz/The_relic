@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://cymu3c4nj33ig"
+path="res://.godot/imported/hot_spring_town.mp3-166a7f055ae73969c5ece3485d2fa813.mp3str"
+
+[deps]
+
+source_file="res://Asset/Main Sound/music/hot_spring_town.mp3"
+dest_files=["res://.godot/imported/hot_spring_town.mp3-166a7f055ae73969c5ece3485d2fa813.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://css6n282qqsfk"
+path="res://.godot/imported/Sun Tribe interior.ogg-a38c62884622b3b8ca635f9693483aae.oggvorbisstr"
+
+[deps]
+
+source_file="res://Asset/Main Sound/music/Sun Tribe interior.ogg"
+dest_files=["res://.godot/imported/Sun Tribe interior.ogg-a38c62884622b3b8ca635f9693483aae.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

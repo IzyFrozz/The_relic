@@ -3,12 +3,12 @@
 importer="wav"
 type="AudioStreamWAV"
 uid="uid://bw26u70wf21eu"
-path="res://.godot/imported/shooter.wav-823b671b375a4de43c370a865f73ad3b.sample"
+path="res://.godot/imported/shooter.wav-5f44c9967c7c214baa32041db9429919.sample"
 
 [deps]
 
-source_file="res://Asset/Meta data assets files/sounds/fx/shooter.wav"
-dest_files=["res://.godot/imported/shooter.wav-823b671b375a4de43c370a865f73ad3b.sample"]
+source_file="res://Asset/Main Sound/fx/shooter.wav"
+dest_files=["res://.godot/imported/shooter.wav-5f44c9967c7c214baa32041db9429919.sample"]
 
 [params]
 

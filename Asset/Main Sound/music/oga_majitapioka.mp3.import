@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://dlo16ua0qsrf0"
+path="res://.godot/imported/oga_majitapioka.mp3-58a88b9bd06396055014668802d6c28e.mp3str"
+
+[deps]
+
+source_file="res://Asset/Main Sound/music/oga_majitapioka.mp3"
+dest_files=["res://.godot/imported/oga_majitapioka.mp3-58a88b9bd06396055014668802d6c28e.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

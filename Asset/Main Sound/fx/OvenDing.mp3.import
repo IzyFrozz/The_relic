@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://bgwm7tktja84j"
+path="res://.godot/imported/OvenDing.mp3-6adb7e34f91b5fb8e7fee8faa4f03e44.mp3str"
+
+[deps]
+
+source_file="res://Asset/Main Sound/fx/OvenDing.mp3"
+dest_files=["res://.godot/imported/OvenDing.mp3-6adb7e34f91b5fb8e7fee8faa4f03e44.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

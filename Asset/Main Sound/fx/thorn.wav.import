@@ -3,12 +3,12 @@
 importer="wav"
 type="AudioStreamWAV"
 uid="uid://5b3pekdo81yp"
-path="res://.godot/imported/thorn.wav-cd7e90c7f2b1232275dd8c64c53f2cf4.sample"
+path="res://.godot/imported/thorn.wav-5baafdfdedae5728b2daf65b675e8c58.sample"
 
 [deps]
 
-source_file="res://Asset/Meta data assets files/sounds/fx/thorn.wav"
-dest_files=["res://.godot/imported/thorn.wav-cd7e90c7f2b1232275dd8c64c53f2cf4.sample"]
+source_file="res://Asset/Main Sound/fx/thorn.wav"
+dest_files=["res://.godot/imported/thorn.wav-5baafdfdedae5728b2daf65b675e8c58.sample"]
 
 [params]
 

@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://cqamww6g6v662"
+path="res://.godot/imported/universfield-error-08-206492.mp3-26e0b91d89d1f962effb22032031533b.mp3str"
+
+[deps]
+
+source_file="res://Asset/Main Sound/fx/universfield-error-08-206492.mp3"
+dest_files=["res://.godot/imported/universfield-error-08-206492.mp3-26e0b91d89d1f962effb22032031533b.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4
