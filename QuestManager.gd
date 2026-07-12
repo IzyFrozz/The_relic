@@ -350,25 +350,26 @@ func _render_heart_segment(current: int, slots: int, full_sym: String, half_sym:
 	while used < slots: s += empty_sym + " "; used += 1
 	return s
 
-const SAVE_PATH_PREFIX := "user://savegame_slot"
-var last_used_slot: int = 1
-# Runtime-only (never written to disk): true once THIS session has an in-game
-# save or was loaded from a slot. Drives flee/death behaviour — a brand-new run
-# that has never been saved must NOT reload a stale slot from another session.
+# ── Save system: 3 SESSIONS × 3 SAVE SLOTS ────────────────────────────────────
+# The Main Menu picks a SESSION (1-3) — each is a separate character / run. Inside
+# a session the player has 3 SAVE SLOTS (1-3) to keep several checkpoints of that
+# same character. Files: user://s{session}_{slot}.save  (up to 9).
+const SAVE_SESSIONS := 3
+const SAVE_SLOTS := 3
+# The session (1-3) this run belongs to; 0 = a fresh run not yet placed in one.
+# In-game saving/loading always stays inside this session.
+var active_session: int = 0
+var last_used_save_slot: int = 1   # last in-game slot saved/loaded this session
+# Runtime-only: true once THIS run has an in-game save to return to. Drives
+# flee/death — a run never saved restarts fresh instead of loading a stale slot.
 var session_saved_once: bool = false
-# Which of the 3 menu slots this play session belongs to (0 = a fresh run not yet
-# bound to a slot). In-game saves always target THIS slot — so a session's saves
-# stay with its own character/slot instead of overwriting another one. The 3 menu
-# slots are the 3 separate sessions; the in-game save is just the current one.
-var active_session_slot: int = 0
 
-func _slot_path(slot: int) -> String:
-	return "%s%d.save" % [SAVE_PATH_PREFIX, slot]
+func _save_path(session: int, slot: int) -> String:
+	return "user://s%d_%d.save" % [session, slot]
 
-func save_game(slot: int = 1) -> void:
-	last_used_slot = slot
-	active_session_slot = slot   # this session now lives in this slot
-	var data = {
+# ── Serialize / deserialize the full run state (shared by every slot) ──
+func _serialize() -> Dictionary:
+	return {
 		"player_level":      player_level,
 		"current_xp":        current_xp,
 		"xp_required":       xp_required,
@@ -408,21 +409,99 @@ func save_game(slot: int = 1) -> void:
 		"explored_cells":      explored_cells,
 		"relic_uses":          relic_uses,
 	}
-	var f = FileAccess.open(_slot_path(slot), FileAccess.WRITE)
-	if f:
-		f.store_string(JSON.stringify(data))
-		f.close()
-		has_unsaved_progress = false
-		session_saved_once = true   # this session now has a save to return to
 
-func load_game(slot: int = 1) -> bool:
-	if not FileAccess.file_exists(_slot_path(slot)): return false
-	var f = FileAccess.open(_slot_path(slot), FileAccess.READ)
+func _write_save(path: String) -> bool:
+	var f = FileAccess.open(path, FileAccess.WRITE)
+	if not f: return false
+	f.store_string(JSON.stringify(_serialize()))
+	f.close()
+	return true
+
+func _read_save(path: String) -> bool:
+	if not FileAccess.file_exists(path): return false
+	var f = FileAccess.open(path, FileAccess.READ)
 	if not f: return false
 	var parsed = JSON.parse_string(f.get_as_text())
 	f.close()
 	if typeof(parsed) != TYPE_DICTIONARY: return false
-	last_used_slot    = slot
+	_deserialize(parsed)
+	return true
+
+# ── Public save API ──
+# In-game save to a slot within the CURRENT session.
+func save_to_slot(slot: int) -> void:
+	if active_session == 0: active_session = 1
+	last_used_save_slot = slot
+	if _write_save(_save_path(active_session, slot)):
+		has_unsaved_progress = false
+		session_saved_once = true
+
+# Load a specific session's slot (Main Menu load, or in-game reload).
+func load_from(session: int, slot: int) -> bool:
+	if not _read_save(_save_path(session, slot)): return false
+	active_session = session
+	last_used_save_slot = slot
+	session_saved_once = true
+	has_unsaved_progress = false
+	return true
+
+# Reload this run's last save (flee / death, if the run was ever saved).
+func reload_current_save() -> bool:
+	return active_session != 0 and load_from(active_session, last_used_save_slot)
+
+# Begin a brand-new character in the given (empty) session. Character-creation
+# fields (name/colours) are set by the menu right after this.
+func start_new_session(session: int) -> void:
+	active_session = session
+	last_used_save_slot = 1
+	session_saved_once = false
+	has_unsaved_progress = true
+
+func save_slot_info(session: int, slot: int) -> Dictionary:
+	return _read_info(_save_path(session, slot))
+
+func _read_info(path: String) -> Dictionary:
+	if not FileAccess.file_exists(path): return {"exists": false}
+	var f = FileAccess.open(path, FileAccess.READ)
+	if not f: return {"exists": false}
+	var parsed = JSON.parse_string(f.get_as_text())
+	f.close()
+	if typeof(parsed) != TYPE_DICTIONARY: return {"exists": false}
+	return {"exists": true, "level": parsed.get("player_level", 1), "time": parsed.get("play_time_seconds", 0.0)}
+
+# A session is "occupied" if any of its 3 slots holds a save.
+func session_occupied(session: int) -> bool:
+	for n in range(1, SAVE_SLOTS + 1):
+		if FileAccess.file_exists(_save_path(session, n)):
+			return true
+	return false
+
+# Highest character level saved anywhere in the session (menu summary). 0 = empty.
+func session_level(session: int) -> int:
+	var lvl := 0
+	for n in range(1, SAVE_SLOTS + 1):
+		var info := save_slot_info(session, n)
+		if info.get("exists", false):
+			lvl = maxi(lvl, int(info.get("level", 1)))
+	return lvl
+
+func delete_save_slot(session: int, slot: int) -> void:
+	var path := _save_path(session, slot)
+	if FileAccess.file_exists(path):
+		DirAccess.remove_absolute(path)
+	if active_session == session and not session_occupied(session):
+		session_saved_once = false
+
+func delete_session(session: int) -> void:
+	for n in range(1, SAVE_SLOTS + 1):
+		var path := _save_path(session, n)
+		if FileAccess.file_exists(path):
+			DirAccess.remove_absolute(path)
+	if active_session == session:
+		active_session = 0
+		session_saved_once = false
+
+func _deserialize(parsed: Dictionary) -> void:
 	player_level      = parsed.get("player_level",      1)
 	current_xp        = parsed.get("current_xp",        0)
 	xp_required       = parsed.get("xp_required",       100)
@@ -478,9 +557,6 @@ func load_game(slot: int = 1) -> bool:
 	player_health     = MAX_HEALTH
 	player_shield     = MAX_SHIELD
 	has_unsaved_progress = false
-	session_saved_once = true   # loaded a real slot — flee/death should return to it
-	active_session_slot = slot  # this session is bound to the slot it loaded from
-	return true
 
 # Bring an older save's item ids up to date: the War Banner became the Mirror
 # Clone, and any id that's no longer a real item is dropped so it can't show up
@@ -495,29 +571,6 @@ func _migrate_item_ids() -> void:
 			if ITEM_META.has(id) and not out.has(id):
 				out.append(id)
 		set(arr_name, out)
-
-# Wipe a save slot (Main-Menu "clear slot"). If it was the active session's
-# slot, that binding is cleared too.
-func delete_slot(slot: int) -> void:
-	var path := _slot_path(slot)
-	if FileAccess.file_exists(path):
-		DirAccess.remove_absolute(path)
-	if active_session_slot == slot:
-		active_session_slot = 0
-		session_saved_once = false
-
-func get_slot_info(slot: int) -> Dictionary:
-	if not FileAccess.file_exists(_slot_path(slot)): return {"exists": false}
-	var f = FileAccess.open(_slot_path(slot), FileAccess.READ)
-	if not f: return {"exists": false}
-	var parsed = JSON.parse_string(f.get_as_text())
-	f.close()
-	if typeof(parsed) != TYPE_DICTIONARY: return {"exists": false}
-	return {
-		"exists": true,
-		"level":  parsed.get("player_level", 1),
-		"time":   parsed.get("play_time_seconds", 0.0),
-	}
 
 func reset_to_defaults() -> void:
 	player_level = 1; current_xp = 0; xp_required = 100; MAX_HEALTH = 100
@@ -537,7 +590,7 @@ func reset_to_defaults() -> void:
 	init_side_quests()
 	has_unsaved_progress = false
 	session_saved_once = false   # a brand-new run has nothing to reload yet
-	active_session_slot = 0      # not yet bound to a menu slot
+	active_session = 0           # not yet placed in a session
 
 # Return the run to its very start while KEEPING the created character (name,
 # appearance, scale) and the "tutorial already seen" flags. Used when a run that

@@ -50,24 +50,20 @@ func _slot_button(slot: int) -> Button:
 
 
 func _refresh_slot_labels() -> void:
-	var bound := QuestManager.active_session_slot   # 0 = this run not yet tied to a slot
+	# These 3 slots belong to the CURRENT session — separate save points for this
+	# same character. A fresh session shows all three empty.
+	var session := QuestManager.active_session
 	for i in range(3):
 		var slot = i + 1
 		var btn = _slot_button(slot)
 		if not is_instance_valid(btn): continue
-		var info = QuestManager.get_slot_info(slot)
-		var base := "Slot %d — Level %d" % [slot, info.get("level", 1)] if info.get("exists", false) else "Slot %d — Empty" % slot
-		# In-game saving is tied to THIS session's slot. Once bound, the other two
-		# slots (other sessions/characters) can't be overwritten from in-game.
-		if bound != 0 and slot != bound:
-			btn.text = "🔒  %s  (another session)" % base
-			btn.disabled = true
-			btn.modulate.a = 0.5
+		var info = QuestManager.save_slot_info(session, slot)
+		if info.get("exists", false):
+			btn.text = "💾  Slot %d — Level %d  (Overwrite)" % [slot, info.get("level", 1)]
 		else:
-			var tag := "  ← this session" if slot == bound else "  (start session here)"
-			btn.text = "💾  %s%s" % [base, tag if bound != 0 or not info.get("exists", false) else "  (Overwrite)"]
-			btn.disabled = false
-			btn.modulate.a = 1.0
+			btn.text = "💾  Slot %d — Empty" % slot
+		btn.disabled = false
+		btn.modulate.a = 1.0
 
 
 func open_popup() -> void:
@@ -79,10 +75,7 @@ func open_popup() -> void:
 
 
 func _on_slot_pressed(slot: int) -> void:
-	# Can't save this session over a different session's slot.
-	if QuestManager.active_session_slot != 0 and slot != QuestManager.active_session_slot:
-		return
-	QuestManager.save_game(slot)   # binds active_session_slot = slot
+	QuestManager.save_to_slot(slot)   # saves to this session's slot
 	if is_instance_valid(status_label):
 		status_label.text = "✅  Saved to Slot %d!" % slot
 		status_label.add_theme_color_override("font_color", COL_GREEN)

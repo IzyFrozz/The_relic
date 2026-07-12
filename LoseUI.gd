@@ -113,7 +113,7 @@ func _on_restart_pressed() -> void:
 	QuestManager.is_in_combat = false
 	# Saved session → reload the last save. Never-saved run → restart it fresh
 	# (keeping the character) instead of loading a stale slot from another run.
-	if QuestManager.session_saved_once and QuestManager.load_game(QuestManager.last_used_slot):
+	if QuestManager.session_saved_once and QuestManager.reload_current_save():
 		pass
 	else:
 		QuestManager.restart_fresh_run()

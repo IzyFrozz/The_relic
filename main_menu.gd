@@ -34,7 +34,17 @@ const PlayerSkin = preload("res://PlayerSkin.gd")
 
 var load_slot_buttons: Array = []
 var load_status_label: Label
-var _delete_armed_slot: int = 0   # which slot's 🗑 is armed for confirm (0 = none)
+var _delete_armed_slot: int = 0   # which session's 🗑 is armed for confirm (0 = none)
+# The "load_view" doubles as the SESSION picker. Mode is "new" (pick an empty
+# session for a freshly-created character) or "load" (pick an occupied session
+# to browse its saves).
+var _session_mode: String = "load"
+var _selected_session: int = 0    # session chosen in load mode, for the save picker
+
+# Save-slot picker (a chosen session's 3 checkpoints, load mode only).
+var saveselect_view: VBoxContainer
+var saveselect_buttons: Array = []
+var saveselect_status: Label
 
 var volume_slider: HSlider
 var mute_check:    CheckButton
@@ -151,6 +161,13 @@ func _build() -> void:
 	vbox.add_child(customize_view)
 	_build_customize_view()
 
+	saveselect_view = VBoxContainer.new()
+	saveselect_view.visible = false
+	saveselect_view.add_theme_constant_override("separation", 12)
+	saveselect_view.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	vbox.add_child(saveselect_view)
+	_build_saveselect_view()
+
 # ── Main view ────────────────────────────────────────────────────────────────
 func _build_main_view() -> void:
 	var start_btn = Button.new()
@@ -162,7 +179,7 @@ func _build_main_view() -> void:
 	var load_btn = Button.new()
 	load_btn.text = "📂  Load Game"
 	_style_btn(load_btn, Color(0.09, 0.12, 0.20), Color(0.30, 0.42, 0.75))
-	load_btn.pressed.connect(func(): _show_view("load"))
+	load_btn.pressed.connect(func(): _session_mode = "load"; _show_view("session"))
 	main_view.add_child(load_btn)
 
 	var settings_btn = Button.new()
@@ -177,10 +194,9 @@ func _build_main_view() -> void:
 	exit_btn.pressed.connect(func(): get_tree().quit())
 	main_view.add_child(exit_btn)
 
-# ── Load view ────────────────────────────────────────────────────────────────
+# ── Session picker (load_view) — used for both New Game and Load ──────────────
 func _build_load_view() -> void:
 	load_status_label = Label.new()
-	load_status_label.text = "Choose a slot to load:"
 	load_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	load_status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	load_status_label.add_theme_color_override("font_color", Color(0.85, 0.85, 0.92))
@@ -188,23 +204,23 @@ func _build_load_view() -> void:
 
 	load_slot_buttons.clear()
 	for i in range(3):
-		var slot = i + 1
+		var session = i + 1
 		var row = HBoxContainer.new()
 		row.add_theme_constant_override("separation", 8)
 		load_view.add_child(row)
 		var btn = Button.new()
 		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		_style_btn(btn, Color(0.09, 0.12, 0.20), Color(0.30, 0.42, 0.75))
-		btn.pressed.connect(func(): _on_load_slot_pressed(slot))
+		btn.pressed.connect(func(): _on_session_pressed(session))
 		row.add_child(btn)
 		load_slot_buttons.append(btn)
-		# Per-slot "clear" button (two-click confirm via the status line).
+		# Per-session "delete" button (two-click confirm via the status line).
 		var del = Button.new()
 		del.text = "🗑"
 		del.focus_mode = Control.FOCUS_NONE
 		del.custom_minimum_size = Vector2(58, 0)
 		_style_btn(del, Color(0.22, 0.09, 0.09), Color(0.70, 0.25, 0.25))
-		del.pressed.connect(func(): _on_delete_slot_pressed(slot))
+		del.pressed.connect(func(): _on_delete_session_pressed(session))
 		row.add_child(del)
 
 	var back_btn = Button.new()
@@ -213,23 +229,97 @@ func _build_load_view() -> void:
 	back_btn.pressed.connect(func(): _show_view("main"))
 	load_view.add_child(back_btn)
 
-func _on_delete_slot_pressed(slot: int) -> void:
-	var info = QuestManager.get_slot_info(slot)
-	if not info.get("exists", false):
+func _refresh_session_slots() -> void:
+	for i in range(3):
+		var session = i + 1
+		var btn = load_slot_buttons[i] as Button
+		if not is_instance_valid(btn): continue
+		var occupied := QuestManager.session_occupied(session)
+		if occupied:
+			btn.text = "Session %d — Lv. %d" % [session, QuestManager.session_level(session)]
+			# New game needs an EMPTY session; load needs an OCCUPIED one.
+			btn.disabled = _session_mode == "new"
+		else:
+			btn.text = "Session %d — Empty%s" % [session, "  (start here)" if _session_mode == "new" else ""]
+			btn.disabled = _session_mode == "load"
+		btn.modulate.a = 1.0 if not btn.disabled else 0.5
+
+func _on_session_pressed(session: int) -> void:
+	if _session_mode == "new":
+		if QuestManager.session_occupied(session):
+			return   # occupied sessions are disabled for new games (delete to free)
+		QuestManager.start_new_session(session)   # character already set by customize
+		QuestManager.play_time_seconds = 0.0
+		QuestManager.is_in_combat = false
+		Engine.time_scale = 1.0
+		get_tree().change_scene_to_file("res://main.tscn")
+	else:
+		if not QuestManager.session_occupied(session):
+			return
+		_selected_session = session
+		_show_view("saveselect")
+
+func _on_delete_session_pressed(session: int) -> void:
+	if not QuestManager.session_occupied(session):
 		_delete_armed_slot = 0
-		load_status_label.text = "Slot %d is already empty." % slot
+		load_status_label.text = "Session %d is already empty." % session
 		load_status_label.add_theme_color_override("font_color", Color(0.85, 0.85, 0.92))
 		return
-	if _delete_armed_slot != slot:
-		# First press → arm. Second press on the same slot confirms.
-		_delete_armed_slot = slot
-		load_status_label.text = "⚠  Clear Slot %d? Press 🗑 again to confirm." % slot
+	if _delete_armed_slot != session:
+		_delete_armed_slot = session
+		load_status_label.text = "⚠  Delete ALL of Session %d's saves? Press 🗑 again to confirm." % session
 		load_status_label.add_theme_color_override("font_color", Color(0.95, 0.6, 0.4))
 		return
-	QuestManager.delete_slot(slot)
+	QuestManager.delete_session(session)
 	_delete_armed_slot = 0
-	_refresh_load_slots()
-	load_status_label.text = "🗑  Slot %d cleared." % slot
+	_refresh_session_slots()
+	load_status_label.text = "🗑  Session %d deleted." % session
+	load_status_label.add_theme_color_override("font_color", Color(0.8, 0.85, 0.95))
+
+# ── Save-slot picker (a chosen session's 3 checkpoints) ───────────────────────
+func _build_saveselect_view() -> void:
+	saveselect_status = Label.new()
+	saveselect_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	saveselect_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	saveselect_status.add_theme_color_override("font_color", Color(0.85, 0.85, 0.92))
+	saveselect_view.add_child(saveselect_status)
+
+	saveselect_buttons.clear()
+	for i in range(3):
+		var slot = i + 1
+		var btn = Button.new()
+		_style_btn(btn, Color(0.09, 0.12, 0.20), Color(0.30, 0.42, 0.75))
+		btn.pressed.connect(func(): _on_saveselect_pressed(slot))
+		saveselect_view.add_child(btn)
+		saveselect_buttons.append(btn)
+
+	var back_btn = Button.new()
+	back_btn.text = "↩  Back to sessions"
+	_style_btn(back_btn, Color(0.12, 0.12, 0.14), Color(0.40, 0.40, 0.48))
+	back_btn.pressed.connect(func(): _show_view("session"))
+	saveselect_view.add_child(back_btn)
+
+func _refresh_saveselect() -> void:
+	saveselect_status.text = "Session %d — choose a save to load:" % _selected_session
+	for i in range(3):
+		var slot = i + 1
+		var btn = saveselect_buttons[i] as Button
+		if not is_instance_valid(btn): continue
+		var info = QuestManager.save_slot_info(_selected_session, slot)
+		if info.get("exists", false):
+			btn.text = "Slot %d — Level %d" % [slot, info.get("level", 1)]
+			btn.disabled = false
+			btn.modulate.a = 1.0
+		else:
+			btn.text = "Slot %d — Empty" % slot
+			btn.disabled = true
+			btn.modulate.a = 0.5
+
+func _on_saveselect_pressed(slot: int) -> void:
+	if QuestManager.load_from(_selected_session, slot):
+		Engine.time_scale = 1.0
+		QuestManager.is_in_combat = false
+		get_tree().change_scene_to_file("res://main.tscn")
 	load_status_label.add_theme_color_override("font_color", Color(0.8, 0.85, 0.95))
 
 # ── Settings view ──────────────────────────────────────────────────────────
@@ -499,6 +589,7 @@ func _update_colors() -> void:
 		PlayerSkin.apply_colors(_preview_mat, hair_picker.color, shirt_picker.color, pants_picker.color, shoes_picker.color, skin_picker.color)
 
 func _on_confirm_customize() -> void:
+	# Build the character now, then go pick which SESSION to start it in.
 	QuestManager.reset_to_defaults()
 	var nm = name_input.text.strip_edges()
 	QuestManager.player_name = nm if nm != "" else "Hero"
@@ -512,14 +603,16 @@ func _on_confirm_customize() -> void:
 	QuestManager.play_time_seconds = 0.0
 	QuestManager.is_in_combat = false
 	Engine.time_scale = 1.0
-	get_tree().change_scene_to_file("res://main.tscn")
+	_session_mode = "new"
+	_show_view("session")
 
 # ── View switching ───────────────────────────────────────────────────────────
 func _show_view(which: String) -> void:
-	main_view.visible     = which == "main"
-	load_view.visible     = which == "load"
-	settings_view.visible = which == "settings"
+	main_view.visible      = which == "main"
+	load_view.visible      = which == "session"
+	settings_view.visible  = which == "settings"
 	customize_view.visible = which == "customize"
+	saveselect_view.visible = which == "saveselect"
 	# Cancel any in-progress key rebind when leaving the settings view.
 	_rebinding_action = ""
 	if which == "settings":
@@ -534,41 +627,16 @@ func _show_view(which: String) -> void:
 			card_panel.custom_minimum_size.y = 700
 	if which == "customize":
 		_update_preview()
-	if which == "load":
+	if which == "session":
 		_delete_armed_slot = 0
-		_refresh_load_slots()
-		load_status_label.text = "Choose a slot to load (🗑 clears a slot):"
-		load_status_label.add_theme_color_override("font_color", Color(0.85, 0.85, 0.92))
-
-func _refresh_load_slots() -> void:
-	for i in range(3):
-		var slot = i + 1
-		var btn = load_slot_buttons[i] as Button
-		if not is_instance_valid(btn): continue
-		var info = QuestManager.get_slot_info(slot)
-		if info.get("exists", false):
-			btn.text = "Slot %d — Level %d" % [slot, info.get("level", 1)]
-			btn.disabled = false
+		_refresh_session_slots()
+		if _session_mode == "new":
+			load_status_label.text = "Pick a session for your new character.\n(🗑 deletes a full session to make room.)"
 		else:
-			btn.text = "Slot %d — Empty" % slot
-			btn.disabled = true
-
-# ── Actions ──────────────────────────────────────────────────────────────────
-func _on_start_new_pressed() -> void:
-	QuestManager.reset_to_defaults()
-	QuestManager.play_time_seconds = 0.0
-	QuestManager.is_in_combat = false
-	Engine.time_scale = 1.0
-	get_tree().change_scene_to_file("res://main.tscn")
-
-func _on_load_slot_pressed(slot: int) -> void:
-	if QuestManager.load_game(slot):
-		Engine.time_scale = 1.0
-		QuestManager.is_in_combat = false
-		get_tree().change_scene_to_file("res://main.tscn")
-	else:
-		load_status_label.text = "⚠️  Slot %d is empty!" % slot
-		load_status_label.add_theme_color_override("font_color", Color(0.9, 0.5, 0.4))
+			load_status_label.text = "Choose a session to load.\n(🗑 deletes a session.)"
+		load_status_label.add_theme_color_override("font_color", Color(0.85, 0.85, 0.92))
+	if which == "saveselect":
+		_refresh_saveselect()
 
 # ── Style helpers ──────────────────────────────────────────────────────────
 func _style_panel(p: Panel, bg: Color, border: Color) -> void:

@@ -321,7 +321,7 @@ func _on_flee_pressed() -> void:
 	# reloads that last save. Otherwise it's a brand-new unsaved run: restart it
 	# fresh (keeping the character) rather than pulling in a stale slot from a
 	# previous session.
-	if QuestManager.session_saved_once and QuestManager.load_game(QuestManager.last_used_slot):
+	if QuestManager.session_saved_once and QuestManager.reload_current_save():
 		pass
 	else:
 		QuestManager.restart_fresh_run()
@@ -462,37 +462,29 @@ func _show_load_view() -> void:
 	if is_instance_valid(keybind_view): keybind_view.visible = false
 	_refresh_load_slot_labels()
 	if is_instance_valid(load_status_label):
-		var bound := QuestManager.active_session_slot
-		load_status_label.text = "Reload your last save:" if bound != 0 else "No in-game save yet — save at the Elder first.\n(Load other sessions from the Main Menu.)"
+		load_status_label.text = "Load one of this session's save slots:"
 		load_status_label.add_theme_color_override("font_color", Color(0.85, 0.85, 0.92))
 
 func _refresh_load_slot_labels() -> void:
-	# In-game, you can only reload THIS session's own save. The other two slots
-	# are separate sessions/characters and are only loadable from the Main Menu.
-	var bound := QuestManager.active_session_slot
+	# In-game load offers THIS session's own 3 save slots (its checkpoints). Other
+	# sessions/characters are only loadable from the Main Menu.
+	var session := QuestManager.active_session
 	for i in range(3):
 		var slot = i + 1
 		var btn = _load_slot_button(slot)
 		if not is_instance_valid(btn): continue
-		var info = QuestManager.get_slot_info(slot)
-		if bound != 0 and slot == bound and info.get("exists", false):
-			btn.text = "↺  Reload Slot %d — Level %d" % [slot, info.get("level", 1)]
+		var info = QuestManager.save_slot_info(session, slot)
+		if info.get("exists", false):
+			btn.text = "↺  Slot %d — Level %d" % [slot, info.get("level", 1)]
 			btn.disabled = false
 			btn.modulate.a = 1.0
-		elif info.get("exists", false):
-			btn.text = "🔒  Slot %d — another session" % slot
-			btn.disabled = true
-			btn.modulate.a = 0.5
 		else:
 			btn.text = "Slot %d — Empty" % slot
 			btn.disabled = true
 			btn.modulate.a = 0.5
 
 func _on_load_slot_pressed(slot: int) -> void:
-	# Only the current session's slot is loadable in-game.
-	if QuestManager.active_session_slot == 0 or slot != QuestManager.active_session_slot:
-		return
-	if QuestManager.load_game(slot):
+	if QuestManager.load_from(QuestManager.active_session, slot):
 		close_menu()
 		get_tree().reload_current_scene()
 	elif is_instance_valid(load_status_label):
