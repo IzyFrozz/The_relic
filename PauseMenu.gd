@@ -565,6 +565,17 @@ func _build_keybinds_ui() -> void:
 	hint.add_theme_color_override("font_color", Color(0.72, 0.74, 0.84))
 	keybind_view.add_child(hint)
 
+	# Rows live in a scroll box so the list never overflows the panel no matter
+	# how many actions are bound.
+	var scroll = ScrollContainer.new()
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	keybind_view.add_child(scroll)
+	var rows_vb = VBoxContainer.new()
+	rows_vb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	rows_vb.add_theme_constant_override("separation", 8)
+	scroll.add_child(rows_vb)
+
 	keybind_rows = {}
 	for action in KeybindManager.action_ids():
 		var row = HBoxContainer.new()
@@ -582,7 +593,7 @@ func _build_keybinds_ui() -> void:
 		var b: Button = key_btn
 		key_btn.pressed.connect(func(): _begin_rebind(a, b))
 		row.add_child(key_btn)
-		keybind_view.add_child(row)
+		rows_vb.add_child(row)
 		keybind_rows[action] = key_btn
 
 	var reset_btn = Button.new()

@@ -70,7 +70,7 @@ const QUESTS := {
 		"desc": "The mobs respawn endlessly. Thin the herd anyway — for the village.",
 		"how": "Defeat 5 enemies in total.",
 		"type": "kill_count", "goal": 5, "params": {},
-		"reward": { "xp": 320, "item": "clone" },
+		"reward": { "xp": 320 },
 	},
 	"herbalist": {
 		"title": "Herbalist", "emoji": "🧪",
@@ -84,9 +84,9 @@ const QUESTS := {
 		"title": "Meet the Locals", "emoji": "🗣️",
 		"teaser": "New face in town? The locals would like to put a name to it.",
 		"desc": "Every face in this village has a story. Introduce yourself around.",
-		"how": "Talk to the Street Kid and visit a Wizard checkpoint.",
-		"type": "talk_npcs", "goal": 2,
-		"params": { "npcs": ["street_kid", "wizard"] },
+		"how": "Talk to the Street Kid, the Navigator, and a Wizard checkpoint.",
+		"type": "talk_npcs", "goal": 3,
+		"params": { "npcs": ["street_kid", "wizard", "navigator"] },
 		"reward": { "xp": 120 },
 	},
 	"gone_fishing": {

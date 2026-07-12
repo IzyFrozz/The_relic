@@ -34,6 +34,7 @@ const PlayerSkin = preload("res://PlayerSkin.gd")
 
 var load_slot_buttons: Array = []
 var load_status_label: Label
+var _delete_armed_slot: int = 0   # which slot's 🗑 is armed for confirm (0 = none)
 
 var volume_slider: HSlider
 var mute_check:    CheckButton
@@ -188,17 +189,48 @@ func _build_load_view() -> void:
 	load_slot_buttons.clear()
 	for i in range(3):
 		var slot = i + 1
+		var row = HBoxContainer.new()
+		row.add_theme_constant_override("separation", 8)
+		load_view.add_child(row)
 		var btn = Button.new()
+		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		_style_btn(btn, Color(0.09, 0.12, 0.20), Color(0.30, 0.42, 0.75))
 		btn.pressed.connect(func(): _on_load_slot_pressed(slot))
-		load_view.add_child(btn)
+		row.add_child(btn)
 		load_slot_buttons.append(btn)
+		# Per-slot "clear" button (two-click confirm via the status line).
+		var del = Button.new()
+		del.text = "🗑"
+		del.focus_mode = Control.FOCUS_NONE
+		del.custom_minimum_size = Vector2(58, 0)
+		_style_btn(del, Color(0.22, 0.09, 0.09), Color(0.70, 0.25, 0.25))
+		del.pressed.connect(func(): _on_delete_slot_pressed(slot))
+		row.add_child(del)
 
 	var back_btn = Button.new()
 	back_btn.text = "↩  Back"
 	_style_btn(back_btn, Color(0.12, 0.12, 0.14), Color(0.40, 0.40, 0.48))
 	back_btn.pressed.connect(func(): _show_view("main"))
 	load_view.add_child(back_btn)
+
+func _on_delete_slot_pressed(slot: int) -> void:
+	var info = QuestManager.get_slot_info(slot)
+	if not info.get("exists", false):
+		_delete_armed_slot = 0
+		load_status_label.text = "Slot %d is already empty." % slot
+		load_status_label.add_theme_color_override("font_color", Color(0.85, 0.85, 0.92))
+		return
+	if _delete_armed_slot != slot:
+		# First press → arm. Second press on the same slot confirms.
+		_delete_armed_slot = slot
+		load_status_label.text = "⚠  Clear Slot %d? Press 🗑 again to confirm." % slot
+		load_status_label.add_theme_color_override("font_color", Color(0.95, 0.6, 0.4))
+		return
+	QuestManager.delete_slot(slot)
+	_delete_armed_slot = 0
+	_refresh_load_slots()
+	load_status_label.text = "🗑  Slot %d cleared." % slot
+	load_status_label.add_theme_color_override("font_color", Color(0.8, 0.85, 0.95))
 
 # ── Settings view ──────────────────────────────────────────────────────────
 func _build_settings_view() -> void:
@@ -503,8 +535,9 @@ func _show_view(which: String) -> void:
 	if which == "customize":
 		_update_preview()
 	if which == "load":
+		_delete_armed_slot = 0
 		_refresh_load_slots()
-		load_status_label.text = "Choose a slot to load:"
+		load_status_label.text = "Choose a slot to load (🗑 clears a slot):"
 		load_status_label.add_theme_color_override("font_color", Color(0.85, 0.85, 0.92))
 
 func _refresh_load_slots() -> void:

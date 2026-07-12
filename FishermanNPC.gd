@@ -65,10 +65,12 @@ func _interact() -> void:
 			{ "name": NPC_NAME, "text": "Fill the meter to the top and she's yours. Now — off to the water with you!" },
 		])
 		return
-	# Already taught → friendly chatter that keeps pointing at the water.
+	# Already taught → friendly chatter that keeps pointing at the water, with a
+	# vague hint that patient anglers pull up more than fish (don't name it).
 	var lines := [
 		"They're biting well today. Get down to the water and cast a line!",
 		"Patience and a steady hand at the water's edge — that's all it takes.",
-		"Land a big one for me, would you? Reckon there's a monster down there.",
+		"Keep at it, friend. They say the sea gives up [b]rare treasures[/b] to those who fish long enough… not just fish, mind you.",
+		"Land enough catches and the tide might reward you with something [b]special[/b]. What, exactly? Well — you'll know it when you reel it up.",
 	]
 	DialogueManager.say(NPC_NAME, lines[randi() % lines.size()])

@@ -20,6 +20,15 @@ const REFRESH_DT := 0.12           # how often we reveal / redraw (seconds)
 const MINI_SIZE := Vector2(196, 196)
 const MINI_CELL_PX := 11.0         # pixels per cell on the mini-map
 
+# Only the overworld island is mapped. House interiors and the combat arena live
+# far off to the side (x ≈ -3000…-4900) — reveals there are ignored so they never
+# show up on the world map (houses are found via the [E] door prompt instead).
+# Tune this rect if you extend the overworld.
+const OVERWORLD_BOUNDS := Rect2(-1200, -900, 2800, 1900)   # x:-1200..1600, y:-900..1000
+
+func _in_overworld(pos: Vector2) -> bool:
+	return OVERWORLD_BOUNDS.has_point(pos)
+
 const BG_COLOR       := Color(0.06, 0.07, 0.11, 0.92)
 const UNEXPLORED_COL := Color(0.12, 0.13, 0.18, 1.0)
 const EXPLORED_COL   := Color(0.24, 0.30, 0.42, 1.0)
@@ -89,8 +98,9 @@ func _build_minimap() -> void:
 	_mini_panel = Panel.new()
 	_mini_panel.anchor_left = 1.0; _mini_panel.anchor_right = 1.0
 	_mini_panel.anchor_top = 1.0;  _mini_panel.anchor_bottom = 1.0
-	_mini_panel.offset_left = -(MINI_SIZE.x + 16); _mini_panel.offset_right = -16
-	_mini_panel.offset_top = -(MINI_SIZE.y + 16 + 20); _mini_panel.offset_bottom = -16
+	# 8px inner margin around the canvas + room for the hint line below it.
+	_mini_panel.offset_left = -(MINI_SIZE.x + 32); _mini_panel.offset_right = -16
+	_mini_panel.offset_top = -(MINI_SIZE.y + 58); _mini_panel.offset_bottom = -16
 	_mini_panel.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 	_mini_panel.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	var ps := StyleBoxFlat.new()
@@ -176,12 +186,15 @@ func _build_fullmap() -> void:
 
 # ── Update loop ───────────────────────────────────────────────────────────────
 func _process(delta: float) -> void:
-	var show_mini := _overworld_active()
-	_mini_panel.visible = show_mini
-	_compass_bar.visible = show_mini
-	if _open_full and not show_mini:
+	var gate := _map_gate_ok()
+	var available := gate and _map_available()
+	# The live mini-map + compass only show on the mappable island. In a house or
+	# in combat they hide (the full map still opens, to say "Map Unavailable").
+	_mini_panel.visible = available
+	_compass_bar.visible = available
+	if _open_full and not gate:
 		_set_full(false)
-	if not show_mini:
+	if not gate:
 		return
 	# Map toggle uses the editable "toggle_map" action (default M).
 	if Input.is_action_just_pressed("toggle_map"):
@@ -190,14 +203,15 @@ func _process(delta: float) -> void:
 	if _accum < REFRESH_DT:
 		return
 	_accum = 0.0
-	var player := _player_node()
-	if is_instance_valid(player):
-		_reveal(player.global_position)
-	_update_compass_bar()
-	_mini_canvas.queue_redraw()
-	_compass_ribbon.queue_redraw()
+	if available:
+		var player := _player_node()
+		if is_instance_valid(player):
+			_reveal(player.global_position)
+		_update_compass_bar()
+		_mini_canvas.queue_redraw()
+		_compass_ribbon.queue_redraw()
 	if _open_full:
-		_full_canvas.queue_redraw()
+		_full_canvas.queue_redraw()   # draws the map, or the "unavailable" notice
 
 func _input(event: InputEvent) -> void:
 	# Esc closes the full map (the toggle itself is polled in _process so it uses
@@ -215,6 +229,9 @@ func _set_full(v: bool) -> void:
 
 # ── Fog of war reveal ─────────────────────────────────────────────────────────
 func _reveal(world_pos: Vector2) -> void:
+	# Never reveal cells outside the overworld (house interiors / combat arena).
+	if not _in_overworld(world_pos):
+		return
 	var cx := int(floor(world_pos.x / CELL))
 	var cy := int(floor(world_pos.y / CELL))
 	var changed := false
@@ -234,6 +251,19 @@ func _paint(canvas: Control, full: bool) -> void:
 		return
 	var size: Vector2 = canvas.size
 	canvas.draw_rect(Rect2(Vector2.ZERO, size), BG_COLOR)
+	# Full map opened somewhere it can't map (a house interior, or combat) — say so.
+	if full and not _map_available():
+		var font := ThemeDB.fallback_font
+		if font:
+			var msg := "🚫  Map Unavailable"
+			var sub := "(No map inside buildings or during combat.)"
+			var mw := font.get_string_size(msg, HORIZONTAL_ALIGNMENT_LEFT, -1, 30).x
+			var sw := font.get_string_size(sub, HORIZONTAL_ALIGNMENT_LEFT, -1, 15).x
+			canvas.draw_string(font, Vector2((size.x - mw) * 0.5, size.y * 0.5 - 8),
+				msg, HORIZONTAL_ALIGNMENT_LEFT, -1, 30, Color(0.9, 0.6, 0.55))
+			canvas.draw_string(font, Vector2((size.x - sw) * 0.5, size.y * 0.5 + 24),
+				sub, HORIZONTAL_ALIGNMENT_LEFT, -1, 15, Color(0.6, 0.62, 0.72))
+		return
 	var player := _player_node()
 	var ppos: Vector2 = player.global_position if is_instance_valid(player) else Vector2.ZERO
 
@@ -260,6 +290,9 @@ func _paint(canvas: Control, full: bool) -> void:
 			continue
 		var wx := float(int(parts[0])) * CELL
 		var wy := float(int(parts[1])) * CELL
+		# Skip any off-island cells baked into older saves (interiors / arena).
+		if not _in_overworld(Vector2(wx + CELL * 0.5, wy + CELL * 0.5)):
+			continue
 		var cp := Vector2(wx, wy) * scale + offset
 		if cp.x < -cell_draw.x or cp.y < -cell_draw.y or cp.x > size.x or cp.y > size.y:
 			continue
@@ -403,6 +436,8 @@ func _explored_world_bounds(ppos: Vector2) -> Rect2:
 			continue
 		var wx := float(int(parts[0])) * CELL
 		var wy := float(int(parts[1])) * CELL
+		if not _in_overworld(Vector2(wx + CELL * 0.5, wy + CELL * 0.5)):
+			continue
 		min_c.x = minf(min_c.x, wx); min_c.y = minf(min_c.y, wy)
 		max_c.x = maxf(max_c.x, wx + CELL); max_c.y = maxf(max_c.y, wy + CELL)
 		has_any = true
@@ -422,15 +457,14 @@ func _player_node() -> Node2D:
 		return p as Node2D
 	return scene.find_child("mainplayer", true, false) as Node2D
 
-func _overworld_active() -> bool:
-	# The whole map/compass system stays hidden until the Navigator grants the
-	# compass — the player has to FIND them first (no map, no marker before then).
+# Whether the map SYSTEM is reachable at all: compass unlocked, we're in the game
+# (not the menu), and no higher-priority modal (dialogue / pause / end screen) is
+# up. This still allows opening the map in combat / inside a house — where it will
+# report "Map Unavailable" — so the M key never feels dead.
+func _map_gate_ok() -> bool:
 	if not QuestManager.has_compass:
 		return false
-	# Only in the actual game scene — never on the main menu (no player there).
 	if not is_instance_valid(_player_node()):
-		return false
-	if QuestManager.is_in_combat or QuestManager.is_fishing:
 		return false
 	if is_instance_valid(DialogueManager) and DialogueManager.is_active:
 		return false
@@ -442,3 +476,13 @@ func _overworld_active() -> bool:
 	if is_instance_valid(pause) and pause.has_method("is_open") and pause.is_open():
 		return false
 	return true
+
+# Whether there's an actual map to show right now: on the overworld island, not in
+# combat/fishing. House interiors and the combat arena sit OUTSIDE the island
+# bounds, so the map is "unavailable" there even though it's technically still
+# the overworld scene.
+func _map_available() -> bool:
+	if QuestManager.is_in_combat or QuestManager.is_fishing:
+		return false
+	var p := _player_node()
+	return is_instance_valid(p) and _in_overworld(p.global_position)

@@ -161,6 +161,12 @@ func accept_side_quest(id: String) -> void:
 	has_unsaved_progress = true
 	var d = SideQuestDB.get_def(id)
 	Toast.show_toast("%s  Quest activated: %s" % [d.get("emoji", "📜"), d.get("title", id)])
+	# Seed progress from state already satisfied BEFORE accepting (e.g. NPCs you
+	# talked to earlier, potions/fish/coins already gathered). These types derive
+	# their count from stored state; the per-event types (kill_count…) must NOT be
+	# seeded or they'd wrongly gain a point on accept.
+	if d.get("type", "") in ["talk_npcs", "coin_lifetime", "potion_count", "fish_count"]:
+		_advance_side_quest(id, d)
 	side_quests_changed.emit()
 
 # Central event hook. Gameplay code calls this with an event key and optional
@@ -489,6 +495,16 @@ func _migrate_item_ids() -> void:
 			if ITEM_META.has(id) and not out.has(id):
 				out.append(id)
 		set(arr_name, out)
+
+# Wipe a save slot (Main-Menu "clear slot"). If it was the active session's
+# slot, that binding is cleared too.
+func delete_slot(slot: int) -> void:
+	var path := _slot_path(slot)
+	if FileAccess.file_exists(path):
+		DirAccess.remove_absolute(path)
+	if active_session_slot == slot:
+		active_session_slot = 0
+		session_saved_once = false
 
 func get_slot_info(slot: int) -> Dictionary:
 	if not FileAccess.file_exists(_slot_path(slot)): return {"exists": false}

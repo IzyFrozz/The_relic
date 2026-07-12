@@ -792,7 +792,7 @@ enabled = false
 zoom = Vector2(2.6, 2.6)
 
 [node name="mob1" type="CharacterBody2D" parent="." unique_id=8730518 node_paths=PackedStringArray("battle_player_marker", "battle_enemy_marker", "graveyard_marker")]
-position = Vector2(-211, 423)
+position = Vector2(124, 487)
 script = ExtResource("1_px5sl")
 is_tutorial_mob = true
 battle_player_marker = NodePath("../BattlePlayerMarker")
@@ -816,80 +816,58 @@ flip_h = true
 position = Vector2(0, 3)
 shape = SubResource("CapsuleShape2D_7tnxx")
 
-[node name="mob1_2" type="CharacterBody2D" parent="." unique_id=1964334702 node_paths=PackedStringArray("battle_player_marker", "battle_enemy_marker", "graveyard_marker")]
-position = Vector2(620, 480)
+[node name="mob1_2" type="CharacterBody2D" parent="." unique_id=271555553 node_paths=PackedStringArray("battle_player_marker", "battle_enemy_marker", "graveyard_marker")]
+position = Vector2(441, 439)
 script = ExtResource("1_px5sl")
+is_tutorial_mob = true
 battle_player_marker = NodePath("../BattlePlayerMarker")
 battle_enemy_marker = NodePath("../BattleEnemyMarker")
 graveyard_marker = NodePath("../GraveyardMarker")
 
-[node name="deadzone" type="Area2D" parent="mob1_2" unique_id=1764811406]
+[node name="deadzone" type="Area2D" parent="mob1_2" unique_id=836785730]
 
-[node name="DZcollison" type="CollisionShape2D" parent="mob1_2/deadzone" unique_id=135791507]
+[node name="DZcollison" type="CollisionShape2D" parent="mob1_2/deadzone" unique_id=1204332624]
 shape = SubResource("CircleShape2D_jb3kq")
 debug_color = Color(0.9823695, 0, 0.36699468, 0.41960785)
 
-[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="mob1_2" unique_id=97427122]
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="mob1_2" unique_id=591250034]
 position = Vector2(4.7683716e-07, 3.8146973e-06)
 scale = Vector2(0.8359378, 0.8359378)
 sprite_frames = SubResource("SpriteFrames_c1b4b")
 autoplay = "default"
 flip_h = true
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="mob1_2" unique_id=1422953817]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="mob1_2" unique_id=1621236172]
 position = Vector2(0, 3)
 shape = SubResource("CapsuleShape2D_7tnxx")
 
-[node name="mob1_3" type="CharacterBody2D" parent="." unique_id=465294187 node_paths=PackedStringArray("battle_player_marker", "battle_enemy_marker", "graveyard_marker")]
-position = Vector2(700, 620)
+[node name="mob1_3" type="CharacterBody2D" parent="." unique_id=60166378 node_paths=PackedStringArray("battle_player_marker", "battle_enemy_marker", "graveyard_marker")]
+position = Vector2(504, 526)
 script = ExtResource("1_px5sl")
+is_tutorial_mob = true
 battle_player_marker = NodePath("../BattlePlayerMarker")
 battle_enemy_marker = NodePath("../BattleEnemyMarker")
 graveyard_marker = NodePath("../GraveyardMarker")
 
-[node name="deadzone" type="Area2D" parent="mob1_3" unique_id=1893844301]
+[node name="deadzone" type="Area2D" parent="mob1_3" unique_id=1179541131]
 
-[node name="DZcollison" type="CollisionShape2D" parent="mob1_3/deadzone" unique_id=865114670]
+[node name="DZcollison" type="CollisionShape2D" parent="mob1_3/deadzone" unique_id=1605745396]
 shape = SubResource("CircleShape2D_jb3kq")
 debug_color = Color(0.9823695, 0, 0.36699468, 0.41960785)
 
-[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="mob1_3" unique_id=853222811]
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="mob1_3" unique_id=1483442021]
 position = Vector2(4.7683716e-07, 3.8146973e-06)
 scale = Vector2(0.8359378, 0.8359378)
 sprite_frames = SubResource("SpriteFrames_c1b4b")
 autoplay = "default"
 flip_h = true
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="mob1_3" unique_id=1103006557]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="mob1_3" unique_id=254989254]
 position = Vector2(0, 3)
-shape = SubResource("CapsuleShape2D_7tnxx")
-
-[node name="mob1_4" type="CharacterBody2D" parent="." unique_id=1189837377 node_paths=PackedStringArray("battle_player_marker", "battle_enemy_marker", "graveyard_marker")]
-position = Vector2(900, 150)
-script = ExtResource("1_px5sl")
-battle_player_marker = NodePath("../BattlePlayerMarker")
-battle_enemy_marker = NodePath("../BattleEnemyMarker")
-graveyard_marker = NodePath("../GraveyardMarker")
-
-[node name="deadzone" type="Area2D" parent="mob1_4" unique_id=2084474382]
-
-[node name="DZcollison" type="CollisionShape2D" parent="mob1_4/deadzone" unique_id=564253333]
-shape = SubResource("CircleShape2D_jb3kq")
-debug_color = Color(0.9823695, 0, 0.36699468, 0.41960785)
-
-[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="mob1_4" unique_id=1570632944]
-position = Vector2(4.7683716e-07, 3.8146973e-06)
-scale = Vector2(0.8359378, 0.8359378)
-sprite_frames = SubResource("SpriteFrames_c1b4b")
-autoplay = "default"
-flip_h = true
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="mob1_4" unique_id=2012463128]
-position = Vector2(0, 5)
 shape = SubResource("CapsuleShape2D_7tnxx")
 
 [node name="mob2" type="CharacterBody2D" parent="." unique_id=1081548398 node_paths=PackedStringArray("battle_player_marker", "battle_enemy_marker", "graveyard_marker")]
-position = Vector2(1000, 550)
+position = Vector2(554, 481)
 script = ExtResource("1_px5sl")
 enemy_level = 2
 battle_player_marker = NodePath("../BattlePlayerMarker")
@@ -914,7 +892,7 @@ position = Vector2(0, 2)
 shape = SubResource("CapsuleShape2D_c1b4b")
 
 [node name="mob3" type="CharacterBody2D" parent="." unique_id=1476578817 node_paths=PackedStringArray("battle_player_marker", "battle_enemy_marker", "graveyard_marker")]
-position = Vector2(650, -50)
+position = Vector2(591, 376)
 script = ExtResource("1_px5sl")
 enemy_level = 3
 battle_player_marker = NodePath("../BattlePlayerMarker")
@@ -964,7 +942,7 @@ position = Vector2(0, 3)
 shape = SubResource("CapsuleShape2D_3d8aq")
 
 [node name="mob5" type="CharacterBody2D" parent="." unique_id=1899198502 node_paths=PackedStringArray("battle_player_marker", "battle_enemy_marker", "graveyard_marker")]
-position = Vector2(1150, 650)
+position = Vector2(658, 344)
 script = ExtResource("1_px5sl")
 enemy_level = 5
 battle_player_marker = NodePath("../BattlePlayerMarker")
@@ -1378,7 +1356,6 @@ shape = SubResource("CapsuleShape2D_7tnxx")
 [connection signal="body_entered" from="mob1/deadzone" to="mob1" method="_on_deadzone_body_entered"]
 [connection signal="body_entered" from="mob1_2/deadzone" to="mob1_2" method="_on_deadzone_body_entered"]
 [connection signal="body_entered" from="mob1_3/deadzone" to="mob1_3" method="_on_deadzone_body_entered"]
-[connection signal="body_entered" from="mob1_4/deadzone" to="mob1_4" method="_on_deadzone_body_entered"]
 [connection signal="body_entered" from="mob6/deadzone" to="mob6" method="_on_deadzone_body_entered"]
 [connection signal="body_entered" from="mob7/deadzone" to="mob7" method="_on_deadzone_body_entered"]
 [connection signal="body_entered" from="mob8/deadzone" to="mob8" method="_on_deadzone_body_entered"]

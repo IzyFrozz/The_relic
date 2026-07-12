@@ -734,11 +734,7 @@ func _summon_clone() -> void:
 	if not is_instance_valid(player_ref):
 		return
 	player_clone_active = true
-	_clone_player_home = player_ref.global_position
-	# Step the player back a little to make room for the double.
-	var tw := create_tween().set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
-	tw.tween_property(player_ref, "global_position", _clone_player_home - Vector2(26, 0), 0.18)
-	await tw.finished
+	_clone_player_home = player_ref.global_position   # the player does NOT move
 	# Build the ghostly double from the player's own sprite frames.
 	var psprite := player_ref.get_node_or_null("AnimatedSprite2D") as AnimatedSprite2D
 	_clone_node = AnimatedSprite2D.new()
@@ -747,22 +743,32 @@ func _summon_clone() -> void:
 		_clone_node.scale = psprite.scale
 		_clone_node.animation = psprite.animation
 		_clone_node.frame = psprite.frame
-		_clone_node.flip_h = psprite.flip_h
-	_clone_node.modulate = Color(0.45, 1.0, 0.95, 0.55)   # ghostly teal, translucent
+		_clone_node.flip_h = false   # face the enemy (to the right)
+	_clone_node.modulate = Color(0.35, 0.62, 1.0, 0.7)   # spectral BLUE at 70% opacity
 	_clone_node.z_index = 4
 	player_ref.get_parent().add_child(_clone_node)
-	_clone_node.global_position = _clone_player_home + Vector2(10, 0)
-	var base_scale: Vector2 = _clone_node.scale
-	_clone_node.scale = base_scale * 0.5
-	var tw2 := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	tw2.tween_property(_clone_node, "scale", base_scale, 0.22)
-	await tw2.finished
+	# Spawn on the player and dash FORWARD toward the enemy — the player stays put.
+	_clone_node.global_position = _clone_player_home
+	if _clone_node.sprite_frames and _clone_node.sprite_frames.has_animation("WalkSide"):
+		_clone_node.play("WalkSide"); _clone_node.speed_scale = 1.0
+	var forward := _clone_player_home + Vector2(52, 0)
+	var tw := create_tween().set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	tw.tween_property(_clone_node, "global_position", forward, 0.22)
+	await tw.finished
+	if is_instance_valid(_clone_node) and _clone_node.sprite_frames and _clone_node.sprite_frames.has_animation("WalkSide"):
+		_clone_node.play("WalkSide"); _clone_node.frame = 2; _clone_node.speed_scale = 0.0   # idle pose
 
 func _clone_strike() -> void:
 	if not is_instance_valid(_clone_node):
 		return
 	var start := _clone_node.global_position
 	var target := global_position - Vector2(30, 0)   # lunge to just left of the enemy
+	var spr := _clone_node as AnimatedSprite2D
+	# Play the attack swing if the sheet has it (it's a copy of the player frames).
+	if spr.sprite_frames and spr.sprite_frames.has_animation("AttackSide"):
+		spr.flip_h = false
+		spr.speed_scale = 1.0
+		spr.play("AttackSide")
 	var tw := create_tween().set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 	tw.tween_property(_clone_node, "global_position", target, 0.14)
 	await tw.finished
@@ -773,6 +779,8 @@ func _clone_strike() -> void:
 		var tw2 := create_tween().set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
 		tw2.tween_property(_clone_node, "global_position", start, 0.12)
 		await tw2.finished
+		if is_instance_valid(_clone_node) and spr.sprite_frames and spr.sprite_frames.has_animation("WalkSide"):
+			spr.play("WalkSide"); spr.frame = 2; spr.speed_scale = 0.0   # back to idle pose
 
 # The clone soaks a hit and shatters (teal flash + expand + fade).
 func _shatter_clone() -> void:
@@ -798,6 +806,31 @@ func _restore_player_home() -> void:
 		var tw := create_tween().set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 		tw.tween_property(player_ref, "global_position", _clone_player_home, 0.15)
 		_clone_player_home = Vector2.ZERO
+
+# The enemy charges the clone at its actual position (front/above/below), lands
+# the hit, then returns — so the clone visibly takes the blow, not the player.
+func _enemy_lunge_at_clone() -> void:
+	if not is_instance_valid(_clone_node):
+		return
+	var estart := global_position
+	var ct := _clone_node.global_position
+	var to := ct - estart
+	var target := estart + (to.normalized() * maxf(to.length() - 22.0, 0.0) if to.length() > 0.001 else Vector2.ZERO)
+	var espr := get_node_or_null("AnimatedSprite2D") as AnimatedSprite2D
+	if is_instance_valid(espr): espr.flip_h = true
+	var tw := create_tween().set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	tw.tween_property(self, "global_position", target, 0.18)
+	await tw.finished
+	# quick impact shudder on the clone
+	if is_instance_valid(_clone_node):
+		var cp := _clone_node.global_position
+		for _i in range(3):
+			_clone_node.global_position = cp + Vector2(randf_range(-4, 4), randf_range(-3, 3))
+			await get_tree().create_timer(0.04).timeout
+		_clone_node.global_position = cp
+	var tw2 := create_tween().set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+	tw2.tween_property(self, "global_position", estart, 0.15)
+	await tw2.finished
 
 # =============================================================================
 #  PLAYER ATTACK PHASE
@@ -988,13 +1021,12 @@ func _execute_enemy_turn_ai() -> void:
 	var actual_dmg_to_player := 0
 
 	if player_clone_active:
-		# The Mirror Clone throws itself in the way — it soaks this hit ENTIRELY,
-		# no matter how big or how piercing, and shatters. The enemy's offensive
-		# one-shots are spent on it.
+		# The Mirror Clone soaks this hit ENTIRELY (any size, even piercing) and
+		# shatters. The enemy charges the CLONE at wherever it stands, not the
+		# player. The enemy's offensive one-shots are spent on it.
 		enemy_god_pierce = false; enemy_piercing = false; enemy_cursed = false
 		enemy_lifesteal_active = false
-		if is_instance_valid(player_ref) and player_ref.has_method("do_enemy_lunge"):
-			await player_ref.do_enemy_lunge(self, player_ref.global_position, false)
+		await _enemy_lunge_at_clone()
 		await _shatter_clone()
 		if combat_ui: combat_ui.display_round_history("👥 Your clone threw itself in the way and shattered — no damage!", false)
 	elif enemy_god_pierce:
