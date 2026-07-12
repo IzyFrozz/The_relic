@@ -49,7 +49,7 @@ func _build() -> void:
 	vbox.add_child(title)
 
 	var sub = Label.new()
-	sub.text = "The enemy has fallen. The relic grows stronger."
+	sub.text = "The relic is safe in the village's hands. Your legend is complete — but the roads still call."
 	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	sub.add_theme_font_size_override("font_size", 15)
 	sub.add_theme_color_override("font_color", Color(0.62, 0.72, 0.62))

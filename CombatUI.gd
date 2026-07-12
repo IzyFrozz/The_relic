@@ -37,6 +37,23 @@ func _ready() -> void:
 	_build_dynamic_popup_window()
 	_disable_engine_focus_modes()
 
+func _process(_delta: float) -> void:
+	# Gentle glow-pulse on the Relic button while it's charged & ready — a clear
+	# "unleash me" cue on the game's signature item.
+	if not visible or not is_instance_valid(current_enemy):
+		return
+	if not (current_enemy.has_method("relic_is_charged") and current_enemy.relic_is_charged()):
+		return
+	var slots = QuestManager.equipped_items
+	for i in range(item_buttons.size()):
+		var btn = item_buttons[i]
+		if not is_instance_valid(btn):
+			continue
+		var item_id = slots[i] if i < slots.size() else ""
+		if item_id == "relic" and not btn.disabled:
+			var p := 0.5 + 0.5 * sin(Time.get_ticks_msec() / 160.0)
+			btn.modulate = Color(1.45 + 0.45 * p, 1.2 + 0.2 * p, 2.05 + 0.35 * p, 1.0)
+
 func _find_nodes_automatically() -> void:
 	drop_countdown_label      = find_child("DropCountdownLabel") as Label
 	fight_button              = find_child("fight_button") as Button
@@ -357,9 +374,9 @@ func _refresh_ui_states() -> void:
 	if drop_countdown_label:
 		var next_count = min(current_enemy.drop_round_index + 1, 6)
 		if current_enemy.cycles_until_drop <= 1:
-			drop_countdown_label.text = "📦  Drop next round!  (+%d items)" % next_count
+			drop_countdown_label.text = "📦  Quartermaster's crate next round!  (+%d items)" % next_count
 		else:
-			drop_countdown_label.text = "📦  Drop in %d rounds  (+%d items)" % [current_enemy.cycles_until_drop, next_count]
+			drop_countdown_label.text = "📦  Quartermaster's crate in %d rounds  (+%d items)" % [current_enemy.cycles_until_drop, next_count]
 
 	var slots = QuestManager.equipped_items
 	for i in range(item_buttons.size()):
@@ -375,7 +392,9 @@ func _refresh_ui_states() -> void:
 		btn.tooltip_text = "%s %s\n%s" % [meta["emoji"], meta["label"], meta["desc"]]
 		var usable = count > 0 and not is_disarmed
 		if "player_items_locked" in current_enemy and current_enemy.player_items_locked: usable = false
-		if item_id == "potion"       and QuestManager.player_health >= QuestManager.MAX_HEALTH: usable = false
+		# Heal items gray out at the gold-heart cap (can't heal above 300 red HP).
+		if item_id == "potion"       and not QuestManager.can_heal_player():  usable = false
+		if item_id == "bandage"      and not QuestManager.can_heal_player() and current_enemy.player_regen_rounds <= 0: usable = false
 		if item_id == "shield"       and current_enemy.player_active_armor:   usable = false
 		if item_id == "whip"         and current_enemy.enemy_is_disarmed:     usable = false
 		if item_id == "needle"       and current_enemy.player_piercing:       usable = false
@@ -386,8 +405,37 @@ func _refresh_ui_states() -> void:
 		if item_id == "smoke_bomb"   and current_enemy.player_dodge_active:   usable = false
 		if item_id == "weaken_totem" and current_enemy.enemy_cursed:          usable = false
 		if item_id == "static_field" and current_enemy.enemy_items_locked:    usable = false
+		if item_id == "clone"        and "player_clone_active" in current_enemy and current_enemy.player_clone_active: usable = false
+		# Phoenix is passive (auto-revive only) — never manually usable.
+		if item_id == "phoenix_feather": usable = false
+		# ── Relic: only usable when charged; its button reflects live charge ──
+		var relic_charged := false
+		if item_id == "relic":
+			relic_charged = current_enemy.has_method("relic_is_charged") and current_enemy.relic_is_charged()
+			if not relic_charged: usable = false
 		btn.disabled   = not usable
-		btn.modulate.a = 1.0 if usable else 0.36
+		btn.modulate   = Color(1, 1, 1, 1.0) if usable else Color(1, 1, 1, 0.36)
+		# ── Live status suffixes for conditional / cooldown items ──
+		if item_id == "relic":
+			var chg  = current_enemy.player_relic_charge if "player_relic_charge" in current_enemy else 0
+			var need = current_enemy.relic_charge_needed() if current_enemy.has_method("relic_charge_needed") else 999
+			if count <= 0:
+				btn.text = "%s  %s\n[%s] ×0  — not held —" % [meta["emoji"], meta["label"], slot_key]
+			elif relic_charged:
+				btn.text = "%s  %s\n[%s] ×%d  ✨ READY" % [meta["emoji"], meta["label"], slot_key, count]
+				btn.modulate = Color(1.75, 1.35, 2.3, 1.0)   # unique radiant glow when charged
+			else:
+				btn.text = "%s  %s\n[%s] ×%d  ⚡ %d/%d" % [meta["emoji"], meta["label"], slot_key, count, mini(chg, need), need]
+		elif item_id == "phoenix_feather":
+			var cd = current_enemy.player_phoenix_cd if "player_phoenix_cd" in current_enemy else 0
+			if count <= 0:
+				btn.text = "%s  %s\n[%s] ×0  — spent —" % [meta["emoji"], meta["label"], slot_key]
+			elif cd > 0:
+				btn.text = "%s  %s\n[%s] ×%d  ⏳ %d" % [meta["emoji"], meta["label"], slot_key, count, cd]
+			else:
+				btn.text = "%s  %s\n[%s] ×%d  🛡 auto" % [meta["emoji"], meta["label"], slot_key, count]
+		elif item_id == "clone" and "player_clone_active" in current_enemy and current_enemy.player_clone_active:
+			btn.text = "%s  %s\n[%s] ×%d  👥 active" % [meta["emoji"], meta["label"], slot_key, count]
 
 	_update_enemy_inventory_grid()
 	_apply_status_tints()
@@ -402,9 +450,7 @@ func _on_fight_pressed() -> void:
 	if not is_instance_valid(current_enemy): return
 	if is_waiting_on_action: return
 	is_waiting_on_action = true; _lock_all_player_inputs()
-	var confirmed = await show_blocking_popup("⚔️  ATTACK", "Commit to your attack phase?", true)
-	if not confirmed:
-		is_waiting_on_action = false; _refresh_ui_states(); return
+	# No confirmation prompt — attack fires immediately on click.
 	var player = get_tree().get_first_node_in_group("player")
 	if not is_instance_valid(player): player = get_tree().root.find_child("mainplayer", true, false)
 	if is_instance_valid(player) and player.has_method("do_attack_lunge"):
@@ -424,14 +470,9 @@ func _on_item_used(item_type: String) -> void:
 		if current_enemy.has_method("use_player_item"): await current_enemy.use_player_item("magnet")
 		if not _is_enemy_turn: is_waiting_on_action = false; _refresh_ui_states()
 		return
-	var meta      = QuestManager.ITEM_META.get(item_type, {"emoji":"❓","label":item_type.capitalize(),"desc":""})
-	var confirmed = await show_blocking_popup("%s  USE ITEM" % meta["emoji"],
-		"Activate  [%s]?\n\n%s" % [meta["label"].to_upper(), meta["desc"]], true)
-	if confirmed:
-		if current_enemy.has_method("use_player_item"): await current_enemy.use_player_item(item_type)
-		if not _is_enemy_turn: is_waiting_on_action = false; _refresh_ui_states()
-	else:
-		is_waiting_on_action = false; _refresh_ui_states()
+	# No confirmation prompt — item activates immediately on click.
+	if current_enemy.has_method("use_player_item"): await current_enemy.use_player_item(item_type)
+	if not _is_enemy_turn: is_waiting_on_action = false; _refresh_ui_states()
 
 func show_blocking_popup(header_title: String, message: String, require_confirmation: bool = false) -> bool:
 	popup_title_lbl.text = header_title; popup_label.text = message; popup_overlay.visible = true

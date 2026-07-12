@@ -10,8 +10,11 @@ extends CanvasLayer
 # NPCs can pause themselves.
 
 signal dialogue_finished
+signal choice_selected(index: int)
 
 var is_active: bool = false
+var _awaiting_choice: bool = false
+var _choice_row: HBoxContainer
 
 var _lines: Array = []
 var _index: int = 0
@@ -51,6 +54,57 @@ func start(lines: Array) -> void:
 	_root.modulate.a = 0.0
 	create_tween().tween_property(_root, "modulate:a", 1.0, 0.12)
 	_show_line()
+
+# Present a prompt with clickable options and await the player's pick. Returns
+# the chosen option index. Click a button, or press the number keys 1..N.
+#     var choice = await DialogueManager.ask("Kid", "Turn it in?", ["Yes", "No"])
+func ask(speaker: String, prompt: String, options: Array) -> int:
+	is_active = true
+	_awaiting_choice = true
+	_typing = false
+	_root.visible = true
+	_root.modulate.a = 0.0
+	create_tween().tween_property(_root, "modulate:a", 1.0, 0.12)
+	_name_label.text = speaker
+	_name_label.visible = speaker != ""
+	_body_label.text = prompt
+	_body_label.visible_characters = -1
+	_hint_label.visible = false
+	for c in _choice_row.get_children():
+		c.queue_free()
+	_choice_row.visible = true
+	for i in range(options.size()):
+		var b = Button.new()
+		b.text = "%d.  %s" % [i + 1, options[i]]
+		b.focus_mode = Control.FOCUS_NONE
+		b.add_theme_font_size_override("font_size", 18)
+		var bs = StyleBoxFlat.new()
+		bs.bg_color = Color(0.14, 0.16, 0.24, 1.0)
+		bs.set_corner_radius_all(8); bs.set_border_width_all(2)
+		bs.border_color = COL_BORDER
+		bs.content_margin_left = 16; bs.content_margin_right = 16
+		bs.content_margin_top = 8;   bs.content_margin_bottom = 8
+		b.add_theme_stylebox_override("normal", bs)
+		var bh = bs.duplicate() as StyleBoxFlat
+		bh.border_color = COL_GOLD
+		b.add_theme_stylebox_override("hover", bh)
+		var idx := i
+		b.pressed.connect(func(): _pick_choice(idx))
+		_choice_row.add_child(b)
+	var chosen = await choice_selected
+	return chosen
+
+func _pick_choice(idx: int) -> void:
+	if not _awaiting_choice:
+		return
+	_awaiting_choice = false
+	_choice_row.visible = false
+	_hint_label.visible = true
+	is_active = false
+	var tw = create_tween()
+	tw.tween_property(_root, "modulate:a", 0.0, 0.10)
+	tw.tween_callback(_hide_box)
+	choice_selected.emit(idx)
 
 # ── Build UI (code-driven, resolution-independent) ──────────────────────────
 func _build() -> void:
@@ -104,6 +158,13 @@ func _build() -> void:
 	_body_label.add_theme_font_size_override("normal_font_size", 23)
 	_body_label.add_theme_color_override("default_color", COL_TEXT)
 	vb.add_child(_body_label)
+
+	# Choice buttons (hidden unless ask() is showing options).
+	_choice_row = HBoxContainer.new()
+	_choice_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	_choice_row.add_theme_constant_override("separation", 16)
+	_choice_row.visible = false
+	vb.add_child(_choice_row)
 
 	_hint_label = Label.new()
 	_hint_label.text = "▸  Space"
@@ -161,6 +222,15 @@ func _hide_box() -> void:
 
 func _input(event: InputEvent) -> void:
 	if not is_active:
+		return
+	# While a choice is on screen, number keys pick an option; advance/close keys
+	# are ignored so the prompt can't be dismissed without choosing.
+	if _awaiting_choice:
+		if event is InputEventKey and event.pressed and not event.echo:
+			var n: int = (event as InputEventKey).keycode - KEY_1
+			if n >= 0 and n < _choice_row.get_child_count():
+				get_viewport().set_input_as_handled()
+				_pick_choice(n)
 		return
 	if event is InputEventKey and event.pressed and not event.echo:
 		match event.keycode:

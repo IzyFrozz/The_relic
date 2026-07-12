@@ -50,16 +50,24 @@ func _handle_interact() -> void:
 		])
 		return
 
-	# ── 4. Turn in the relic → win ──
+	# ── 4. Relic in hand — offer the choice: turn it in (win) or keep wielding it ──
 	if QuestManager.has_relic:
-		QuestManager.has_relic = false
-		QuestManager.game_won = true
-		PromptHUD.release(self)
 		await _say_and_wait([
-			{ "name": QuestManager.player_name, "text": "Here — your village's relic, safe and sound." },
-			{ "name": NPC_NAME,  "text": "You did it! You truly saved us all. Thank you, hero!" },
+			{ "name": NPC_NAME, "text": "You found it — the [b]🏺 relic![/b] Hand it over and our village is saved at last." },
 		])
-		_trigger_win_screen()
+		var choice = await DialogueManager.ask(NPC_NAME,
+			"Turn in the relic now and end your journey? (You can also keep it a while and wield its power in battle first.)",
+			["Turn it in — end the quest", "Not yet — keep the relic"])
+		if choice == 0:
+			QuestManager.turn_in_relic()   # clears relic, unlocks the win, removes it from the loadout
+			PromptHUD.release(self)
+			await _say_and_wait([
+				{ "name": QuestManager.player_name, "text": "Here — your village's relic, safe and sound." },
+				{ "name": NPC_NAME,  "text": "You did it! You truly saved us all. Thank you, hero!" },
+			])
+			_trigger_win_screen()
+		else:
+			DialogueManager.say(NPC_NAME, "Ha! Can't blame you — it IS a marvel. Come back when you're ready to finish this.")
 		return
 
 	# ── 3. Has the key, still needs the relic ──

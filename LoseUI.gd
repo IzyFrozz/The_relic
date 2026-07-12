@@ -111,8 +111,12 @@ func show_death_screen() -> void:
 func _on_restart_pressed() -> void:
 	Engine.time_scale = 1.0
 	QuestManager.is_in_combat = false
-	if not QuestManager.load_game(QuestManager.last_used_slot):
-		QuestManager.reset_to_defaults()
+	# Saved session → reload the last save. Never-saved run → restart it fresh
+	# (keeping the character) instead of loading a stale slot from another run.
+	if QuestManager.session_saved_once and QuestManager.load_game(QuestManager.last_used_slot):
+		pass
+	else:
+		QuestManager.restart_fresh_run()
 	get_tree().reload_current_scene()
 
 func _on_exit_pressed() -> void:

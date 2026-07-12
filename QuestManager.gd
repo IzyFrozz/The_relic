@@ -95,8 +95,10 @@ const ITEM_META := {
 	"time_warp":    { "emoji": "⏳", "label": "Time Warp",       "desc": "Target skips their next TWO turns." },
 	"overcharge":   { "emoji": "🔥", "label": "Overcharge",      "desc": "Adds +20 damage AND pierces armor on next attack. Stacks with Grindstone." },
 	# ── Side-quest reward items (not level-gated; earned by completing quests) ──
-	"phoenix_feather": { "emoji": "🪶", "label": "Phoenix Feather", "desc": "Heals you to FULL HP instantly and grants +10 HP regen for 3 rounds." },
-	"war_banner":      { "emoji": "🚩", "label": "War Banner",      "desc": "Your next attack deals DOUBLE damage. Applied after other damage buffs." },
+	"phoenix_feather": { "emoji": "🪶", "label": "Phoenix Feather", "desc": "Passive safety net (can't be used by hand). The moment you'd die it auto-revives you to 40 HP, then goes dormant for 5+ turns — the wait grows each time it triggers. Only one at a time." },
+	"clone":           { "emoji": "👥", "label": "Mirror Clone",    "desc": "Summons a ghostly double in front of you. On your attack the clone strikes first for 20, then you strike (buffs apply to you) — two hits in one turn. The clone also soaks the enemy's next hit, then fades." },
+	# ── The Ancient Relic (quest item that doubles as the ultimate loadout item) ──
+	"relic":           { "emoji": "🏺", "label": "Ancient Relic",   "desc": "The strongest item alive. Once it's in your bag it charges from damage traded in a fight; when it GLOWS, unleash 40 unblockable damage and heal 20, cleansing your afflictions. Consumed on use (back to the crate pool), and each use it demands more charge. Only one at a time. Turn it in to win." },
 }
 
 # ── Side quest state (see SideQuestDB.gd for definitions) ────────────────────
@@ -114,8 +116,15 @@ var coins_lifetime: int = 0               # never decreases (coin_hoarder)
 var potions_lifetime: int = 0             # never decreases (herbalist)
 var fish_caught: int = 0                  # total fish reeled in
 var fishing_tutorial_done: bool = false   # fisherman's how-to shown once
+var intro_tutorial_done: bool = false     # controls/goal intro shown once, right after char creation
+var combat_tutorial_done: bool = false    # "how to fight" shown once, at the tutorial mob's first pull
+var tutorial_mob_defeated: bool = false   # the one guided-combat mob never respawns once beaten
 var enemies_defeated: int = 0             # lifetime kills (drives rumour reveals)
 var talked_npcs: Array = []               # distinct npc ids the player has talked to
+# ── Map & compass (see WorldMap.gd / NavigatorNPC.gd) ──
+var has_compass: bool = false             # granted by the Navigator; unlocks the compass + map markers
+var explored_cells: Dictionary = {}       # "cx,cy" -> true, fog-of-war reveal (persisted)
+var relic_uses: int = 0                   # lifetime relic activations — raises the charge requirement each time
 signal side_quests_changed               # HUD listens to refresh the quest log
 
 # Called once at character creation and defensively on load: seed any quest
@@ -284,10 +293,28 @@ func unlock_random_new_item() -> String:
 	has_unsaved_progress = true
 	return pick
 
+# ── Relic as a usable item ────────────────────────────────────────────────────
+# Obtaining the relic also unlocks it as an equippable combat item (the single
+# strongest in the game). Turning it in wins the run and permanently removes it
+# from the loadout so post-game play no longer has access to it.
+func grant_relic() -> void:
+	has_relic = true
+	if not unlocked_items.has("relic"):
+		unlocked_items.append("relic")
+	has_unsaved_progress = true
+
+func turn_in_relic() -> void:
+	has_relic = false
+	game_won = true
+	unlocked_items.erase("relic")
+	equipped_items.erase("relic")
+	has_unsaved_progress = true
+
 func collect_coin() -> void:
+	# Coins are strictly the 10 win-gating pickups scattered in the world — no
+	# lifetime tally, no farmable quest. (coins_lifetime is retained only so old
+	# saves still load; it is no longer used for anything.)
 	coins_collected += 1
-	coins_lifetime += 1
-	notify_quest_event("coin_lifetime")
 	has_unsaved_progress = true
 
 const HP_PER_HEART := 20
@@ -319,12 +346,22 @@ func _render_heart_segment(current: int, slots: int, full_sym: String, half_sym:
 
 const SAVE_PATH_PREFIX := "user://savegame_slot"
 var last_used_slot: int = 1
+# Runtime-only (never written to disk): true once THIS session has an in-game
+# save or was loaded from a slot. Drives flee/death behaviour — a brand-new run
+# that has never been saved must NOT reload a stale slot from another session.
+var session_saved_once: bool = false
+# Which of the 3 menu slots this play session belongs to (0 = a fresh run not yet
+# bound to a slot). In-game saves always target THIS slot — so a session's saves
+# stay with its own character/slot instead of overwriting another one. The 3 menu
+# slots are the 3 separate sessions; the in-game save is just the current one.
+var active_session_slot: int = 0
 
 func _slot_path(slot: int) -> String:
 	return "%s%d.save" % [SAVE_PATH_PREFIX, slot]
 
 func save_game(slot: int = 1) -> void:
 	last_used_slot = slot
+	active_session_slot = slot   # this session now lives in this slot
 	var data = {
 		"player_level":      player_level,
 		"current_xp":        current_xp,
@@ -356,14 +393,21 @@ func save_game(slot: int = 1) -> void:
 		"potions_lifetime":    potions_lifetime,
 		"fish_caught":         fish_caught,
 		"fishing_tutorial_done": fishing_tutorial_done,
+		"intro_tutorial_done":   intro_tutorial_done,
+		"combat_tutorial_done":  combat_tutorial_done,
+		"tutorial_mob_defeated": tutorial_mob_defeated,
 		"enemies_defeated":    enemies_defeated,
 		"talked_npcs":         talked_npcs,
+		"has_compass":         has_compass,
+		"explored_cells":      explored_cells,
+		"relic_uses":          relic_uses,
 	}
 	var f = FileAccess.open(_slot_path(slot), FileAccess.WRITE)
 	if f:
 		f.store_string(JSON.stringify(data))
 		f.close()
 		has_unsaved_progress = false
+		session_saved_once = true   # this session now has a save to return to
 
 func load_game(slot: int = 1) -> bool:
 	if not FileAccess.file_exists(_slot_path(slot)): return false
@@ -379,6 +423,7 @@ func load_game(slot: int = 1) -> bool:
 	MAX_HEALTH        = parsed.get("MAX_HEALTH",         100)
 	unlocked_items    = parsed.get("unlocked_items",     ["potion", "shield"])
 	equipped_items    = parsed.get("equipped_items",     ["potion", "shield"])
+	_migrate_item_ids()   # war_banner → clone, drop any items no longer in ITEM_META
 	coins_collected   = parsed.get("coins_collected",    0)
 	chest_unlocked    = parsed.get("chest_unlocked",     false)
 	has_relic         = parsed.get("has_relic",          false)
@@ -413,14 +458,37 @@ func load_game(slot: int = 1) -> bool:
 	potions_lifetime  = int(parsed.get("potions_lifetime", 0))
 	fish_caught       = int(parsed.get("fish_caught",      0))
 	fishing_tutorial_done = bool(parsed.get("fishing_tutorial_done", false))
+	intro_tutorial_done   = bool(parsed.get("intro_tutorial_done",   false))
+	combat_tutorial_done  = bool(parsed.get("combat_tutorial_done",  false))
+	tutorial_mob_defeated = bool(parsed.get("tutorial_mob_defeated", false))
 	enemies_defeated  = int(parsed.get("enemies_defeated", 0))
 	var raw_talked    = parsed.get("talked_npcs", [])
 	talked_npcs       = raw_talked if typeof(raw_talked) == TYPE_ARRAY else []
+	has_compass       = bool(parsed.get("has_compass", false))
+	var raw_explored  = parsed.get("explored_cells", {})
+	explored_cells    = raw_explored if typeof(raw_explored) == TYPE_DICTIONARY else {}
+	relic_uses        = int(parsed.get("relic_uses", 0))
 	init_side_quests()   # seed any quests missing from an older save
 	player_health     = MAX_HEALTH
 	player_shield     = MAX_SHIELD
 	has_unsaved_progress = false
+	session_saved_once = true   # loaded a real slot — flee/death should return to it
+	active_session_slot = slot  # this session is bound to the slot it loaded from
 	return true
+
+# Bring an older save's item ids up to date: the War Banner became the Mirror
+# Clone, and any id that's no longer a real item is dropped so it can't show up
+# as a "❓" ghost in the loadout/combat.
+func _migrate_item_ids() -> void:
+	const RENAMES := {"war_banner": "clone"}
+	for arr_name in ["unlocked_items", "equipped_items"]:
+		var arr: Array = get(arr_name)
+		var out: Array = []
+		for it in arr:
+			var id: String = RENAMES.get(it, it)
+			if ITEM_META.has(id) and not out.has(id):
+				out.append(id)
+		set(arr_name, out)
 
 func get_slot_info(slot: int) -> Dictionary:
 	if not FileAccess.file_exists(_slot_path(slot)): return {"exists": false}
@@ -446,9 +514,38 @@ func reset_to_defaults() -> void:
 	side_quest_states.clear(); side_quest_progress.clear()
 	coins_lifetime = 0; potions_lifetime = 0; fish_caught = 0; enemies_defeated = 0
 	fishing_tutorial_done = false
+	intro_tutorial_done = false; combat_tutorial_done = false; tutorial_mob_defeated = false
+	has_compass = false; explored_cells.clear()
+	relic_uses = 0
 	talked_npcs.clear()
 	init_side_quests()
 	has_unsaved_progress = false
+	session_saved_once = false   # a brand-new run has nothing to reload yet
+	active_session_slot = 0      # not yet bound to a menu slot
+
+# Return the run to its very start while KEEPING the created character (name,
+# appearance, scale) and the "tutorial already seen" flags. Used when a run that
+# has never been saved flees or dies: instead of loading a stale slot from a
+# previous session, the player respawns at the authored start with starting
+# gear — "like new, but still their character."
+func restart_fresh_run() -> void:
+	player_level = 1; current_xp = 0; xp_required = 100; MAX_HEALTH = 100
+	unlocked_items = ["potion", "shield"]; equipped_items = ["potion", "shield"]
+	coins_collected = 0; chest_unlocked = false; has_relic = false; game_won = false
+	quest_accepted = false; has_key = false
+	player_spawn_position = Vector2.ZERO   # main.gd falls back to the authored spawn
+	player_health = MAX_HEALTH; player_shield = MAX_SHIELD
+	is_in_combat = false
+	defeated_enemies.clear(); tutorial_mob_defeated = false
+	side_quest_states.clear(); side_quest_progress.clear()
+	coins_lifetime = 0; potions_lifetime = 0; fish_caught = 0; enemies_defeated = 0
+	has_compass = false; explored_cells.clear()
+	relic_uses = 0
+	talked_npcs.clear()
+	init_side_quests()
+	# NOTE: player_name/colors/scale and the *_tutorial_done flags are preserved
+	# on purpose, and session_saved_once stays false (still an unsaved run).
+	has_unsaved_progress = true
 
 func get_max_equip_slots() -> int:
 	if player_level >= 8: return 6
@@ -464,6 +561,28 @@ func reset_player_health() -> void:
 	player_health = MAX_HEALTH
 	player_shield = MAX_SHIELD
 
+# ── Golden-heart heal cap ─────────────────────────────────────────────────────
+# Healing only ever restores the red hearts (up to HP_PER_LAP = 300). Any HP
+# above that — the gold hearts you get from a high MAX_HEALTH — is a per-fight
+# bonus buffer that can NOT be healed back once it's spent.
+func heal_cap() -> int:
+	return mini(MAX_HEALTH, HP_PER_LAP)
+
+func can_heal_player() -> bool:
+	return player_health < heal_cap()
+
+# Heal the player by `amount` respecting the gold-heart rule. Never lifts HP
+# above heal_cap(), and never lowers it if already in the gold zone.
+func heal_player(amount: int) -> void:
+	var cap := maxi(heal_cap(), player_health)
+	player_health = clampi(player_health + amount, 0, cap)
+
+# ── Relic charge requirement (climbs with every use, persisted) ───────────────
+const RELIC_CHARGE_BASE := 100
+const RELIC_CHARGE_STEP := 40
+func relic_charge_needed() -> int:
+	return RELIC_CHARGE_BASE + relic_uses * RELIC_CHARGE_STEP
+
 func gain_xp(amount: int) -> void:
 	current_xp += amount
 	has_unsaved_progress = true
@@ -471,6 +590,7 @@ func gain_xp(amount: int) -> void:
 		current_xp -= xp_required
 		player_level += 1
 		MAX_HEALTH += 20   # keeps growing forever — no level cap
+		Toast.show_toast("⭐  Level up!  You're now Level %d  (+20 max HP)" % player_level)
 		if item_unlocks.has(player_level):
 			var new_item = item_unlocks[player_level]
 			if not unlocked_items.has(new_item):

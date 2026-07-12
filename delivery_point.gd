@@ -40,16 +40,16 @@ func _process(_delta: float) -> void:
 		return
 	# Has the key → open it.
 	QuestManager.chest_unlocked = true
-	QuestManager.has_relic = true
+	QuestManager.grant_relic()   # sets has_relic AND unlocks it as an equippable item
 	QuestManager.has_key = false
-	QuestManager.has_unsaved_progress = true
 	_update_chest_sprite()
 	if player_nearby:
 		PromptHUD.request(self, _prompt_text())
-	Toast.show_toast("🏺  Obtained the Ancient Relic — return it to the Street Kid!")
+	Toast.show_toast("🏺  Obtained the Ancient Relic — equip it in your Loadout, or return it to win!")
 	DialogueManager.start([
 		{ "name": QuestManager.player_name, "text": "The key turns... [i]click.[/i]" },
-		{ "name": QuestManager.player_name, "text": "The [b]🏺 Ancient Relic![/b] I must bring this back to the Street Kid." },
+		{ "name": QuestManager.player_name, "text": "The [b]🏺 Ancient Relic![/b] It thrums with power — I could wield it in battle..." },
+		{ "name": QuestManager.player_name, "text": "Equip it from my [b]Loadout[/b] to fight with it, or hand it to the Street Kid to end my quest. The choice is mine." },
 	])
 
 func _prompt_text() -> String:

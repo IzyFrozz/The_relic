@@ -39,7 +39,18 @@ var volume_slider: HSlider
 var mute_check:    CheckButton
 var fullscreen_check: CheckButton
 
+# Keybind rebinding (shares KeybindManager with the in-game pause menu, so a
+# rebind set here in the main menu carries into the game and persists).
+var keybind_rows: Dictionary = {}
+var _rebinding_action: String = ""
+
+const CURSOR_TEX := preload("res://Asset/UI Elements/Cursors/Cursor_01.png")
+
 func _ready() -> void:
+	# Swap the OS pointer for the pack's themed cursor. set_custom_mouse_cursor is
+	# global and persists across every scene, so setting it once at the menu (the
+	# game's boot scene) themes the cursor for the whole session.
+	Input.set_custom_mouse_cursor(CURSOR_TEX, Input.CURSOR_ARROW, Vector2(3, 2))
 	for c in get_children():
 		c.queue_free()
 	_build()
@@ -220,15 +231,77 @@ func _build_settings_view() -> void:
 			DisplayServer.WINDOW_MODE_FULLSCREEN if p else DisplayServer.WINDOW_MODE_WINDOWED))
 	settings_view.add_child(fullscreen_check)
 
-	var spacer = Control.new()
-	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	settings_view.add_child(spacer)
+	# ── Controls / keybinds ──
+	var controls_lbl = Label.new()
+	controls_lbl.text = "⌨  Controls"
+	settings_view.add_child(controls_lbl)
+
+	var kb_hint = Label.new()
+	kb_hint.text = "Click a key, then press the new key. Saved automatically."
+	kb_hint.add_theme_font_size_override("font_size", 11)
+	kb_hint.add_theme_color_override("font_color", Color(0.68, 0.72, 0.82))
+	settings_view.add_child(kb_hint)
+
+	keybind_rows = {}
+	for action in KeybindManager.action_ids():
+		var row = HBoxContainer.new()
+		row.add_theme_constant_override("separation", 10)
+		var name_lbl = Label.new()
+		name_lbl.text = KeybindManager.label_for(action)
+		name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		name_lbl.add_theme_color_override("font_color", Color(0.9, 0.9, 1.0))
+		row.add_child(name_lbl)
+		var key_btn = Button.new()
+		key_btn.focus_mode = Control.FOCUS_NONE
+		key_btn.custom_minimum_size = Vector2(150, 30)
+		key_btn.text = KeybindManager.key_display(action)
+		var a: String = action
+		var b: Button = key_btn
+		key_btn.pressed.connect(func(): _begin_rebind(a, b))
+		row.add_child(key_btn)
+		settings_view.add_child(row)
+		keybind_rows[action] = key_btn
+
+	var reset_btn = Button.new()
+	reset_btn.text = "↺  Reset Keys to Defaults"
+	reset_btn.focus_mode = Control.FOCUS_NONE
+	reset_btn.custom_minimum_size = Vector2(0, 34)
+	reset_btn.pressed.connect(func():
+		KeybindManager.reset_defaults()
+		_refresh_keybind_labels())
+	settings_view.add_child(reset_btn)
 
 	var back_btn = Button.new()
 	back_btn.text = "↩  Back"
 	_style_btn(back_btn, Color(0.12, 0.12, 0.14), Color(0.40, 0.40, 0.48))
-	back_btn.pressed.connect(func(): _show_view("main"))
+	back_btn.pressed.connect(func():
+		_rebinding_action = ""
+		_refresh_keybind_labels()
+		_show_view("main"))
 	settings_view.add_child(back_btn)
+
+# ── Keybind rebinding ────────────────────────────────────────────────────────
+func _begin_rebind(action: String, btn: Button) -> void:
+	_refresh_keybind_labels()   # clear any other "Press a key…" prompt
+	_rebinding_action = action
+	if is_instance_valid(btn):
+		btn.text = "Press a key…"
+
+func _refresh_keybind_labels() -> void:
+	for a in keybind_rows.keys():
+		if is_instance_valid(keybind_rows[a]):
+			keybind_rows[a].text = KeybindManager.key_display(a)
+
+func _input(event: InputEvent) -> void:
+	if _rebinding_action == "":
+		return
+	if event is InputEventKey and event.pressed and not event.is_echo():
+		get_viewport().set_input_as_handled()
+		var kc: int = event.physical_keycode if event.physical_keycode != 0 else event.keycode
+		if event.keycode != KEY_ESCAPE:   # Esc cancels the rebind
+			KeybindManager.rebind(_rebinding_action, kc)
+		_rebinding_action = ""
+		_refresh_keybind_labels()
 
 # ── Character creation ───────────────────────────────────────────────────────
 func _build_customize_view() -> void:
@@ -415,9 +488,18 @@ func _show_view(which: String) -> void:
 	load_view.visible     = which == "load"
 	settings_view.visible = which == "settings"
 	customize_view.visible = which == "customize"
-	# The customize view has more content — grow the card so nothing spills out.
+	# Cancel any in-progress key rebind when leaving the settings view.
+	_rebinding_action = ""
+	if which == "settings":
+		_refresh_keybind_labels()
+	# Views with more content grow the card so nothing spills out.
 	if is_instance_valid(card_panel):
-		card_panel.custom_minimum_size.y = 1010 if which == "customize" else 700
+		if which == "customize":
+			card_panel.custom_minimum_size.y = 1010
+		elif which == "settings":
+			card_panel.custom_minimum_size.y = 1080   # taller: now includes Map + Reel keybinds
+		else:
+			card_panel.custom_minimum_size.y = 700
 	if which == "customize":
 		_update_preview()
 	if which == "load":

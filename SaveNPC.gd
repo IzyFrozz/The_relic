@@ -20,21 +20,13 @@ func _process(_delta: float) -> void:
 		if is_instance_valid(pause_menu) and pause_menu.has_method("is_open") and pause_menu.is_open():
 			return
 
-		if QuestManager.game_won:
-			return
-
-		if QuestManager.has_relic:
-			QuestManager.has_relic = false
-			QuestManager.game_won = true
-			if is_instance_valid(prompt_label):
-				prompt_label.visible = false
-			trigger_black_win_screen()
-		else:
-			var save_popup = get_tree().root.find_child("SavePopup", true, false)
-			if is_instance_valid(save_popup) and save_popup.has_method("open_popup"):
-				save_popup.open_popup()
-			elif is_instance_valid(prompt_label):
-				prompt_label.text = "No save slots found!"
+		# Pure save point. The relic is turned in at the Street Kid (which offers
+		# the keep-vs-turn-in choice) — not here — so this never auto-wins.
+		var save_popup = get_tree().root.find_child("SavePopup", true, false)
+		if is_instance_valid(save_popup) and save_popup.has_method("open_popup"):
+			save_popup.open_popup()
+		elif is_instance_valid(prompt_label):
+			prompt_label.text = "No save slots found!"
 
 func trigger_black_win_screen() -> void:
 	var life_label = get_tree().root.find_child("lifeLabel", true, false)
@@ -62,8 +54,6 @@ func _on_body_entered(body: Node2D) -> void:
 		if is_instance_valid(prompt_label):
 			if QuestManager.game_won:
 				prompt_label.text = "Thank you for saving our relic!"
-			elif QuestManager.has_relic:
-				prompt_label.text = "[E]  Give Ancient Relic"
 			else:
 				prompt_label.text = "[E]  Save Game"
 			prompt_label.visible = true

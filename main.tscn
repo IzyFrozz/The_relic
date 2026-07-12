@@ -21,6 +21,8 @@
 [ext_resource type="Script" uid="uid://c0yq6db10h3yi" path="res://Doorway.gd" id="30_kq58d"]
 [ext_resource type="Script" uid="uid://tmmvyr5pr6j4" path="res://QuestGiverNPC.gd" id="31_qnpc"]
 [ext_resource type="Script" uid="uid://honwlwck108r" path="res://FishermanNPC.gd" id="32_fish"]
+[ext_resource type="Script" uid="uid://bdwyr087x63tp" path="res://FishingSpot.gd" id="33_fspot"]
+[ext_resource type="Script" uid="uid://c3ky81fomi5c2" path="res://NavigatorNPC.gd" id="34_navig"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_cegan"]
 size = Vector2(48, 29)
@@ -487,6 +489,13 @@ height = 18.0
 [sub_resource type="CircleShape2D" id="CircleShape2D_seu75"]
 radius = 11.045361
 
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_5dllo"]
+radius = 9.0
+height = 34.0
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_htxhm"]
+radius = 34.0
+
 [sub_resource type="AtlasTexture" id="AtlasTexture_kkkcx"]
 atlas = ExtResource("17_getpj")
 region = Rect2(0, 0, 64, 64)
@@ -523,12 +532,9 @@ animations = [{
 "speed": 5.0
 }]
 
-[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_5dllo"]
-radius = 9.0
-height = 34.0
-
-[sub_resource type="CircleShape2D" id="CircleShape2D_htxhm"]
-radius = 34.0
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_d13ii"]
+radius = 7.0
+height = 20.0
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_jq2sk"]
 radius = 23.021729
@@ -942,8 +948,6 @@ position = Vector2(-1, -9.000008)
 scale = Vector2(1.1311195, 1.1311195)
 sprite_frames = SubResource("SpriteFrames_come4")
 autoplay = "default"
-frame = 1
-frame_progress = 0.9862111
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="mainplayer" unique_id=2000731134]
 position = Vector2(-1, 4)
@@ -990,14 +994,14 @@ offset_bottom = 141.33333
 text = "Relic Gained!!!"
 
 [node name="Fisherman" type="CharacterBody2D" parent="." unique_id=1965856540]
-position = Vector2(-447, 649)
+position = Vector2(-294, 625)
 script = ExtResource("32_fish")
 
 [node name="Emoji" type="Label" parent="Fisherman" unique_id=743001923]
-offset_left = -30.0
-offset_top = -12.0
-offset_right = 2.0
-offset_bottom = 20.0
+offset_left = -8.0
+offset_top = -23.0
+offset_right = 24.0
+offset_bottom = 9.0
 scale = Vector2(0.5, 0.5)
 text = "🎣"
 horizontal_alignment = 1
@@ -1013,24 +1017,77 @@ scale = Vector2(0.35, 0.35)
 text = "Fisherman"
 horizontal_alignment = 1
 
-[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="Fisherman" unique_id=752912158]
-position = Vector2(25.5, -28)
+[node name="CollisionShape2D2" type="CollisionShape2D" parent="Fisherman" unique_id=1409874900]
+position = Vector2(0.5, 0)
+shape = SubResource("CapsuleShape2D_5dllo")
+
+[node name="Area2D" type="Area2D" parent="Fisherman" unique_id=1901263297]
+position = Vector2(1, 1)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Fisherman/Area2D" unique_id=743001925]
+shape = SubResource("CircleShape2D_htxhm")
+debug_color = Color(0, 0.6462937, 0.24779516, 0.41960785)
+
+[node name="FishingSpot" type="Area2D" parent="." unique_id=770011001]
+position = Vector2(-447, 649)
+script = ExtResource("33_fspot")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="FishingSpot" unique_id=770011002]
+shape = SubResource("CircleShape2D_htxhm")
+debug_color = Color(0.2, 0.55, 0.95, 0.35)
+
+[node name="Puddle" type="Label" parent="FishingSpot" unique_id=770011003]
+offset_left = -36.0
+offset_top = -10.0
+offset_right = 8.0
+offset_bottom = 26.0
+scale = Vector2(0.5, 0.5)
+text = "💧"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Navigator" type="CharacterBody2D" parent="." unique_id=2107755025]
+position = Vector2(-106, 276)
+script = ExtResource("34_navig")
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="Navigator" unique_id=752912158]
+position = Vector2(-1, -1)
 scale = Vector2(1.078125, 1)
 sprite_frames = SubResource("SpriteFrames_gx4rg")
 autoplay = "default"
 frame_progress = 0.032695908
 flip_h = true
 
-[node name="CollisionShape2D2" type="CollisionShape2D" parent="Fisherman" unique_id=1409874900]
-position = Vector2(26.5, -27)
-shape = SubResource("CapsuleShape2D_5dllo")
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Navigator" unique_id=1538804299]
+position = Vector2(0, 5)
+shape = SubResource("CapsuleShape2D_d13ii")
 
-[node name="Area2D" type="Area2D" parent="Fisherman" unique_id=1901263297]
+[node name="Area2D" type="Area2D" parent="Navigator" unique_id=454012721]
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Fisherman/Area2D" unique_id=743001925]
-position = Vector2(-22, -3)
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Navigator/Area2D" unique_id=770022002]
 shape = SubResource("CircleShape2D_htxhm")
-debug_color = Color(0, 0.6462937, 0.24779516, 0.41960785)
+debug_color = Color(0.4, 0.9, 0.4, 0.35)
+
+[node name="Emoji" type="Label" parent="Navigator" unique_id=770022003]
+visible = false
+offset_left = -7.0
+offset_top = -28.0
+offset_right = 25.0
+offset_bottom = 4.0
+scale = Vector2(0.5, 0.5)
+text = "🧭"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="NameTag" type="Label" parent="Navigator" unique_id=770022004]
+visible = false
+offset_left = -14.000002
+offset_top = 11.999999
+offset_right = 74.0
+offset_bottom = 35.0
+scale = Vector2(0.35, 0.35)
+text = "Navigator"
+horizontal_alignment = 1
 
 [node name="OutsideDoor" type="Area2D" parent="." unique_id=1871006764 node_paths=PackedStringArray("target_marker")]
 position = Vector2(-516, 178)

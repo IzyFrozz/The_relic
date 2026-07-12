@@ -15,6 +15,8 @@ const ACTIONS := [
 	["move_right", "Move Right"],
 	["interact",   "Interact"],
 	["sprint",     "Sprint"],
+	["toggle_map", "Open Map"],
+	["fish_reel",  "Reel In (Fishing)"],
 ]
 
 # Captured at boot before any override is applied, so "Reset to Defaults" works.

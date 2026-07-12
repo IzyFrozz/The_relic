@@ -32,7 +32,7 @@ func _process(_delta: float) -> void:
 
 		if QuestManager.has_enough_coins():
 			QuestManager.chest_unlocked = true
-			QuestManager.has_relic = true
+			QuestManager.grant_relic()   # also unlocks it as an equippable item
 			if is_instance_valid(prompt_label):
 				prompt_label.text = "Chest Unlocked!"
 			show_canvas_popup("✨ ANCIENT RELIC GAINED!!! ✨")

@@ -2,6 +2,10 @@ extends CharacterBody2D
 
 @export var enemy_level: int = 1
 @export var enemy_id: String = ""   # stable id for save/respawn tracking — auto-generated if blank
+# Marks the one guided-tutorial mob (set on "mob1" in character.tscn): its first
+# pull shows a short "how combat works" dialogue, and once defeated it never
+# respawns (unlike every other mob, which respawns after RESPAWN_COOLDOWN_SECONDS).
+@export var is_tutorial_mob: bool = false
 
 @export var battle_player_marker: Marker2D
 @export var battle_enemy_marker:  Marker2D
@@ -20,6 +24,17 @@ var enemy_item_pool:  Array = []
 # items are exempt (see HEAL_ITEMS).
 var items_used_this_turn: Dictionary = {}
 const HEAL_ITEMS := ["potion", "bandage", "phoenix_feather"]
+# Items that can only ever have ONE copy in the player's bag at a time.
+const MAX_ONE_ITEMS := ["relic", "phoenix_feather"]
+
+# ── Overhead level label ─────────────────────────────────────────────────────
+# Built entirely in code (not scene-authored) so it applies uniformly to every
+# hand-placed mob instance without editing character.tscn's node tree by hand.
+# A second, LARGER Area2D ("sight range") purely toggles the label's visibility;
+# the original small "deadzone" Area2D remains the sole combat trigger.
+var _level_label: Label = null
+var _sight_area: Area2D = null
+var _player_in_sight: bool = false
 
 var cycles_until_drop:    int = 1
 var drop_round_index:     int = 0
@@ -37,12 +52,49 @@ var player_dodge_active:   bool = false;  var enemy_dodge_active:   bool = false
 var player_items_locked:   bool = false;  var enemy_items_locked:   bool = false
 var player_lifesteal_active: bool = false; var enemy_lifesteal_active: bool = false
 var player_god_pierce:       bool = false; var enemy_god_pierce:       bool = false
-var player_rally:            bool = false; var enemy_rally:            bool = false   # War Banner: next attack ×2
+var player_banner_rounds:    int = 0;  var enemy_banner_rounds:    int = 0   # War Banner: rally aura duration
 var player_damage_bonus: int = 0;  var enemy_damage_bonus: int = 0
 
 var player_regen_rounds:     int = 0;  var enemy_regen_rounds:     int = 0
 var player_poison_rounds:    int = 0;  var enemy_poison_rounds:    int = 0
 var player_stun_extra_turns: int = 0;  var enemy_stun_extra_turns: int = 0
+
+# ── Phoenix Feather (player-only safety net) ──────────────────────────────────
+# Reworked away from a game-flipping full heal. It now revives you to a modest
+# fixed HP the moment you would die, then locks itself behind a turn cooldown so
+# it can't chain-save you. The cooldown base climbs by +1 with every activation
+# this fight, so leaning on it repeatedly gets steadily riskier.
+const PHOENIX_REVIVE_HP := 40
+const PHOENIX_BASE_COOLDOWN := 5
+var player_phoenix_cd:   int = 0   # rounds remaining before it can trigger again
+var player_phoenix_uses: int = 0   # activations so far this fight (drives the climbing cooldown)
+
+# ── Ancient Relic (player-only signature item) ────────────────────────────────
+# The single strongest item, but deliberately NOT a stacking buff and NOT a full
+# heal. It's a self-contained burst that charges up from the damage flowing
+# through the fight (dealt + taken), independent of the enemy's loadout. Only
+# when fully charged does its button light up; firing it spends the charge.
+const RELIC_STRIKE_DAMAGE := 40   # fixed, unblockable — does NOT scale with buffs (multiple of 10)
+const RELIC_HEAL := 20            # bounded, respects the gold-heart heal cap
+var player_relic_charge: int = 0
+var _relic_prev_enemy_hp:  int = 0   # snapshots for per-round charge accrual
+var _relic_prev_player_hp: int = 0
+var _relic_announced_charged: bool = false   # one-shot "it's ready!" callout
+
+# ── Mirror Clone (player-only) ────────────────────────────────────────────────
+# A ghostly teal double summoned in front of the player. It strikes first on
+# your attack turn (flat 20), then soaks the enemy's next hit and fades.
+const CLONE_STRIKE_DAMAGE := 20
+var player_clone_active: bool = false
+var _clone_node: Node2D = null
+var _clone_player_home: Vector2 = Vector2.ZERO
+
+# The charge target climbs with lifetime uses (persisted on QuestManager).
+func relic_charge_needed() -> int:
+	return QuestManager.relic_charge_needed()
+
+func relic_is_charged() -> bool:
+	return player_inventory.has("relic") and player_relic_charge >= relic_charge_needed()
 
 var player_ref: Node2D = null
 var is_in_combat: bool = false
@@ -56,6 +108,7 @@ var _enemy_ground_fx:  ColorRect = null
 
 # ── Graveyard / respawn state ──────────────────────────────────────────────────
 var _is_defeated_waiting_respawn: bool = false
+var _permanently_dead: bool = false   # tutorial mob only — never respawns once beaten
 var _orig_collision_layer: int = 1
 var _orig_collision_mask:  int = 1
 
@@ -214,10 +267,17 @@ func _ready() -> void:
 
 	_initialize_mob_stats_by_character_tier()
 	_auto_wire_overworld_signals()
+	_setup_level_display()
 	enemy_overworld_position = self.global_position
-	_check_existing_defeat_state()
+	if is_tutorial_mob and QuestManager.tutorial_mob_defeated:
+		_permanently_dead = true
+		_hide_and_disable_at_graveyard()
+	else:
+		_check_existing_defeat_state()
 
 func _process(_delta: float) -> void:
+	if _permanently_dead:
+		return
 	if _is_defeated_waiting_respawn:
 		var death_time = QuestManager.defeated_enemies.get(enemy_id, QuestManager.play_time_seconds)
 		var elapsed = QuestManager.play_time_seconds - float(death_time)
@@ -245,6 +305,10 @@ func _hide_and_disable_at_graveyard() -> void:
 	if is_instance_valid(dz) and dz is Area2D:
 		dz.monitoring  = false
 		dz.monitorable = false
+	if is_instance_valid(_sight_area):
+		_sight_area.monitoring = false
+	if is_instance_valid(_level_label):
+		_level_label.visible = false
 	if is_instance_valid(graveyard_marker):
 		self.global_position = graveyard_marker.global_position
 	else:
@@ -259,6 +323,8 @@ func _respawn_enemy() -> void:
 	if is_instance_valid(dz) and dz is Area2D:
 		dz.monitoring  = true
 		dz.monitorable = true
+	if is_instance_valid(_sight_area):
+		_sight_area.monitoring = true
 	self.global_position = enemy_overworld_position
 	_reset_enemy_visual_state()
 	_initialize_mob_stats_by_character_tier()
@@ -284,6 +350,91 @@ func _auto_wire_overworld_signals() -> void:
 			dz.body_entered.disconnect(_on_deadzone_body_entered)
 		dz.body_entered.connect(_on_deadzone_body_entered)
 
+# Builds the overhead "Lv. N" label and its larger sight-range Area2D. The
+# sight radius is derived from the existing "deadzone" shape (if a
+# CircleShape2D) so bigger enemies naturally get a bigger sight range too.
+func _setup_level_display() -> void:
+	var dz_radius := 24.0
+	var dz = find_child("deadzone")
+	if is_instance_valid(dz):
+		var dzc = dz.find_child("DZcollison")
+		if is_instance_valid(dzc) and dzc is CollisionShape2D and (dzc as CollisionShape2D).shape is CircleShape2D:
+			dz_radius = ((dzc as CollisionShape2D).shape as CircleShape2D).radius
+
+	_sight_area = Area2D.new()
+	_sight_area.name = "SightZone"
+	_sight_area.monitorable = false
+	add_child(_sight_area)
+	var sight_shape := CollisionShape2D.new()
+	var circle := CircleShape2D.new()
+	circle.radius = dz_radius * 2.6   # well beyond the deadzone — purely visual
+	sight_shape.shape = circle
+	_sight_area.add_child(sight_shape)
+	_sight_area.body_entered.connect(_on_sight_body_entered)
+	_sight_area.body_exited.connect(_on_sight_body_exited)
+
+	# Anchor the label just above the sprite's actual top edge (not the much
+	# larger deadzone radius, which floated it way over the head).
+	var sprite_top := -dz_radius
+	var spr = get_node_or_null("AnimatedSprite2D") as AnimatedSprite2D
+	if is_instance_valid(spr) and spr.sprite_frames and spr.sprite_frames.has_animation("default"):
+		var tex = spr.sprite_frames.get_frame_texture("default", 0)
+		if tex != null:
+			sprite_top = spr.position.y - tex.get_height() * 0.5 * spr.scale.y
+
+	const LBL_W := 80.0
+	const LBL_SCALE := 0.4
+	_level_label = Label.new()
+	_level_label.text = "Lv. %d" % enemy_level
+	_level_label.add_theme_font_size_override("font_size", 20)
+	_level_label.scale = Vector2(LBL_SCALE, LBL_SCALE)
+	_level_label.size = Vector2(LBL_W, 20)
+	# Centre horizontally on the sprite (scale pivots from the top-left corner),
+	# and sit a few px above the sprite's head.
+	_level_label.position = Vector2(-LBL_W * LBL_SCALE * 0.5, sprite_top - 12.0)
+	_level_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_level_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_level_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.9))
+	_level_label.add_theme_constant_override("shadow_offset_x", 1)
+	_level_label.add_theme_constant_override("shadow_offset_y", 1)
+	_level_label.visible = false
+	add_child(_level_label)
+	_update_level_label_color()
+
+# Colour-codes the level label relative to the player's current level so the
+# player can judge threat at a glance (green = easy, yellow = even, red = tough).
+func _update_level_label_color() -> void:
+	if not is_instance_valid(_level_label):
+		return
+	var diff := enemy_level - QuestManager.player_level
+	var col: Color
+	if diff <= -3:   col = Color(0.45, 0.95, 0.45)   # much weaker
+	elif diff < 0:   col = Color(0.75, 0.95, 0.55)   # weaker
+	elif diff == 0:  col = Color(1.0, 0.92, 0.4)     # even
+	elif diff <= 2:  col = Color(1.0, 0.65, 0.35)    # stronger
+	else:            col = Color(1.0, 0.35, 0.35)    # much stronger
+	_level_label.add_theme_color_override("font_color", col)
+
+func _on_sight_body_entered(body: Node2D) -> void:
+	if body.name == "mainplayer":
+		_player_in_sight = true
+		_update_level_label_color()
+		_refresh_level_label_visibility()
+
+func _on_sight_body_exited(body: Node2D) -> void:
+	if body.name == "mainplayer":
+		_player_in_sight = false
+		_refresh_level_label_visibility()
+
+# The overhead level tag is an overworld-only affordance: it shows while the
+# player is nearby but must never appear once a fight starts (the mob teleports
+# to the arena, dragging its label along). Visibility is state-driven so any
+# combat start/end path keeps it correct without extra bookkeeping.
+func _refresh_level_label_visibility() -> void:
+	if not is_instance_valid(_level_label):
+		return
+	_level_label.visible = _player_in_sight and not is_in_combat and not QuestManager.is_in_combat
+
 const TIER_POOLS_LV6_PLUS := {
 	6:  ["potion", "shield", "grindstone", "needle", "magnet", "poison_dart"],
 	7:  ["shield", "whip",   "poison_dart", "bandage", "needle", "magnet"],
@@ -299,7 +450,13 @@ const TIER_POOLS_LV6_PLUS := {
 
 func _initialize_mob_stats_by_character_tier() -> void:
 	enemy_max_health = 80 + (enemy_level * 20)
-	if enemy_level <= 5:
+	if enemy_level <= 1:
+		# The very first fight is a teaching fight: the level-1 mob carries no
+		# items at all so the player can focus on the Attack/Item basics without
+		# the enemy trading blows via a loadout. (The player still gets their own
+		# starting items via the supply drop.) Level 2+ is unchanged.
+		enemy_item_pool = []
+	elif enemy_level <= 5:
 		enemy_item_pool = ["potion", "shield"]
 		if enemy_level >= 2: enemy_item_pool.append("grindstone")
 		if enemy_level >= 3: enemy_item_pool.append("needle")
@@ -317,6 +474,18 @@ func _initialize_mob_stats_by_character_tier() -> void:
 func _on_deadzone_body_entered(body: Node2D) -> void:
 	if body.name == "mainplayer" and not is_in_combat and not _is_defeated_waiting_respawn:
 		player_ref = body
+		if is_tutorial_mob and not QuestManager.combat_tutorial_done:
+			QuestManager.combat_tutorial_done = true
+			QuestManager.has_unsaved_progress = true
+			DialogueManager.start([
+				{ "name": "", "text": "A fight has started! Combat here is turn-based — you act, then the enemy acts, back and forth." },
+				{ "name": "", "text": "On your turn, choose [b]Attack[/b] for basic damage, or use one of your equipped [b]Items[/b] — each does something different: bonus damage, healing, or hindering the enemy." },
+				{ "name": "", "text": "Watch both HP bars at the top of the screen. Bring the enemy's to zero before yours hits zero to win!" },
+				{ "name": "", "text": "One more thing: a roaming [b]Quartermaster[/b] shadows every brawl in these lands — war is good for their business." },
+				{ "name": "", "text": "At set rounds they lob an identical [b]supply crate[/b] to BOTH fighters, keeping it a fair test of skill. Grab what's useful and adapt!" },
+				{ "name": "", "text": "Good luck — you've got this!" },
+			])
+			await DialogueManager.dialogue_finished
 		start_combat()
 
 # =============================================================================
@@ -326,8 +495,11 @@ func _on_deadzone_body_entered(body: Node2D) -> void:
 func start_combat() -> void:
 	is_in_combat = true
 	QuestManager.is_in_combat = true
+	_refresh_level_label_visibility()   # hide the overhead level tag for the fight
 	if is_instance_valid(player_ref) and "velocity" in player_ref:
 		player_ref.velocity = Vector2.ZERO
+	# Fade to black so the camera cut + fighter teleport is hidden.
+	await ScreenFade.fade_out()
 	enemy_overworld_position = self.global_position
 	_initialize_mob_stats_by_character_tier()
 	player_inventory.clear(); enemy_inventory.clear()
@@ -336,6 +508,9 @@ func start_combat() -> void:
 	drop_round_index = 0; cycles_until_drop = 1
 	QuestManager.player_health = QuestManager.MAX_HEALTH
 	_apply_supply_drop_rewards()
+	# Baseline for the Relic's per-round charge accrual (dealt + taken damage).
+	_relic_prev_enemy_hp  = enemy_health
+	_relic_prev_player_hp = QuestManager.player_health
 
 	if is_instance_valid(player_ref):
 		QuestManager.player_overworld_position = player_ref.global_position
@@ -357,7 +532,10 @@ func start_combat() -> void:
 	_switch_to_combat_camera()
 	if is_instance_valid(combat_ui):
 		combat_ui.open_combat_screen(self)
+		combat_ui.display_round_history("📦 The Quartermaster tosses both fighters an opening crate.", true)
 		combat_ui.start_player_turn()
+	# Reveal the combat arena.
+	await ScreenFade.fade_in()
 
 # =============================================================================
 #  PLAYER ITEM USE
@@ -365,6 +543,26 @@ func start_combat() -> void:
 
 func use_player_item(item_type: String) -> void:
 	if not item_type in player_inventory: return
+
+	# Phoenix Feather is a PASSIVE charm — it can never be spent by hand, it only
+	# fires automatically when you'd die. Refuse without consuming the turn.
+	if item_type == "phoenix_feather":
+		if combat_ui:
+			var msg := "🪶 Phoenix Feather revives you automatically — it can't be used by hand."
+			if player_phoenix_cd > 0:
+				msg = "🪶 Phoenix Feather is dormant (%d turns) — and it only ever revives you automatically." % player_phoenix_cd
+			combat_ui.display_round_history(msg, true)
+			combat_ui._refresh_ui_states()
+		return
+
+	# The Relic only fires when its charge is full (its button glows to signal
+	# this). Trying early refuses the turn instead of wasting it.
+	if item_type == "relic" and not relic_is_charged():
+		if combat_ui:
+			combat_ui.display_round_history(
+				"🏺 The Relic is still gathering power — %d / %d." % [player_relic_charge, relic_charge_needed()], true)
+			combat_ui._refresh_ui_states()
+		return
 
 	match item_type:
 		"magnet":
@@ -407,12 +605,48 @@ func use_player_item(item_type: String) -> void:
 			if combat_ui: combat_ui._refresh_ui_states()
 			return
 
+		"relic":
+			# Signature burst. CONSUMED on use (returns to the crate pool, so the
+			# player must hope it drops again). Fixed, unblockable, multiples of
+			# ten — never stacks with buffs, never full-heals.
+			player_inventory.erase("relic")
+			enemy_reflect_active = false
+			enemy_dodge_active   = false
+			enemy_active_armor   = false
+			enemy_health = clampi(enemy_health - RELIC_STRIKE_DAMAGE, 0, enemy_max_health)
+			QuestManager.heal_player(RELIC_HEAL)   # respects the gold-heart heal cap
+			# Cleanse the player's active afflictions — a moment of ancient grace.
+			player_poison_rounds = 0
+			player_cursed = false
+			player_weakened = false
+			# Each use raises the future charge requirement (persisted).
+			QuestManager.relic_uses += 1
+			QuestManager.has_unsaved_progress = true
+			await _fx_status("enemy", Color(1.0, 0.55, 1.0, 1.0), "🏺")
+			await _fx_damage("enemy")
+			await _fx_heal("player")
+			# Charge is spent; with the relic gone it won't rebuild until it drops
+			# again. Re-baseline so nothing lingering re-adds charge.
+			player_relic_charge = 0
+			_relic_announced_charged = false
+			_relic_prev_enemy_hp  = enemy_health
+			_relic_prev_player_hp = QuestManager.player_health
+			if combat_ui:
+				combat_ui.display_round_history(
+					"🏺 ANCIENT RELIC unleashed — %d unblockable damage, +%d HP, afflictions cleansed! (spent)" % [RELIC_STRIKE_DAMAGE, RELIC_HEAL], true)
+				combat_ui._refresh_ui_states()
+			_sync_ground_fx()
+			# If that killed the enemy, end the fight right now — no need to also
+			# press Attack.
+			if await _check_combat_end_conditions(): return
+			return
+
 		_:
 			player_inventory.erase(item_type)
 
 	match item_type:
 		"potion":
-			QuestManager.player_health = clampi(QuestManager.player_health + 20, 0, QuestManager.MAX_HEALTH)
+			QuestManager.heal_player(20)   # capped at red hearts (no healing gold)
 			await _fx_heal("player")
 			if combat_ui: combat_ui.display_round_history("🧪 Potion (+20 HP)", true)
 		"shield":
@@ -434,7 +668,7 @@ func use_player_item(item_type: String) -> void:
 			await _fx_status("player", Color(0.80, 0.55, 1.0, 1.0), "📌")
 			if combat_ui: combat_ui.display_round_history("📌 Needle — next hit pierces armor", true)
 		"bandage":
-			QuestManager.player_health = clampi(QuestManager.player_health + 10, 0, QuestManager.MAX_HEALTH)
+			QuestManager.heal_player(10)   # capped at red hearts (no healing gold)
 			player_regen_rounds = 2
 			await _fx_heal("player")
 			if combat_ui: combat_ui.display_round_history("🩹 Bandage (+10 HP + regen ×2)", true)
@@ -476,18 +710,94 @@ func use_player_item(item_type: String) -> void:
 			await _fx_status("player", Color(1.0, 0.45, 0.05, 1.0), "🔥")
 			if combat_ui: combat_ui.display_round_history(
 				"🔥 Overcharge — +20 damage, GUARANTEED hit (pierces shield/dodge/reflect entirely, bonus: +%d)" % player_damage_bonus, true)
-		"phoenix_feather":
-			QuestManager.player_health = QuestManager.MAX_HEALTH
-			player_regen_rounds = 3
-			await _fx_heal("player")
-			if combat_ui: combat_ui.display_round_history("🪶 Phoenix Feather — full heal + regen ×3!", true)
-		"war_banner":
-			player_rally = true
-			await _fx_status("player", Color(0.95, 0.30, 0.30, 1.0), "🚩")
-			if combat_ui: combat_ui.display_round_history("🚩 War Banner — next attack deals DOUBLE damage!", true)
+		# NOTE: phoenix_feather has no manual case — it's a passive auto-revive
+		# only (refused at the top of use_player_item).
+		"clone":
+			# Mirror Clone: a ghostly double that strikes alongside you next
+			# attack (flat 20 first, then your hit) and soaks the enemy's next
+			# blow before fading.
+			if player_clone_active:
+				if combat_ui: combat_ui.display_round_history("👥 A clone is already at your side!", true)
+			else:
+				player_inventory.erase("clone")
+				await _summon_clone()
+				if combat_ui: combat_ui.display_round_history(
+					"👥 Mirror Clone summoned — it strikes with you AND shields the next hit!", true)
 
 	_sync_ground_fx()
 	if combat_ui: combat_ui._refresh_ui_states()
+
+# =============================================================================
+#  MIRROR CLONE
+# =============================================================================
+func _summon_clone() -> void:
+	if not is_instance_valid(player_ref):
+		return
+	player_clone_active = true
+	_clone_player_home = player_ref.global_position
+	# Step the player back a little to make room for the double.
+	var tw := create_tween().set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	tw.tween_property(player_ref, "global_position", _clone_player_home - Vector2(26, 0), 0.18)
+	await tw.finished
+	# Build the ghostly double from the player's own sprite frames.
+	var psprite := player_ref.get_node_or_null("AnimatedSprite2D") as AnimatedSprite2D
+	_clone_node = AnimatedSprite2D.new()
+	if is_instance_valid(psprite):
+		_clone_node.sprite_frames = psprite.sprite_frames
+		_clone_node.scale = psprite.scale
+		_clone_node.animation = psprite.animation
+		_clone_node.frame = psprite.frame
+		_clone_node.flip_h = psprite.flip_h
+	_clone_node.modulate = Color(0.45, 1.0, 0.95, 0.55)   # ghostly teal, translucent
+	_clone_node.z_index = 4
+	player_ref.get_parent().add_child(_clone_node)
+	_clone_node.global_position = _clone_player_home + Vector2(10, 0)
+	var base_scale: Vector2 = _clone_node.scale
+	_clone_node.scale = base_scale * 0.5
+	var tw2 := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tw2.tween_property(_clone_node, "scale", base_scale, 0.22)
+	await tw2.finished
+
+func _clone_strike() -> void:
+	if not is_instance_valid(_clone_node):
+		return
+	var start := _clone_node.global_position
+	var target := global_position - Vector2(30, 0)   # lunge to just left of the enemy
+	var tw := create_tween().set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	tw.tween_property(_clone_node, "global_position", target, 0.14)
+	await tw.finished
+	enemy_health = clampi(enemy_health - CLONE_STRIKE_DAMAGE, 0, enemy_max_health)
+	await _fx_damage("enemy")
+	if combat_ui: combat_ui.display_round_history("👥 Clone strikes for %d!" % CLONE_STRIKE_DAMAGE, true)
+	if is_instance_valid(_clone_node):
+		var tw2 := create_tween().set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+		tw2.tween_property(_clone_node, "global_position", start, 0.12)
+		await tw2.finished
+
+# The clone soaks a hit and shatters (teal flash + expand + fade).
+func _shatter_clone() -> void:
+	if is_instance_valid(_clone_node):
+		var c := _clone_node
+		var tw := create_tween()
+		tw.tween_property(c, "modulate", Color(0.6, 1.0, 1.0, 0.0), 0.24)
+		tw.parallel().tween_property(c, "scale", c.scale * 1.35, 0.24)
+		tw.tween_callback(c.queue_free)
+	_clone_node = null
+	player_clone_active = false
+	_restore_player_home()
+
+func _dismiss_clone() -> void:
+	if is_instance_valid(_clone_node):
+		_clone_node.queue_free()
+	_clone_node = null
+	player_clone_active = false
+	_restore_player_home()
+
+func _restore_player_home() -> void:
+	if is_instance_valid(player_ref) and _clone_player_home != Vector2.ZERO:
+		var tw := create_tween().set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+		tw.tween_property(player_ref, "global_position", _clone_player_home, 0.15)
+		_clone_player_home = Vector2.ZERO
 
 # =============================================================================
 #  PLAYER ATTACK PHASE
@@ -495,6 +805,12 @@ func use_player_item(item_type: String) -> void:
 
 func process_player_attack_phase() -> void:
 	if player_items_locked: player_items_locked = false
+
+	# Mirror Clone strikes FIRST on your turn — a flat, unbuffed 20 — then your
+	# own (buffed) attack lands right after, for two hits in one turn.
+	if player_clone_active:
+		await _clone_strike()
+		if await _check_combat_end_conditions(): return
 
 	if player_is_disarmed:
 		player_is_disarmed = false
@@ -518,10 +834,6 @@ func process_player_attack_phase() -> void:
 	if player_weakened:
 		dmg = maxi(0, dmg - 20)
 		player_weakened = false
-	# War Banner: double the final damage (applied after all other modifiers).
-	if player_rally:
-		dmg *= 2
-		player_rally = false
 
 	var actual_dmg_dealt := 0
 
@@ -544,7 +856,7 @@ func process_player_attack_phase() -> void:
 	elif player_cursed:
 		player_cursed = false
 		player_lifesteal_active = false
-		enemy_health = clampi(enemy_health + 20, 0, enemy_max_health)
+		_enemy_heal(20)
 		await _fx_status("player", Color(0.70, 0.20, 1.0, 1.0), "🗿")
 		await _fx_heal("enemy")
 		if combat_ui: combat_ui.display_round_history("🗿 CURSED — 0 dmg, healed enemy 20 HP!", true)
@@ -675,7 +987,17 @@ func _execute_enemy_turn_ai() -> void:
 
 	var actual_dmg_to_player := 0
 
-	if enemy_god_pierce:
+	if player_clone_active:
+		# The Mirror Clone throws itself in the way — it soaks this hit ENTIRELY,
+		# no matter how big or how piercing, and shatters. The enemy's offensive
+		# one-shots are spent on it.
+		enemy_god_pierce = false; enemy_piercing = false; enemy_cursed = false
+		enemy_lifesteal_active = false
+		if is_instance_valid(player_ref) and player_ref.has_method("do_enemy_lunge"):
+			await player_ref.do_enemy_lunge(self, player_ref.global_position, false)
+		await _shatter_clone()
+		if combat_ui: combat_ui.display_round_history("👥 Your clone threw itself in the way and shattered — no damage!", false)
+	elif enemy_god_pierce:
 		# Mirror of the player's Overcharge — guaranteed hit, ignores this attack
 		# being cursed, and pierces straight through dodge/reflect/shield.
 		enemy_god_pierce = false
@@ -743,7 +1065,7 @@ func _execute_enemy_turn_ai() -> void:
 		enemy_lifesteal_active = false
 		if actual_dmg_to_player > 0:
 			var steal_heal = actual_dmg_to_player / 2
-			enemy_health = clampi(enemy_health + steal_heal, 0, enemy_max_health)
+			_enemy_heal(steal_heal)
 			await _fx_heal("enemy")
 			if combat_ui: combat_ui.display_round_history("🩸 Enemy lifesteal — healed %d HP!" % steal_heal, false)
 
@@ -764,7 +1086,7 @@ func _enemy_execute_item(item_type: String, tracking: Dictionary) -> void:
 
 	match item_type:
 		"potion":
-			enemy_health = clampi(enemy_health + 20, 0, enemy_max_health)
+			_enemy_heal(20)
 			await _fx_heal("enemy")
 			if combat_ui: combat_ui.display_round_history("🧪 Enemy Potion (+20 HP)", false)
 		"shield":
@@ -786,7 +1108,7 @@ func _enemy_execute_item(item_type: String, tracking: Dictionary) -> void:
 			await _fx_status("enemy", Color(0.80, 0.55, 1.0, 1.0), "📌")
 			if combat_ui: combat_ui.display_round_history("📌 Enemy Needle — next hit pierces armor", false)
 		"bandage":
-			enemy_health = clampi(enemy_health + 10, 0, enemy_max_health)
+			_enemy_heal(10)
 			enemy_regen_rounds = 2
 			await _fx_heal("enemy")
 			if combat_ui: combat_ui.display_round_history("🩹 Enemy Bandage (+10 HP + regen ×2)", false)
@@ -867,13 +1189,33 @@ func _enemy_execute_item(item_type: String, tracking: Dictionary) -> void:
 
 func _conclude_round_cycle_ticks() -> void:
 	await _process_dot_hot_ticks()
+	# Feed the Relic: every point of damage that changed hands this round (dealt
+	# to the enemy + taken by the player) builds charge, no matter the source.
+	# The Relic only charges while it's actually in the bag — you can't bank
+	# progress toward it before it drops (not a proactive system). If it isn't
+	# held, its charge sits at zero.
+	if player_inventory.has("relic"):
+		var dealt := maxi(0, _relic_prev_enemy_hp  - enemy_health)
+		var taken := maxi(0, _relic_prev_player_hp - QuestManager.player_health)
+		if dealt + taken > 0:
+			player_relic_charge += dealt + taken
+	else:
+		player_relic_charge = 0
+		_relic_announced_charged = false
+	_relic_prev_enemy_hp  = enemy_health
+	_relic_prev_player_hp = QuestManager.player_health
+	# One-shot callout the moment the Relic finishes charging.
+	if not _relic_announced_charged and relic_is_charged():
+		_relic_announced_charged = true
+		if combat_ui:
+			combat_ui.display_round_history("🏺✨ The Ancient Relic is FULLY CHARGED — unleash it!", true)
 	_sync_ground_fx()
 	if combat_ui: combat_ui._refresh_ui_states()
 	if await _check_combat_end_conditions(): return
 	cycles_until_drop -= 1
 	if cycles_until_drop <= 0:
 		_apply_supply_drop_rewards()
-		if combat_ui: combat_ui.display_round_history("📦 Supply drop — new items!", true)
+		if combat_ui: combat_ui.display_round_history("📦 The Quartermaster lobs in a matched crate — both fighters resupply!", true)
 	if combat_ui:
 		combat_ui.start_player_turn()
 		combat_ui._refresh_ui_states()
@@ -893,18 +1235,63 @@ func _process_dot_hot_ticks() -> void:
 			"☠️ Enemy poison ticked — 10 dmg (%d left)" % enemy_poison_rounds, true)
 	if player_regen_rounds > 0:
 		player_regen_rounds -= 1
-		QuestManager.player_health = clampi(QuestManager.player_health + 10, 0, QuestManager.MAX_HEALTH)
+		QuestManager.heal_player(10)   # capped at red hearts
 		await _fx_heal("player")
 		if combat_ui: combat_ui.display_round_history(
 			"🩹 Regen healed 10 HP (%d left)" % player_regen_rounds, true)
 	if enemy_regen_rounds > 0:
 		enemy_regen_rounds -= 1
-		enemy_health = clampi(enemy_health + 10, 0, enemy_max_health)
+		_enemy_heal(10)
 		await _fx_heal("enemy")
 		if combat_ui: combat_ui.display_round_history(
 			"🩹 Enemy regen +10 HP (%d left)" % enemy_regen_rounds, true)
+	# The Phoenix cooldown counts down on the same round cadence.
+	if player_phoenix_cd > 0:
+		player_phoenix_cd -= 1
 	if (player_poison_rounds + enemy_poison_rounds + player_regen_rounds + enemy_regen_rounds) > 0:
 		await get_tree().create_timer(0.30).timeout
+
+# Puts the Phoenix on cooldown after an activation. The base window climbs by
+# +1 with each use this fight so repeated revives get progressively riskier.
+func _trigger_phoenix_cooldown() -> void:
+	player_phoenix_uses += 1
+	player_phoenix_cd = PHOENIX_BASE_COOLDOWN + (player_phoenix_uses - 1)
+
+# Enemy healing obeys the same gold-heart rule as the player: it can only ever
+# restore up to the red-heart cap (300), never its bonus gold HP.
+func _enemy_heal(amount: int) -> void:
+	var cap := maxi(mini(enemy_max_health, QuestManager.HP_PER_LAP), enemy_health)
+	enemy_health = clampi(enemy_health + amount, 0, cap)
+
+# Phoenix death→rebirth flourish: the player goes limp for a beat (a faked death
+# cycle, since there's no death animation), then flashes golden and rises.
+func _play_phoenix_revive() -> void:
+	var spr: AnimatedSprite2D = null
+	if is_instance_valid(player_ref):
+		spr = player_ref.get_node_or_null("AnimatedSprite2D") as AnimatedSprite2D
+	if not is_instance_valid(spr):
+		await get_tree().create_timer(0.8).timeout
+		return
+	var home_rot := spr.rotation
+	var home_pos := spr.position
+	# 1) Death beat — darken, keel over, sink; hold one cycle.
+	var t1 := create_tween().set_parallel(true)
+	t1.tween_property(spr, "modulate", Color(0.22, 0.22, 0.28, 1.0), 0.35)
+	t1.tween_property(spr, "rotation", home_rot + deg_to_rad(80), 0.35)
+	t1.tween_property(spr, "position", home_pos + Vector2(0, 6), 0.35)
+	await t1.finished
+	await get_tree().create_timer(0.5).timeout
+	# 2) Golden rebirth — pulse gold a few times while righting.
+	for _i in range(3):
+		spr.modulate = Color(2.3, 1.8, 0.6, 1.0)
+		await get_tree().create_timer(0.12).timeout
+		spr.modulate = Color(1.0, 0.85, 0.4, 1.0)
+		await get_tree().create_timer(0.10).timeout
+	var t2 := create_tween().set_parallel(true)
+	t2.tween_property(spr, "rotation", home_rot, 0.25)
+	t2.tween_property(spr, "position", home_pos, 0.25)
+	t2.tween_property(spr, "modulate", Color.WHITE, 0.3)
+	await t2.finished
 
 func _apply_supply_drop_rewards() -> void:
 	drop_round_index += 1
@@ -914,7 +1301,15 @@ func _apply_supply_drop_rewards() -> void:
 	cycles_until_drop = DROP_SCHEDULE[min(drop_round_index, DROP_SCHEDULE.size() - 1)]
 	for _i in range(items_this_drop):
 		if QuestManager.equipped_items.size() > 0:
-			player_inventory.append(QuestManager.equipped_items.pick_random())
+			var pick: String = QuestManager.equipped_items.pick_random()
+			# Some items cap at ONE copy in the bag (relic, phoenix). If the player
+			# already holds it, that crate slot rolls a different equipped item
+			# instead (so a loadout can't stockpile game-ending copies).
+			if pick in MAX_ONE_ITEMS and player_inventory.has(pick):
+				var alt := QuestManager.equipped_items.filter(func(i: String) -> bool:
+					return not (i in MAX_ONE_ITEMS and player_inventory.has(i)))
+				pick = alt.pick_random() if alt.size() > 0 else "potion"
+			player_inventory.append(pick)
 		if enemy_item_pool.size() > 0:
 			enemy_inventory.append(enemy_item_pool.pick_random())
 
@@ -931,7 +1326,11 @@ func _reset_all_combat_modifiers() -> void:
 	player_items_locked   = false;  enemy_items_locked   = false
 	player_lifesteal_active = false; enemy_lifesteal_active = false
 	player_god_pierce      = false; enemy_god_pierce      = false
-	player_rally           = false; enemy_rally           = false
+	player_banner_rounds   = 0;     enemy_banner_rounds   = 0
+	player_phoenix_cd      = 0;     player_phoenix_uses   = 0
+	player_relic_charge    = 0;     _relic_announced_charged = false
+	if is_instance_valid(_clone_node): _clone_node.queue_free()
+	_clone_node = null; player_clone_active = false; _clone_player_home = Vector2.ZERO
 	player_damage_bonus   = 0;      enemy_damage_bonus   = 0
 	player_regen_rounds   = 0;      enemy_regen_rounds   = 0
 	player_poison_rounds  = 0;      enemy_poison_rounds  = 0
@@ -955,19 +1354,37 @@ func _switch_to_overworld_camera() -> void:
 
 func _check_combat_end_conditions() -> bool:
 	if QuestManager.player_health <= 0:
+		# ── Phoenix Feather auto-revive ────────────────────────────────────────
+		# Holding a Phoenix that's off cooldown snatches you back from death at a
+		# modest HP instead of losing the fight. It's consumed and the cooldown
+		# climbs, so it can't chain-save you (and it can't help if it's dormant).
+		if player_phoenix_cd == 0 and player_inventory.has("phoenix_feather"):
+			player_inventory.erase("phoenix_feather")
+			_trigger_phoenix_cooldown()
+			if combat_ui:
+				combat_ui.display_round_history(
+					"🪶 PHOENIX FEATHER! You fall... then blaze back to %d HP (dormant %d turns)." % [PHOENIX_REVIVE_HP, player_phoenix_cd], true)
+			await _play_phoenix_revive()   # die beat + golden rebirth flash
+			QuestManager.player_health = PHOENIX_REVIVE_HP
+			if combat_ui: combat_ui._refresh_ui_states()
+			return false
 		# Set is_in_combat false FIRST so any in-flight fx coroutines bail out
 		# on their next resume instead of re-applying a stale tint.
+		if player_clone_active: _dismiss_clone()
 		is_in_combat = false; QuestManager.is_in_combat = false
 		_reset_sprite_modulates()
 		_clear_ground_fx_visibility()
 		if is_instance_valid(combat_ui): combat_ui.visible = false
+		await ScreenFade.fade_out()
 		self.global_position = enemy_overworld_position
 		_switch_to_overworld_camera()
 		if is_instance_valid(lose_ui) and lose_ui.has_method("show_death_screen"):
 			lose_ui.show_death_screen()
+		await ScreenFade.fade_in()
 		return true
 
 	if enemy_health <= 0:
+		if player_clone_active: _dismiss_clone()
 		is_in_combat = false; QuestManager.is_in_combat = false
 		_reset_sprite_modulates()
 		_clear_ground_fx_visibility()
@@ -999,6 +1416,8 @@ func _check_combat_end_conditions() -> bool:
 		await get_tree().create_timer(1.0).timeout
 		if is_instance_valid(spr): spr.stop()
 
+		# Fade to black to cover the return camera-cut + player teleport.
+		await ScreenFade.fade_out()
 		if is_instance_valid(player_ref):
 			if "velocity" in player_ref: player_ref.velocity = Vector2.ZERO
 			player_ref.global_position = QuestManager.player_overworld_position
@@ -1008,10 +1427,19 @@ func _check_combat_end_conditions() -> bool:
 		# against anything that may have queued during that 1s window.
 		_reset_sprite_modulates()
 
-		# ── Graveyard respawn instead of permanent removal ─────────────────────
-		QuestManager.defeated_enemies[enemy_id] = QuestManager.play_time_seconds
-		_is_defeated_waiting_respawn = true
-		_hide_and_disable_at_graveyard()
+		if is_tutorial_mob:
+			# One-time guided-combat mob: gone for good, no respawn timer.
+			QuestManager.tutorial_mob_defeated = true
+			QuestManager.has_unsaved_progress = true
+			_permanently_dead = true
+			_hide_and_disable_at_graveyard()
+		else:
+			# ── Graveyard respawn instead of permanent removal ─────────────────
+			QuestManager.defeated_enemies[enemy_id] = QuestManager.play_time_seconds
+			_is_defeated_waiting_respawn = true
+			_hide_and_disable_at_graveyard()
+
+		await ScreenFade.fade_in()
 		return true
 
 	return false

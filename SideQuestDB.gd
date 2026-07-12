@@ -62,14 +62,6 @@ const QUESTS := {
 		"params": { "level_diff": 2 },
 		"reward": { "xp": 300, "item": "phoenix_feather" },
 	},
-	"coin_hoarder": {
-		"title": "Coin Hoarder", "emoji": "🪙",
-		"teaser": "Coin keeps turning up along the island paths — someone ought to gather it.",
-		"desc": "Coins keep turning up all over the island. Someone should collect them…",
-		"how": "Pick up 15 coins in total (lifetime — spending doesn't reset it).",
-		"type": "coin_lifetime", "goal": 15, "params": {},
-		"reward": { "xp": 180 },
-	},
 	"mob_slayer": {
 		"title": "Mob Slayer", "emoji": "💀",
 		"teaser": "The village needs the mob numbers thinned. Badly.",
@@ -78,7 +70,7 @@ const QUESTS := {
 		"desc": "The mobs respawn endlessly. Thin the herd anyway — for the village.",
 		"how": "Defeat 5 enemies in total.",
 		"type": "kill_count", "goal": 5, "params": {},
-		"reward": { "xp": 320, "item": "war_banner" },
+		"reward": { "xp": 320, "item": "clone" },
 	},
 	"herbalist": {
 		"title": "Herbalist", "emoji": "🧪",
@@ -109,7 +101,7 @@ const QUESTS := {
 
 # Quests that start "available" (startable from the outset). Everything else in
 # QUESTS starts as a "rumour" and is revealed by its `reveal` trigger.
-const INITIALLY_AVAILABLE := ["first_blood", "coin_hoarder", "herbalist", "village_census", "gone_fishing"]
+const INITIALLY_AVAILABLE := ["first_blood", "herbalist", "village_census", "gone_fishing"]
 
 static func get_def(id: String) -> Dictionary:
 	return QUESTS.get(id, {})

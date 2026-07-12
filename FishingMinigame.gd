@@ -32,11 +32,21 @@ const BOUNCE := -0.30
 const GAIN := 0.55               # meter fill rate while on the fish
 const LOSS := 0.20               # meter drain rate while off the fish (forgiving)
 
-# Hidden fish sizes: [speed, retarget_min, retarget_max, xp_mult, weight]
+# Hidden fish sizes. Six tiers now (was three) so the difficulty really spreads:
+# tiny/small are relaxed, medium/large take focus, and huge/legendary are fast,
+# erratic and drain the meter quicker — rare trophies worth big XP.
+#   speed      — how fast it chases its target
+#   rt_min/max — how often it re-targets (lower = twitchier)
+#   xp         — XP multiplier (revealed only after the catch)
+#   drain      — meter drain multiplier while off the fish (harder = leakier)
+#   weight     — spawn weight (rarer trophies)
 const SIZES := {
-	"small":  { "speed": 0.55, "rt_min": 0.75, "rt_max": 1.5, "xp": 1.0, "weight": 45 },
-	"medium": { "speed": 0.85, "rt_min": 0.55, "rt_max": 1.1, "xp": 1.5, "weight": 38 },
-	"large":  { "speed": 1.20, "rt_min": 0.35, "rt_max": 0.8, "xp": 2.2, "weight": 17 },
+	"tiny":      { "speed": 0.45, "rt_min": 0.85, "rt_max": 1.70, "xp": 0.8, "drain": 0.80, "weight": 24 },
+	"small":     { "speed": 0.60, "rt_min": 0.70, "rt_max": 1.40, "xp": 1.0, "drain": 1.00, "weight": 30 },
+	"medium":    { "speed": 0.88, "rt_min": 0.55, "rt_max": 1.10, "xp": 1.5, "drain": 1.15, "weight": 24 },
+	"large":     { "speed": 1.18, "rt_min": 0.38, "rt_max": 0.85, "xp": 2.3, "drain": 1.35, "weight": 13 },
+	"huge":      { "speed": 1.55, "rt_min": 0.28, "rt_max": 0.60, "xp": 3.4, "drain": 1.60, "weight": 6  },
+	"legendary": { "speed": 1.95, "rt_min": 0.20, "rt_max": 0.45, "xp": 5.0, "drain": 1.90, "weight": 3  },
 }
 
 var _bar_pos := 0.08             # bottom edge of the catch bar, 0..(1-BAR_FRAC)
@@ -52,6 +62,7 @@ var _fish_speed := 0.6
 var _rt_min := 0.7
 var _rt_max := 1.4
 var _xp_mult := 1.0
+var _loss := LOSS
 
 var _tank: Control
 var _bar: Panel
@@ -132,7 +143,7 @@ func _ready() -> void:
 	meter.add_child(_prog_fill)
 
 	var help := Label.new()
-	help.text = "Hold  [E]  to raise the bar — keep it on the fish"
+	help.text = "Hold  [%s]  to raise the bar — keep it on the fish" % KeybindManager.key_display("fish_reel")
 	help.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	help.add_theme_font_size_override("font_size", 15)
 	help.add_theme_color_override("font_color", Color(0.8, 0.85, 0.95))
@@ -162,13 +173,14 @@ func _pick_size() -> void:
 	_rt_min = float(s["rt_min"])
 	_rt_max = float(s["rt_max"])
 	_xp_mult = float(s["xp"])
+	_loss = LOSS * float(s.get("drain", 1.0))
 	_fish_retarget = randf_range(_rt_min, _rt_max)
 
 func _process(delta: float) -> void:
 	if _ended:
 		return
 
-	var lifting := Input.is_action_pressed("interact") or Input.is_action_pressed("ui_accept")
+	var lifting := Input.is_action_pressed("fish_reel")
 	_bar_vel += (LIFT if lifting else GRAVITY) * delta
 	_bar_vel = clamp(_bar_vel, -MAX_VEL, MAX_VEL)
 	_bar_pos += _bar_vel * delta
@@ -187,7 +199,7 @@ func _process(delta: float) -> void:
 	_fish_pos = move_toward(_fish_pos, _fish_target, _fish_speed * delta)
 
 	var on_fish: bool = _fish_pos >= _bar_pos and _fish_pos <= _bar_pos + BAR_FRAC
-	_progress += (GAIN if on_fish else -LOSS) * delta
+	_progress += (GAIN if on_fish else -_loss) * delta
 	_progress = clamp(_progress, 0.0, 1.0)
 
 	_layout()
