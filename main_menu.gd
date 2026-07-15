@@ -177,20 +177,20 @@ func _build_main_view() -> void:
 	main_view.add_child(start_btn)
 
 	var load_btn = Button.new()
-	load_btn.text = "📂  Load Game"
 	_style_btn(load_btn, Color(0.09, 0.12, 0.20), Color(0.30, 0.42, 0.75))
+	IconDB.decorate_button(load_btn, "📂", "Load Game")
 	load_btn.pressed.connect(func(): _session_mode = "load"; _show_view("session"))
 	main_view.add_child(load_btn)
 
 	var settings_btn = Button.new()
-	settings_btn.text = "⚙️  Settings"
 	_style_btn(settings_btn, Color(0.14, 0.12, 0.05), Color(0.62, 0.52, 0.20))
+	IconDB.decorate_button(settings_btn, "⚙️", "Settings")
 	settings_btn.pressed.connect(func(): _show_view("settings"))
 	main_view.add_child(settings_btn)
 
 	var exit_btn = Button.new()
-	exit_btn.text = "🚪  Exit Game"
 	_style_btn(exit_btn, Color(0.22, 0.07, 0.07), Color(0.65, 0.20, 0.20))
+	IconDB.decorate_button(exit_btn, "🚪", "Exit Game")
 	exit_btn.pressed.connect(func(): get_tree().quit())
 	main_view.add_child(exit_btn)
 
@@ -427,11 +427,15 @@ func _input(event: InputEvent) -> void:
 
 # ── Character creation ───────────────────────────────────────────────────────
 func _build_customize_view() -> void:
-	var title = Label.new()
-	title.text = "🧙  Create Your Hero"
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 20)
-	title.add_theme_color_override("font_color", COL_GOLD)
+	var title = RichTextLabel.new()
+	title.bbcode_enabled = true
+	title.fit_content = true
+	title.scroll_active = false
+	title.autowrap_mode = TextServer.AUTOWRAP_OFF
+	title.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	title.add_theme_font_size_override("normal_font_size", 20)
+	title.add_theme_color_override("default_color", COL_GOLD)
+	title.text = IconDB.iconify("🧙  Create Your Hero", 24)
 	customize_view.add_child(title)
 
 	# ── Live character preview ──

@@ -67,7 +67,7 @@ func ask(speaker: String, prompt: String, options: Array) -> int:
 	create_tween().tween_property(_root, "modulate:a", 1.0, 0.12)
 	_name_label.text = speaker
 	_name_label.visible = speaker != ""
-	_body_label.text = prompt
+	_body_label.text = IconDB.iconify(prompt, 22)
 	_body_label.visible_characters = -1
 	_hint_label.visible = false
 	for c in _choice_row.get_children():
@@ -178,7 +178,8 @@ func _show_line() -> void:
 	var line = _lines[_index]
 	_name_label.text = str(line.get("name", ""))
 	_name_label.visible = _name_label.text != ""
-	_body_label.text = str(line.get("text", ""))
+	# Swap any item/world emoji in the line for real icons (🏺 relic, 🧭 compass, …).
+	_body_label.text = IconDB.iconify(str(line.get("text", "")), 22)
 	_total_chars = _body_label.get_total_character_count()
 	_body_label.visible_characters = 0
 	_char_progress = 0.0

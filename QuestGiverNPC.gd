@@ -9,17 +9,20 @@ extends CharacterBody2D
 #
 # CharacterBody2D (so it blocks the player). Player detection comes from a child
 # Area2D whose body_entered/exited are scene-wired to _on_area_2d_body_*.
-# Messages go through DialogueManager; the "[E] …" prompt goes through PromptHUD.
+# Messages go through DialogueManager; the in-range affordance is the floating
+# chat icon (IconDB.add_talk_marker), not a text prompt.
 
 const NPC_NAME := "Street Kid"
 
 var _scene_label: Label = null
 var player_nearby: bool = false
+var _talk_marker: Sprite2D = null
 
 func _ready() -> void:
 	_scene_label = get_node_or_null("PromptLabel") as Label
 	if is_instance_valid(_scene_label):
 		_scene_label.visible = false
+	_talk_marker = IconDB.add_talk_marker(self)
 
 func _process(_delta: float) -> void:
 	if not (player_nearby and Input.is_action_just_pressed("interact")) or QuestManager.ui_arrow_nav_open:
@@ -60,7 +63,7 @@ func _handle_interact() -> void:
 			["Turn it in — end the quest", "Not yet — keep the relic"])
 		if choice == 0:
 			QuestManager.turn_in_relic()   # clears relic, unlocks the win, removes it from the loadout
-			PromptHUD.release(self)
+			_update_prompt()
 			await _say_and_wait([
 				{ "name": QuestManager.player_name, "text": "Here — your village's relic, safe and sound." },
 				{ "name": NPC_NAME,  "text": "You did it! You truly saved us all. Thank you, hero!" },
@@ -96,16 +99,11 @@ func _say_and_wait(lines: Array) -> void:
 	DialogueManager.start(lines)
 	await DialogueManager.dialogue_finished
 
-func _prompt_text() -> String:
-	if QuestManager.has_relic:
-		return "[E]  Turn in the Relic"
-	if QuestManager.quest_accepted and not QuestManager.has_key:
-		return "[E]  Deliver Coins"
-	return "[E]  Talk"
-
+# The floating chat icon replaces the old "[E] …" text prompt: it just shows while
+# the player is in range.
 func _update_prompt() -> void:
-	if player_nearby:
-		PromptHUD.request(self, _prompt_text())
+	if is_instance_valid(_talk_marker):
+		_talk_marker.visible = player_nearby
 
 # Targets the SCRIPTED WinUI (with show_win_screen) so it isn't fooled by any
 # other node that happens to be named "WinUI".
@@ -130,4 +128,4 @@ func _on_area_2d_body_entered(body: Node2D) -> void:
 func _on_area_2d_body_exited(body: Node2D) -> void:
 	if body.name == "mainplayer":
 		player_nearby = false
-		PromptHUD.release(self)
+		_update_prompt()

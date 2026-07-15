@@ -194,19 +194,33 @@ func _float_icon(target: String, icon: String, color: Color) -> void:
 	var s = _get_sprite(target)
 	if not is_instance_valid(s): return
 	var sp  = get_viewport().get_canvas_transform() * s.global_position
-	var lbl = Label.new()
-	lbl.text = icon
-	lbl.add_theme_font_size_override("font_size", 26)
-	lbl.add_theme_color_override("font_color", color)
-	lbl.position     = sp + Vector2(-14, -54)
-	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	lbl.z_index      = 200
-	combat_ui.add_child(lbl)
-	var tw = lbl.create_tween().set_parallel(true)
-	tw.tween_property(lbl, "position:y", lbl.position.y - 58, 0.88).set_ease(Tween.EASE_OUT)
-	tw.tween_property(lbl, "modulate:a", 0.0, 0.88).set_delay(0.26)
+	# Prefer a real pixel icon when this emoji is mapped; else fall back to the glyph.
+	var node: Control
+	var icon_tex: Texture2D = IconDB.tex(IconDB.id_for_emoji(icon))
+	if is_instance_valid(icon_tex):
+		var tr = TextureRect.new()
+		tr.texture = icon_tex
+		tr.custom_minimum_size = Vector2(40, 40)
+		tr.size = Vector2(40, 40)
+		tr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		tr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		tr.position = sp + Vector2(-20, -60)
+		node = tr
+	else:
+		var lbl = Label.new()
+		lbl.text = icon
+		lbl.add_theme_font_size_override("font_size", 26)
+		lbl.add_theme_color_override("font_color", color)
+		lbl.position = sp + Vector2(-14, -54)
+		node = lbl
+	node.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	node.z_index      = 200
+	combat_ui.add_child(node)
+	var tw = node.create_tween().set_parallel(true)
+	tw.tween_property(node, "position:y", node.position.y - 58, 0.88).set_ease(Tween.EASE_OUT)
+	tw.tween_property(node, "modulate:a", 0.0, 0.88).set_delay(0.26)
 	get_tree().create_timer(0.96).timeout.connect(
-		func(): if is_instance_valid(lbl): lbl.queue_free()
+		func(): if is_instance_valid(node): node.queue_free()
 	)
 
 func _reset_sprite_modulates() -> void:
@@ -552,6 +566,16 @@ func use_player_item(item_type: String) -> void:
 			if player_phoenix_cd > 0:
 				msg = "🪶 Phoenix Feather is dormant (%d turns) — and it only ever revives you automatically." % player_phoenix_cd
 			combat_ui.display_round_history(msg, true)
+			combat_ui._refresh_ui_states()
+		return
+
+	# A damage buff of a given type can't be stacked with itself in one turn — e.g.
+	# using Grindstone again while already sharpened (would let you spam +20s). Same
+	# for Overcharge. Refuse without consuming the item/turn.
+	if (item_type == "grindstone" and player_sharpened) or (item_type == "overcharge" and player_overcharged):
+		if combat_ui:
+			var lbl: String = QuestManager.ITEM_META.get(item_type, {}).get("label", item_type.capitalize())
+			combat_ui.display_round_history("%s is already active this turn — it can't stack with itself." % lbl, true)
 			combat_ui._refresh_ui_states()
 		return
 

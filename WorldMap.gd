@@ -41,7 +41,7 @@ var _mini_panel: Panel
 var _mini_canvas: Control
 var _compass_bar: Panel
 var _compass_ribbon: Control
-var _compass_text: Label
+var _compass_text: RichTextLabel
 
 var _full_root: Control
 var _full_canvas: Control
@@ -84,12 +84,14 @@ func _build_compass_bar() -> void:
 	_compass_ribbon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_compass_bar.add_child(_compass_ribbon)
 
-	_compass_text = Label.new()
+	_compass_text = RichTextLabel.new()
+	_compass_text.bbcode_enabled = true
+	_compass_text.scroll_active = false
+	_compass_text.autowrap_mode = TextServer.AUTOWRAP_OFF
 	_compass_text.position = Vector2(10, 26)
 	_compass_text.size = Vector2(440, 20)
-	_compass_text.add_theme_font_size_override("font_size", 14)
-	_compass_text.add_theme_color_override("font_color", Color(0.95, 0.9, 0.7))
-	_compass_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_compass_text.add_theme_font_size_override("normal_font_size", 14)
+	_compass_text.add_theme_color_override("default_color", Color(0.95, 0.9, 0.7))
 	_compass_bar.add_child(_compass_text)
 
 # ── UI construction ───────────────────────────────────────────────────────────
@@ -157,13 +159,16 @@ func _build_fullmap() -> void:
 	panel.add_theme_stylebox_override("panel", ps)
 	_full_root.add_child(panel)
 
-	var title := Label.new()
-	title.text = "🗺  World Map"
+	var title := RichTextLabel.new()
+	title.bbcode_enabled = true
+	title.scroll_active = false
+	title.fit_content = true
+	title.autowrap_mode = TextServer.AUTOWRAP_OFF
 	title.set_anchors_preset(Control.PRESET_TOP_WIDE)
 	title.offset_top = 14
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 24)
-	title.add_theme_color_override("font_color", Color(1.0, 0.85, 0.3))
+	title.add_theme_font_size_override("normal_font_size", 24)
+	title.add_theme_color_override("default_color", Color(1.0, 0.85, 0.3))
+	title.text = "[center]%s[/center]" % IconDB.iconify("🗺  World Map", 26)
 	panel.add_child(title)
 
 	_full_canvas = MapCanvas.new()
@@ -226,6 +231,11 @@ func _set_full(v: bool) -> void:
 	_full_root.visible = v
 	if v:
 		_full_canvas.queue_redraw()
+
+# True while the full-screen map is showing. PauseMenu checks this so the first
+# Esc only closes the map (it doesn't also pop the pause menu on the same press).
+func is_full_open() -> bool:
+	return _open_full
 
 # ── Fog of war reveal ─────────────────────────────────────────────────────────
 func _reveal(world_pos: Vector2) -> void:
@@ -407,7 +417,7 @@ func _tutorial_mob(scene: Node) -> Node:
 func _update_compass_bar() -> void:
 	var obj := _objective()
 	if obj.is_empty():
-		_compass_text.text = "🧭  Explore…"
+		_compass_text.text = "[center]%s[/center]" % IconDB.iconify("🧭  Explore…", 18)
 		return
 	var player := _player_node()
 	var arrow := "•"
@@ -417,7 +427,7 @@ func _update_compass_bar() -> void:
 		arrow = _dir_arrow(d)
 		var m := int(d.length() / 12.0)   # rough "metres"
 		dist_txt = "   ~%dm" % m if m > 4 else "   (arrived)"
-	_compass_text.text = "%s  %s%s" % [arrow, obj["label"], dist_txt]
+	_compass_text.text = "[center]%s[/center]" % IconDB.iconify("%s  %s%s" % [arrow, obj["label"], dist_txt], 18)
 
 func _dir_arrow(d: Vector2) -> String:
 	var a := rad_to_deg(atan2(d.y, d.x))

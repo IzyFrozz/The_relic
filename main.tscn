@@ -74,8 +74,11 @@ animations = [{
 [sub_resource type="CircleShape2D" id="CircleShape2D_qsp4k"]
 radius = 29.274563
 
-[sub_resource type="CircleShape2D" id="CircleShape2D_1u8w0"]
-radius = 23.086792
+[sub_resource type="CircleShape2D" id="CircleShape2D_signbody"]
+radius = 9.0
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_htxhm"]
+radius = 34.0
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_82xsv"]
 atlas = ExtResource("12_cegan")
@@ -497,12 +500,6 @@ radius = 11.045361
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_5dllo"]
 radius = 9.0
 height = 34.0
-
-[sub_resource type="CircleShape2D" id="CircleShape2D_htxhm"]
-radius = 34.0
-
-[sub_resource type="CircleShape2D" id="CircleShape2D_signbody"]
-radius = 9.0
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_kkkcx"]
 atlas = ExtResource("17_getpj")
@@ -1056,15 +1053,10 @@ script = ExtResource("33_fspot")
 shape = SubResource("CircleShape2D_htxhm")
 debug_color = Color(0.2, 0.55, 0.95, 0.35)
 
-[node name="Puddle" type="Label" parent="FishingSpot" unique_id=770011003]
-offset_left = -36.0
-offset_top = -10.0
-offset_right = 8.0
-offset_bottom = 26.0
-scale = Vector2(0.5, 0.5)
-text = "💧"
-horizontal_alignment = 1
-vertical_alignment = 1
+[node name="RodIcon" type="Sprite2D" parent="FishingSpot" unique_id=770011003]
+visible = false
+position = Vector2(-27, -18)
+scale = Vector2(0.42, 0.42)
 
 [node name="Navigator" type="CharacterBody2D" parent="." unique_id=2107755025]
 position = Vector2(-106, 276)

@@ -4,17 +4,27 @@ var current_enemy = null
 var is_waiting_on_action: bool = false
 var _is_enemy_turn: bool = false
 
-var drop_countdown_label: Label
+var drop_countdown_label: RichTextLabel
 var fight_button: Button
-var player_hp: Label
-var player_buffs_lbl: Label
-var enemy_hp: Label
-var enemy_buffs_lbl: Label
+var player_hp: RichTextLabel
+var player_buffs_lbl: RichTextLabel
+var enemy_hp: RichTextLabel
+var enemy_buffs_lbl: RichTextLabel
 
 var item_buttons: Array = []
 var enemy_inventory_container: GridContainer
 var enemy_item_labels: Array = []
 var enemy_item_labels_pool_ref: Array = []
+
+# Item tiles curve in an arc around each fighter (player left, enemy right)
+# instead of sitting in the bottom bar — the bottom keeps only the Fight button.
+# The holders are plain full-rect Controls; tiles are placed by hand in _layout_arc.
+var player_items_col: Control
+var enemy_items_col: Control
+const TILE_SIZE   := Vector2(84, 84)
+const ARC_STEP    := 96.0   # vertical gap between tile centres
+const ARC_BULGE   := 74.0   # how far the arc's ends pull inward vs its middle
+const ARC_MARGIN  := 18.0   # gap from the screen edge at the arc's widest point
 
 var popup_overlay: ColorRect
 var popup_panel: Panel
@@ -32,10 +42,61 @@ const SLOT_KEYS := ["1","2","3","4","5","6"]
 func _ready() -> void:
 	visible = false
 	_find_nodes_automatically()
+	_build_side_columns()
 	_connect_fight_button()
 	_apply_card_styles()
 	_build_dynamic_popup_window()
 	_disable_engine_focus_modes()
+
+# Creates the two edge-hugging item columns and slims the bottom bar down to just
+# the Fight button (the old bottom item grids are hidden).
+func _build_side_columns() -> void:
+	player_items_col = _make_item_holder(true)
+	enemy_items_col  = _make_item_holder(false)
+	# Hide the legacy bottom item sections; keep only the centre (Fight button).
+	for n in ["PlayerItemsSectionVBox", "EnemyItemsSectionVBox"]:
+		var sec = find_child(n)
+		if is_instance_valid(sec): sec.visible = false
+	var hbox = find_child("BottomHBox")
+	if hbox is HBoxContainer: (hbox as HBoxContainer).alignment = BoxContainer.ALIGNMENT_CENTER
+	get_viewport().size_changed.connect(_layout_item_arcs)
+
+func _make_item_holder(is_left: bool) -> Control:
+	var c = Control.new()
+	c.name = "PlayerItemsArc" if is_left else "EnemyItemsArc"
+	c.mouse_filter = Control.MOUSE_FILTER_IGNORE   # tiles themselves take the clicks
+	add_child(c)
+	c.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	return c
+
+# Places both fighters' tiles along a vertical arc that bulges toward its own
+# screen edge in the middle and pulls inward at the ends (see the mockup).
+func _layout_item_arcs() -> void:
+	_layout_arc(player_items_col, item_buttons, true)
+	_layout_arc(enemy_items_col, enemy_item_labels, false)
+
+func _layout_arc(holder: Control, tiles: Array, is_left: bool) -> void:
+	if not is_instance_valid(holder):
+		return
+	var vis: Array = []
+	for t in tiles:
+		if is_instance_valid(t) and t.visible:
+			vis.append(t)
+	var n := vis.size()
+	if n == 0:
+		return
+	var vp: Vector2 = holder.size
+	var total_h := float(n - 1) * ARC_STEP
+	var start_y := vp.y * 0.5 - total_h * 0.5
+	for i in range(n):
+		var tile: Control = vis[i]
+		# u sweeps 0..PI, so sin(u) is 0 at the ends and 1 at the middle.
+		var u := PI * 0.5 if n == 1 else (float(i) / float(n - 1)) * PI
+		var inward := ARC_BULGE * (1.0 - sin(u))
+		var y := start_y + float(i) * ARC_STEP - TILE_SIZE.y * 0.5
+		var x := ARC_MARGIN + inward if is_left else vp.x - ARC_MARGIN - inward - TILE_SIZE.x
+		tile.size = TILE_SIZE
+		tile.position = Vector2(x, y)
 
 func _process(_delta: float) -> void:
 	# Gentle glow-pulse on the Relic button while it's charged & ready — a clear
@@ -55,12 +116,12 @@ func _process(_delta: float) -> void:
 			btn.modulate = Color(1.45 + 0.45 * p, 1.2 + 0.2 * p, 2.05 + 0.35 * p, 1.0)
 
 func _find_nodes_automatically() -> void:
-	drop_countdown_label      = find_child("DropCountdownLabel") as Label
+	drop_countdown_label      = find_child("DropCountdownLabel") as RichTextLabel
 	fight_button              = find_child("fight_button") as Button
-	player_hp                 = find_child("PlayerHPLabel") as Label
-	player_buffs_lbl          = find_child("PlayerBuffsLabel") as Label
-	enemy_hp                  = find_child("EnemyHPLabel") as Label
-	enemy_buffs_lbl           = find_child("EnemyBuffsLabel") as Label
+	player_hp                 = find_child("PlayerHPLabel") as RichTextLabel
+	player_buffs_lbl          = find_child("PlayerBuffsLabel") as RichTextLabel
+	enemy_hp                  = find_child("EnemyHPLabel") as RichTextLabel
+	enemy_buffs_lbl           = find_child("EnemyBuffsLabel") as RichTextLabel
 	enemy_inventory_container = find_child("EnemyItemsGrid") as GridContainer
 
 func _apply_card_styles() -> void:
@@ -78,25 +139,34 @@ func _apply_card_styles() -> void:
 	if is_instance_valid(tl): tl.add_theme_stylebox_override("panel", _make.call())
 	if is_instance_valid(tr): tr.add_theme_stylebox_override("panel", _make.call())
 	if is_instance_valid(bp):
-		var bs = StyleBoxFlat.new(); bs.bg_color = Color(0.06, 0.07, 0.11, 0.93)
-		bs.set_border_width_all(0); bp.add_theme_stylebox_override("panel", bs)
+		# No dark strip along the bottom — the Fight button (and crate countdown)
+		# float straight over the arena.
+		bp.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 	if is_instance_valid(player_hp):
-		player_hp.add_theme_font_size_override("font_size", 14)
-		player_hp.add_theme_color_override("font_color", Color(1.00, 0.92, 0.86))
+		player_hp.add_theme_font_size_override("normal_font_size", 14)
+		player_hp.add_theme_color_override("default_color", Color(1.00, 0.92, 0.86))
 		player_hp.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		player_hp.bbcode_enabled = true; player_hp.fit_content = true; player_hp.scroll_active = false
 	if is_instance_valid(enemy_hp):
-		enemy_hp.add_theme_font_size_override("font_size", 14)
-		enemy_hp.add_theme_color_override("font_color", Color(1.00, 0.75, 0.75))
+		enemy_hp.add_theme_font_size_override("normal_font_size", 14)
+		enemy_hp.add_theme_color_override("default_color", Color(1.00, 0.75, 0.75))
 		enemy_hp.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		enemy_hp.bbcode_enabled = true; enemy_hp.fit_content = true; enemy_hp.scroll_active = false
 	for lbl in [player_buffs_lbl, enemy_buffs_lbl]:
 		if is_instance_valid(lbl):
-			lbl.add_theme_font_size_override("font_size", 12)
-			lbl.add_theme_color_override("font_color", Color(0.72, 0.84, 1.0))
+			lbl.add_theme_font_size_override("normal_font_size", 12)
+			lbl.add_theme_color_override("default_color", Color(0.72, 0.84, 1.0))
 			lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			lbl.bbcode_enabled = true
+			lbl.fit_content = true
+			lbl.scroll_active = false
 	if is_instance_valid(drop_countdown_label):
-		drop_countdown_label.add_theme_font_size_override("font_size", 14)
-		drop_countdown_label.add_theme_color_override("font_color", Color(1.0, 0.85, 0.35))
-		drop_countdown_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		drop_countdown_label.add_theme_font_size_override("normal_font_size", 14)
+		drop_countdown_label.add_theme_color_override("default_color", Color(1.0, 0.85, 0.35))
+		drop_countdown_label.bbcode_enabled = true
+		drop_countdown_label.fit_content = true
+		drop_countdown_label.scroll_active = false
+		drop_countdown_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 
 func _connect_fight_button() -> void:
 	if fight_button:
@@ -135,19 +205,22 @@ func _build_item_buttons() -> void:
 	for btn in item_buttons:
 		if is_instance_valid(btn): btn.queue_free()
 	item_buttons.clear()
-	var grid = find_child("PlayerItemsGrid")
+	var grid = player_items_col
 	if not is_instance_valid(grid): return
-	if grid is GridContainer: (grid as GridContainer).columns = 2
 	var slots = QuestManager.equipped_items
 	for i in range(slots.size()):
 		var item_id = slots[i]
 		var meta = QuestManager.ITEM_META.get(item_id, {"emoji":"❓","label":item_id.capitalize(),"desc":""})
 		var btn = Button.new()
 		btn.name = "ItemBtn_%d" % i; btn.focus_mode = Control.FOCUS_NONE
-		btn.custom_minimum_size = Vector2(148, 70)
-		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		btn.size_flags_vertical   = Control.SIZE_EXPAND_FILL
-		btn.tooltip_text = "%s %s\n%s\n[%s]" % [meta["emoji"], meta["label"], meta["desc"],
+		btn.custom_minimum_size = TILE_SIZE
+		btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		btn.size_flags_vertical   = Control.SIZE_SHRINK_CENTER
+		btn.mouse_filter = Control.MOUSE_FILTER_STOP
+		# Uniform square tile: icon centred on top, tiny key/count line below.
+		btn.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		btn.vertical_icon_alignment = VERTICAL_ALIGNMENT_TOP
+		btn.tooltip_text = "%s\n%s\n[%s]" % [meta["label"], meta["desc"],
 			SLOT_KEYS[i] if i < SLOT_KEYS.size() else ""]
 		var style = StyleBoxFlat.new()
 		style.bg_color = Color(0.10, 0.11, 0.16, 0.96); style.set_corner_radius_all(7); style.set_border_width_all(1)
@@ -159,7 +232,7 @@ func _build_item_buttons() -> void:
 		btn.add_theme_stylebox_override("hover", hs)
 		var ds = style.duplicate(); ds.bg_color = Color(0.08, 0.08, 0.12, 0.70); ds.border_color = Color(0.20, 0.20, 0.30)
 		btn.add_theme_stylebox_override("disabled", ds)
-		btn.add_theme_font_size_override("font_size", 13)
+		btn.add_theme_font_size_override("font_size", 11)
 		var cid = item_id
 		btn.pressed.connect(func(): _on_item_used(cid))
 		grid.add_child(btn); item_buttons.append(btn)
@@ -167,10 +240,7 @@ func _build_item_buttons() -> void:
 func _update_enemy_inventory_grid() -> void:
 	if not current_enemy: return
 	var pool = current_enemy.enemy_item_pool if "enemy_item_pool" in current_enemy else []
-	if not is_instance_valid(enemy_inventory_container):
-		enemy_inventory_container = find_child("EnemyItemsGrid") as GridContainer
-	if not is_instance_valid(enemy_inventory_container): return
-	enemy_inventory_container.columns = 2
+	if not is_instance_valid(enemy_items_col): return
 	if enemy_item_labels.size() != pool.size() or enemy_item_labels_pool_ref != pool:
 		for lbl in enemy_item_labels:
 			if is_instance_valid(lbl): lbl.queue_free()
@@ -179,10 +249,12 @@ func _update_enemy_inventory_grid() -> void:
 			var lbl = Button.new()
 			lbl.name = "EnemyItemLbl_%s" % id; lbl.focus_mode = Control.FOCUS_NONE
 			lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE; lbl.disabled = true
-			lbl.custom_minimum_size = Vector2(148, 70)
-			lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			lbl.size_flags_vertical   = Control.SIZE_EXPAND_FILL
-			lbl.add_theme_font_size_override("font_size", 13)
+			lbl.custom_minimum_size = TILE_SIZE
+			lbl.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+			lbl.size_flags_vertical   = Control.SIZE_SHRINK_CENTER
+			lbl.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			lbl.vertical_icon_alignment = VERTICAL_ALIGNMENT_TOP
+			lbl.add_theme_font_size_override("font_size", 11)
 			var st = StyleBoxFlat.new()
 			st.bg_color = Color(0.13, 0.09, 0.09, 0.96); st.set_corner_radius_all(7); st.set_border_width_all(1)
 			st.border_color = Color(0.42, 0.26, 0.26)
@@ -190,14 +262,20 @@ func _update_enemy_inventory_grid() -> void:
 			st.content_margin_top  = 6; st.content_margin_bottom = 6
 			lbl.add_theme_stylebox_override("normal",   st)
 			lbl.add_theme_stylebox_override("disabled", st)
-			enemy_inventory_container.add_child(lbl); enemy_item_labels.append(lbl)
+			enemy_items_col.add_child(lbl); enemy_item_labels.append(lbl)
 		enemy_item_labels_pool_ref = pool.duplicate()
 	for i in range(pool.size()):
 		var id  = pool[i]; var lbl = enemy_item_labels[i] as Button
 		if not is_instance_valid(lbl): continue
 		var meta  = QuestManager.ITEM_META.get(id, {"emoji":"❓","label":id.capitalize()})
 		var count = current_enemy.enemy_inventory.count(id)
-		lbl.text = "%s  %s\n×%d" % [meta["emoji"], meta["label"], count]
+		# Compact square tile: icon on top, ×count below (name lives in the tooltip).
+		var icon_tex = IconDB.tex(id)
+		lbl.icon = icon_tex
+		if icon_tex: lbl.add_theme_constant_override("icon_max_width", 44)
+		var head = "" if icon_tex else meta["emoji"] + "\n"
+		lbl.text = "%s×%d" % [head, count]
+		lbl.tooltip_text = meta["label"]
 		lbl.modulate.a = 1.0 if count > 0 else 0.28
 
 func _build_dynamic_popup_window() -> void:
@@ -343,7 +421,7 @@ func _refresh_ui_states() -> void:
 		if "player_cursed"           in current_enemy and current_enemy.player_cursed:           s += "💀 "
 		if "player_items_locked"     in current_enemy and current_enemy.player_items_locked:     s += "⚡ "
 		if "player_stun_extra_turns" in current_enemy and current_enemy.player_stun_extra_turns > 0: s += "⏳×%d " % current_enemy.player_stun_extra_turns
-		player_buffs_lbl.text = s.strip_edges() if s.strip_edges() != "" else "● Normal"
+		player_buffs_lbl.text = IconDB.iconify(s.strip_edges(), 20) if s.strip_edges() != "" else "● Normal"
 
 	# ── Enemy buffs ──
 	if enemy_buffs_lbl:
@@ -363,20 +441,22 @@ func _refresh_ui_states() -> void:
 		if "enemy_cursed"            in current_enemy and current_enemy.enemy_cursed:            s += "💀 "
 		if "enemy_items_locked"      in current_enemy and current_enemy.enemy_items_locked:      s += "⚡ "
 		if "enemy_stun_extra_turns"  in current_enemy and current_enemy.enemy_stun_extra_turns > 0: s += "⏳×%d " % current_enemy.enemy_stun_extra_turns
-		enemy_buffs_lbl.text = s.strip_edges() if s.strip_edges() != "" else "● Normal"
+		enemy_buffs_lbl.text = IconDB.iconify(s.strip_edges(), 20) if s.strip_edges() != "" else "● Normal"
 
 	if player_hp:
-		player_hp.text = "⚔️  YOU\n" + _parse_hp_line(QuestManager.player_health, QuestManager.MAX_HEALTH)
+		player_hp.text = IconDB.iconify("⚔️  YOU\n" + _parse_hp_line(QuestManager.player_health, QuestManager.MAX_HEALTH), 18)
 	if enemy_hp:
 		var emax = current_enemy.enemy_max_health if "enemy_max_health" in current_enemy else 100
-		enemy_hp.text = "💀  ENEMY  LV.%d\n" % current_enemy.enemy_level + _parse_hp_line(current_enemy.enemy_health, emax)
+		enemy_hp.text = IconDB.iconify("💀  ENEMY  LV.%d\n" % current_enemy.enemy_level + _parse_hp_line(current_enemy.enemy_health, emax), 18)
 
 	if drop_countdown_label:
 		var next_count = min(current_enemy.drop_round_index + 1, 6)
+		var drop_msg := ""
 		if current_enemy.cycles_until_drop <= 1:
-			drop_countdown_label.text = "📦  Quartermaster's crate next round!  (+%d items)" % next_count
+			drop_msg = "📦  Quartermaster's crate next round!  (+%d items)" % next_count
 		else:
-			drop_countdown_label.text = "📦  Quartermaster's crate in %d rounds  (+%d items)" % [current_enemy.cycles_until_drop, next_count]
+			drop_msg = "📦  Quartermaster's crate in %d rounds  (+%d items)" % [current_enemy.cycles_until_drop, next_count]
+		drop_countdown_label.text = "[center]%s[/center]" % IconDB.iconify(drop_msg, 18)
 
 	var slots = QuestManager.equipped_items
 	for i in range(item_buttons.size()):
@@ -391,16 +471,21 @@ func _refresh_ui_states() -> void:
 		# Show a real icon when we have one; otherwise keep the emoji in the text.
 		var icon_tex = IconDB.tex(item_id)
 		btn.icon = icon_tex
-		if icon_tex: btn.add_theme_constant_override("icon_max_width", 46)
-		var em = "" if icon_tex else meta["emoji"] + "  "
-		btn.text         = "%s%s\n[%s]  ×%d" % [em, meta["label"], slot_key, count]
-		btn.tooltip_text = "%s %s\n%s" % [meta["emoji"], meta["label"], meta["desc"]]
+		if icon_tex: btn.add_theme_constant_override("icon_max_width", 44)
+		# Compact square tile: no item name on the tile (it's in the tooltip); just
+		# the slot key + count. `head` only carries the emoji when there's no icon.
+		var head = "" if icon_tex else meta["emoji"] + "\n"
+		btn.text         = "%s[%s] ×%d" % [head, slot_key, count]
+		btn.tooltip_text = "%s\n%s\n[%s]" % [meta["label"], meta["desc"], slot_key]
 		var usable = count > 0 and not is_disarmed
 		if "player_items_locked" in current_enemy and current_enemy.player_items_locked: usable = false
 		# Heal items gray out at the gold-heart cap (can't heal above 300 red HP).
 		if item_id == "potion"       and not QuestManager.can_heal_player():  usable = false
 		if item_id == "bandage"      and not QuestManager.can_heal_player() and current_enemy.player_regen_rounds <= 0: usable = false
 		if item_id == "shield"       and current_enemy.player_active_armor:   usable = false
+		# Damage buffs can't be re-applied to themselves this turn (no Grindstone spam).
+		if item_id == "grindstone"   and current_enemy.player_sharpened:      usable = false
+		if item_id == "overcharge"   and "player_overcharged" in current_enemy and current_enemy.player_overcharged: usable = false
 		if item_id == "whip"         and current_enemy.enemy_is_disarmed:     usable = false
 		if item_id == "needle"       and current_enemy.player_piercing:       usable = false
 		if item_id == "bandage"      and current_enemy.player_regen_rounds  > 0: usable = false
@@ -420,29 +505,30 @@ func _refresh_ui_states() -> void:
 			if not relic_charged: usable = false
 		btn.disabled   = not usable
 		btn.modulate   = Color(1, 1, 1, 1.0) if usable else Color(1, 1, 1, 0.36)
-		# ── Live status suffixes for conditional / cooldown items ──
+		# ── Live status suffixes for conditional / cooldown items (compact) ──
 		if item_id == "relic":
 			var chg  = current_enemy.player_relic_charge if "player_relic_charge" in current_enemy else 0
 			var need = current_enemy.relic_charge_needed() if current_enemy.has_method("relic_charge_needed") else 999
 			if count <= 0:
-				btn.text = "%s%s\n[%s] ×0  — not held —" % [em, meta["label"], slot_key]
+				btn.text = "%s[%s] ×0" % [head, slot_key]
 			elif relic_charged:
-				btn.text = "%s%s\n[%s] ×%d  ✨ READY" % [em, meta["label"], slot_key, count]
+				btn.text = "%s[%s] ×%d\nREADY" % [head, slot_key, count]
 				btn.modulate = Color(1.75, 1.35, 2.3, 1.0)   # unique radiant glow when charged
 			else:
-				btn.text = "%s%s\n[%s] ×%d  ⚡ %d/%d" % [em, meta["label"], slot_key, count, mini(chg, need), need]
+				btn.text = "%s[%s] ×%d\n%d/%d" % [head, slot_key, count, mini(chg, need), need]
 		elif item_id == "phoenix_feather":
 			var cd = current_enemy.player_phoenix_cd if "player_phoenix_cd" in current_enemy else 0
 			if count <= 0:
-				btn.text = "%s%s\n[%s] ×0  — spent —" % [em, meta["label"], slot_key]
+				btn.text = "%s[%s] ×0" % [head, slot_key]
 			elif cd > 0:
-				btn.text = "%s%s\n[%s] ×%d  ⏳ %d" % [em, meta["label"], slot_key, count, cd]
+				btn.text = "%s[%s] ×%d\nCD %d" % [head, slot_key, count, cd]
 			else:
-				btn.text = "%s%s\n[%s] ×%d  🛡 auto" % [em, meta["label"], slot_key, count]
+				btn.text = "%s[%s] ×%d" % [head, slot_key, count]
 		elif item_id == "clone" and "player_clone_active" in current_enemy and current_enemy.player_clone_active:
-			btn.text = "%s%s\n[%s] ×%d  👥 active" % [em, meta["label"], slot_key, count]
+			btn.text = "%s[%s] ×%d\nON" % [head, slot_key, count]
 
 	_update_enemy_inventory_grid()
+	_layout_item_arcs()   # after visibility/pool changes, so only live tiles are placed
 	_apply_status_tints()
 
 func _lock_all_player_inputs() -> void:
@@ -515,7 +601,11 @@ func show_magnet_choice_popup(stealable_pool: Array) -> String:
 	for i in range(unique_items.size()):
 		var item = unique_items[i]
 		var meta = QuestManager.ITEM_META.get(item, {"emoji":"❓","label":item.capitalize(),"desc":""})
-		var btn  = Button.new(); btn.text = "[%d]  %s  %s" % [i + 1, meta["emoji"], meta["label"]]
+		var btn  = Button.new()
+		var micon = IconDB.tex(item)
+		btn.icon = micon
+		if micon: btn.add_theme_constant_override("icon_max_width", 28)
+		btn.text = "[%d]  %s%s" % [i + 1, ("" if micon else meta["emoji"] + "  "), meta["label"]]
 		btn.focus_mode = Control.FOCUS_NONE; btn.custom_minimum_size = Vector2(130, 44); dg.add_child(btn)
 		choice_btns.append(btn)
 		btn.pressed.connect(func():

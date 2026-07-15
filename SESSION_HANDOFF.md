@@ -1,109 +1,100 @@
-# Session Handoff — The_relic (JRPG)
+# SESSION HANDOFF — The Relic (Godot 4.6 JRPG)
 
-> Paste this whole file into the next chat's first message. It captures the project state so a cold start can continue seamlessly.
-
----
-
-## 0. READ FIRST — critical context
-
-- **Working directory: `E:\Code\Godot\DAD\The_relic`** (do ALL edits, `run_project`, git here).
-- **Branch: `testingHeng`.** It was merged up to `testing` this session, so it now sits at commit **`82cca81` (v0.8.0)** which contains all of tasks 1–6. Everything in the "uncommitted" list is on top of v0.8.0 and **NOT yet committed**.
-- **Godot 4.6.1.stable, Windows.** Godot MCP available: `run_project` (compile-check) → `get_debug_output`. Expect only ONE harmless warning: `Integer division … at QuestManager.gd:314`. Any OTHER error = something you broke. Whole project compiles clean as of end of session.
-- **DO NOT EVER edit `map.tscn` or `foreground.tscn`.** Teammate (Sal) owns them; editing risks git conflicts. **Read-only is fine** — to find coordinates/water/bounds, load them in a throwaway probe scene and inspect (see §5). Confirmed untouched in git this session.
-- **`character.tscn` IS ours to edit** — it holds the overworld mob layer (mob1..mob20, each an MobEnemy with `enemy_level`) and is instanced into `main.tscn`. `main.tscn` is also ours.
-- **Nothing is committed yet.** Uncommitted working-tree changes (all compile clean):
-  - Modified: `CombatUI.gd`, `FishermanNPC.gd`, `MobEnemy.gd`, `QuestManager.gd`, `character.tscn`, `main.gd`, `main_menu.gd`, `project.godot`
-  - New: `ScreenFade.gd` (+ `.uid`)
+Drop this into the first message of the next session.
 
 ---
 
-## 1. The 10-task list (from Heng) — status
+## 0. Snapshot
+- **Branch:** `testingHeng`  ·  **HEAD:** `79468af3 v0.7.7`  ·  **working tree: CLEAN** (everything committed).
+- **Engine:** Godot **4.6.1.stable**. Binary at `C:/Program Files/Godot/Godot.exe` (NOT on PATH — use the full path).
+- **Do NOT commit or push unless the user explicitly asks.** When they do: branch is not `main`, so commit directly on `testingHeng`. End commit messages with the Co-Authored-By line.
 
-| # | Task | Status |
-|---|------|--------|
-| 1 | Idle animations by facing dir | ✅ done (in v0.8.0) |
-| 2 | Recolor → 5 mask groups (exact hex + shading + white) | ✅ done (in v0.8.0) |
-| 3 | Player level cap 20+ | ✅ done |
-| 4 | Modular level-gate system | ✅ done |
-| 5 | Side-quest framework (rumour→available→active, max-3, Q/E nav) | ✅ done |
-| 6 | Fishing minigame + fisherman + rewards | ✅ done |
-| 7 | Tutorial/intro flow + non-respawning tutorial mob | ✅ **done this session** |
-| 8 | Keybind editing in main menu | ✅ **done this session** |
-| 9 | Supply-drop lore rework | ✅ **done this session** |
-| 10 | UI Elements pack integration | 🟡 **partial — cursor done, icons reviewed; BARS + BANNERS remain** |
+## 1. What this project is
+A top-down pixel JRPG. Overworld exploration + turn-based combat. Win condition: collect 10 coins → Street Kid gives a key → open chest → get the **Ancient Relic** → turn it in (with a keep-vs-turn-in choice) → post-game continues (enemies respawn, relic gone).
+- **Tile grid is 16×16.** Character sprites are bigger (player 48×48, NPCs 32/64). New world art → target 16px tiles.
+- Window 1920×1080, `canvas_items` stretch. Camera zoom ~6×, so small sprites render large.
 
-Plus ad-hoc requests handled this session: combat fade transition, level-label placement fix.
+## 2. Architecture (know this before editing)
+**Scene composition:** `main.tscn` (root `main`) instances `map.tscn` (world tilemap), `character.tscn` (all mobs live here under node `Character`), `foreground.tscn`, `ui.tscn`, and builds the HUD via `OverworldHUD.gd`. Player is `mainplayer` (direct child of `main`). One shared world coordinate space.
 
----
+**Autoloads** (`project.godot [autoload]`):
+- `QuestManager` — all run state + save/load + item metadata (`ITEM_META`) + side-quest engine.
+- `KeybindManager` — rebindable actions, persists to `user://keybinds.cfg`.
+- `Toast`, `DialogueManager` (linear reader + `ask()` for yes/no choices), `PromptHUD`, `ScreenFade`.
+- `WorldMap` — fog-of-war minimap + full map + compass (see §4).
+- `IconDB` — emoji→texture icon system (see §5, the CURRENT focus).
 
-## 2. What was built THIS session (all on top of v0.8.0, uncommitted)
+**HARD RULES / gotchas:**
+- **NEVER edit `map.tscn` or `foreground.tscn`.** Place new world objects in `main.tscn` only.
+- **Player-recolor shader trap** (long-term memory): recolor is mask-driven; combat FX that set `sprite.modulate` toggle `recolor_on` off automatically in `mainplayer._process`. Don't fight it.
+- **Off-island coords:** house interiors (`x ≈ -3000…-4900`) and the combat arena (battle markers `x ≈ -2971 / -1632`) live far off the island. `WorldMap.OVERWORLD_BOUNDS = Rect2(-1200,-900,2800,1900)` excludes them from the map.
+- **NPC pattern:** simple NPCs are `Area2D` roots (SaveNPC, delivery_point, FishingSpot, quest_item). Some are now **`CharacterBody2D` + a child `Area2D`** for solid collision (NavigatorNPC, Sign) — they wire detection off `get_node("Area2D").body_entered/exited` in `_ready`.
 
-### Combat fade transition — NEW `ScreenFade.gd` autoload ✅ compile-verified
-- `ScreenFade.gd` = autoload CanvasLayer (layer 200) with a full-screen black `ColorRect`; `await ScreenFade.fade_out()` / `fade_in()` (default 0.22s). Registered in `project.godot` `[autoload]` as `ScreenFade="*res://ScreenFade.gd"`.
-- `MobEnemy.start_combat()` is now `async`: fades OUT before the camera-cut/teleport, fades IN after the combat UI opens. Only caller is `_on_deadzone_body_entered` (fire-and-forget, safe).
-- `MobEnemy._check_combat_end_conditions()` win + lose paths: fade out → reposition/switch camera → hide enemy → fade in. Win path restructured to `if is_tutorial_mob … else …` with a single `fade_in()` + `return true`.
+## 3. Verification workflow (ALWAYS run after edits)
+```bash
+GODOT="/c/Program Files/Godot/Godot.exe"
+# compile + import (also generates .uid for new scripts, imports new PNGs):
+"$GODOT" --headless --editor --quit-after 400 2>&1 | grep -iE "SCRIPT ERROR|Parse Error|Compile Error|Failed to load"
+# runtime (exercises autoload _ready — catches WorldMap/IconDB init errors):
+"$GODOT" --headless --quit-after 120 2>&1 | grep -iE "SCRIPT ERROR|ERROR|null instance"
+```
+- `--headless --check-only --script X.gd` catches syntax errors but **false-positives on autoload identifiers** (QuestManager/IconDB "not found") — ignore those, trust only real `Parse Error`.
+- Combat/fishing flows need live input → can't be driven headless; validate by logic review + ask the user to test.
+- **Edit tab gotcha:** GDScript match-case labels are 2 tabs, bodies 3 tabs. If an Edit says "string not found", re-Read and count tabs.
 
-### Level label placement fix ✅ visually verified (probe)
-- In `MobEnemy._setup_level_display()` the "Lv. N" label was floating ~45px above heads (used deadzone radius). Now anchored to the sprite's real top edge (`AnimatedSprite2D` frame height × scale) and horizontally centered. Result pos ≈ `(-16, sprite_top-12)`.
-- TWO Area2Ds per mob: small scene-authored **`deadzone`** (combat trigger, unchanged) + code-built **`SightZone`** (2.6× radius, only toggles label visibility). Label color-codes threat vs `player_level` (green→yellow→red).
+## 4. Gameplay systems reworked (current behavior)
+- **Combat items** (`MobEnemy.gd` + `QuestManager.ITEM_META`): all deal/heal in **multiples of 10**.
+  - **Relic:** consumed on use (returns to crate pool); 40 unblockable dmg + 20 heal + cleanse; charges from damage traded **only while held** (not proactive); charge requirement climbs per use (`QuestManager.relic_uses`, base 100 +40/use). A relic kill ends combat immediately.
+  - **Phoenix Feather:** passive **auto-revive only** (no manual use) to 40 HP, cooldown 5+ (climbs); on death plays die-beat → gold-flash → rise. Max 1 in bag.
+  - **Mirror Clone** (replaced War Banner; from fishing): 70%-opacity blue double dashes **forward** (player stays put); strikes first for flat 20 then you hit; soaks the enemy's next hit (enemy runs to the clone) and shatters.
+  - **Max-one items** (`MAX_ONE_ITEMS`): relic, phoenix — supply drops substitute if you already hold one.
+  - **Golden-heart heal cap:** healing (player AND enemy) caps at 300 (red hearts); HP above 300 is an unhealable per-fight bonus; heal items gray out at cap. See `QuestManager.heal_player()` / `MobEnemy._enemy_heal()`.
+  - Level-1 mobs carry **no items** (fast tutorial fight).
+- **Save system (nested):** 3 **sessions** (menu) × 3 **save slots** each. Files `user://s{session}_{slot}.save`. New Game → customize → pick an EMPTY session (delete a full one to free). Load → session → save slot. In-game Elder save / pause Load show only the **current session's** 3 slots. Flee/death → `reload_current_save()` or `restart_fresh_run()` (keeps character+session, never a stale slot). API: `save_to_slot`, `load_from(session,slot)`, `start_new_session`, `session_occupied/level`, `delete_session`. **Old flat `savegame_slot*.save` are NOT read** (format change).
+- **Map/compass (`WorldMap.gd`, `MapCanvas.gd`):** gated entirely behind `has_compass` (granted by NavigatorNPC). Mini-map bottom-right; full map on the **`toggle_map`** action (editable, default M); compass = faked top-center ribbon. In a house/combat → "🚫 Map Unavailable". Explored cells persist in save.
+- **Fishing:** split — Fisherman (`FishermanNPC.gd`) only talks/teaches; **`FishingSpot.gd`** (puddle node in `main.tscn`) casts, with 3-2-1 countdown, editable **`fish_reel`** key, 6 fish tiers, NO coins.
+- **Coins:** only the **10 world coins** (no fishing coins, no lifetime/farming). `coin_hoarder` quest removed.
+- **Navigator + Sign:** auto-intro dropped; a **`🪧 Signpost`** (`Sign.gd`, now CharacterBody2D w/ placeholder Sprite2D) near spawn holds the how-to notes; Navigator grants compass+map. "Meet the Locals" = 3 NPCs (street_kid, navigator, wizard); talking before accepting counts retroactively (`accept_side_quest` seeds progress).
 
-### Task 7 — Tutorial / intro flow ✅ verified (probe-tested)
-- `main.gd._maybe_show_intro_tutorial()` — once per fresh character on overworld entry: dialogue covering WASD/Shift, E-interact, the explore→quest→reward loop, quest log + Q/E, combat heads-up. Gated by `QuestManager.intro_tutorial_done` (saved).
-- Tutorial mob = **`mob1`** in `character.tscn` (`is_tutorial_mob = true`, Lv1, near spawn). First pull shows a combat walkthrough dialogue (turn-based, Attack/Items, HP bars, Quartermaster/supply). On defeat sets `tutorial_mob_defeated=true`, `_permanently_dead=true`, and **skips the respawn dict** → never respawns (survives save/load; `MobEnemy._ready` restores the hidden state on load). Gated by `combat_tutorial_done`.
-- QuestManager saved+reset flags added: `intro_tutorial_done`, `combat_tutorial_done`, `tutorial_mob_defeated`.
-- **Safe island cleared**: only `mob1` remains on the spawn island; the other 7 (mob1_2/1_3/1_4/2/3/4/5) relocated to the mainland in `character.tscn`. (mob6–mob20 were already on the mainland.)
+## 5. ⭐ CURRENT FOCUS: the icon system (emoji → real icons)
+Replacing emoji with pixel icons from a pack (`Asset/Raven Fantasy Icons/…/Separated Files/64x64/fcN.png`; files are actually 32×32). Selected icons are copied+renamed into `Asset/Selected Icon/`.
 
-### Task 8 — Keybinds in main menu ✅ visually verified (probe)
-- `main_menu.gd`: added a **Controls** section in the Settings view — one rebind button per `KeybindManager.action_ids()` + "Reset Keys to Defaults". Added `_input()` (captures next key, Esc cancels), `_begin_rebind()`, `_refresh_keybind_labels()`, vars `keybind_rows`/`_rebinding_action`. Shares `KeybindManager` so binds persist into the game. `_show_view()` bumps settings card height to 940 + cancels pending rebind on view change.
+**`IconDB.gd` (autoload):** maps a concept id → filename in `Asset/Selected Icon/`. `IconDB.tex("potion")` returns the Texture2D **or null** → callers fall back to emoji, so a partial set renders cleanly. Add mappings by editing `IconDB.MAP`.
 
-### Task 9 — Supply-drop lore ✅ compile-verified
-- **Mechanic unchanged** (fixed-round, both fighters get identical items — Heng likes it). Only the *story* changed: a roaming **Quartermaster** shadows every brawl and lobs an identical crate to both sides at set rounds ("war's good for business; a fair fight lasts longer").
-- Text updated in: `MobEnemy` combat-tutorial lines, opening-crate line in `start_combat`, mid-combat drop line in `_conclude_round_cycle_ticks`, and `CombatUI` `drop_countdown_label`.
+**Naming convention in `Asset/Selected Icon/`:** singles named directly (`grindstone.png`, `key.png`). **Ranges** = rename the FIRST file, e.g. `fb265 (from here to fb272) is healing potion.png` then `fb266.png…fb272.png` are variations (small→large).
 
-### Task 10 — UI Elements pack 🟡 PARTIAL
-- **Assets**: `Asset/UI Elements/` (reorganized copy) and `Asset/Tiny Swords (Free Pack)/UI Elements/UI Elements/` (original). Contains: `Bars/` (BigBar_Base+Fill, SmallBar_Base+Fill — wooden frame + red fill, horizontal), `Banners/` (Banner.png 9-slice-able + Banner_Slots), `Buttons/`, `Cursors/` (Cursor_01 arrow, 03 "disabled", …), `Icons/` (Icon_01..12), `Papers/`, `Ribbons/`, `Human Avatars/`, `Wood Table/`, `Swords/`.
-- **DONE — Cursor**: `main_menu.gd` `Input.set_custom_mouse_cursor(Cursor_01, CURSOR_ARROW, Vector2(3,2))` at boot (global, persists across scenes).
-- **DONE — Icon review**: the `Icons/` are **item-style glyphs** (Icon_01=hammer, 06=shield, 08=orange arrow, 11=ring, …), NOT UI-control icons (no music/settings/X). No clean 1:1 to control glyphs. Candidate reuse: Icon_08 (arrow) for quest-log ◀▶. Do a full 12-icon pass when integrating.
-- **TODO — Bars**: re-skin HP / stamina / XP bars with `BigBar_Base` (frame → `NinePatchRect` or `TextureProgressBar.texture_under`) + `BigBar_Fill` (`texture_progress`). Current bars are `StyleBoxFlat` panels — stamina bar in `mainplayer.gd` (`_build_stamina_bar`/`_update_stamina_bar`, world-space above player), XP bar in `OverworldHUD.gd`. Needs pixel-accurate sizing + **visual iteration via probe** (was deferred; do NOT do blind).
-- **TODO — Banners**: 9-slice `Banner.png` (`StyleBoxTexture` w/ expand margins) for panel headers/titles. Also needs visual iteration.
-- **Optional — Buttons**: `Buttons/` wooden textures could re-skin `Button` styleboxes (higher layout risk).
+**WIRED (show real icons):**
+- All 19 **combat items** in combat (`CombatUI.gd`) + loadout (`EquipmentMenu.gd`) — via `Button.icon` (`icon_max_width` 40-46), emoji stripped from text when an icon exists.
+- **Stamina** state-icon under the player (`mainplayer.gd`) — single icon swapping green/yellow/red (`stamina_full/low/empty`).
+- **Sign** placeholder sprite (`help.png` "?").
 
----
+**NOT wired yet — the "wire the rest" pass** (mapped in IconDB but still emoji because they live in Label/RichText/Toast strings, not `Button.icon`):
+- HUD **hearts** (HP bar is an emoji string via `QuestManager.hp_to_hearts`), **coin counter** (`OverworldHUD` quest tracker), **toasts** (crate/level-up/reward — `Toast.show_toast` takes a plain string; would need Toast to accept an icon), **menu buttons** (save/load/settings/menu in `main_menu`/`PauseMenu`), map/trophy/skull labels.
+- User's trigger phrase: **"wire the rest"** → do these in ONE pass. RichTextLabel can use `[img]`; Labels/Toast need small structural changes (an icon TextureRect beside text, or extend `Toast.show_toast(text, icon_id)`).
 
-## 3. ON HOLD — recall when Heng asks
+**Confirmed mappings (from user):** quest log = `quest book.png`; talk-quest = `chat.png`; audio = `music node icon.png`; signpost = `help.png` (the `?`); loadout bag (🎒 in Roadmap) = `pouch.png`. The `sword/Armour icon (for profile)` files are **reserved for a future player-profile screen** — do NOT use them for quests.
 
-**Buff-item once-per-turn rule** (paused mid-implementation). Goal: each non-healing combat item usable only ONCE per player turn; different buffs still STACK; healing exempt.
-- Already in `MobEnemy.gd`: `var items_used_this_turn: Dictionary = {}` and `const HEAL_ITEMS := ["potion","bandage","phoenix_feather"]` (declared, NOT yet used).
-- Remaining: in `use_player_item()` reject a non-heal item already in `items_used_this_turn` (return BEFORE it's consumed/erased) and mark it used on successful apply (incl. the magnet/chain_hook early-return branches); `items_used_this_turn.clear()` at each player-turn start (before the two `combat_ui.start_player_turn()` calls — in `start_combat` and `_conclude_round_cycle_ticks`).
-- Why: supply drops accumulate DUPLICATE equipped items in `player_inventory` across rounds, so a player can currently spam grindstone multiple times/turn (+20 each).
+### Icons STILL NEEDED (user is collecting — "Uncleared")
+1. **Heart states:** half, empty, gold/full, gold/half (only `red heart` = full provided) — to icon-ify the HP bar.
+2. **Compass** (Navigator's compass + on-map objective marker).
+3. **Wizard/Elder** NPC (save point + "Create Your Hero").
+4. **Quartermaster** merchant (drops supply crates; text-only now).
+5. **Wolf/beast** (Underdog quest marker).
+6. **XP** icon (XP bar) — or confirm `upgrade icon`.
+7. Optional menu glyphs: hamburger ☰, display 🖥️, keybinds ⌨, mute 🔇, pause ⏸, restart 🔄, flee 🏃, exit 🚪, lock/unlock 🔒🔓, delete 🗑, water/fishing-spot 💧.
 
----
+To re-audit every emoji in code+scenes: run a Python scan over `*.gd`+`*.tscn` for chars in emoji ranges, group by char, **write to a UTF-8 `.md` file and Read it** (the Windows console mangles emoji on print). **Delete the temp file after** (last time it was accidentally left in repo root).
 
-## 4. Architecture quick-reference
+## 6. Known TEST HOOK to revert later
+- **`FishingSpot.gd`**: every catch currently gives the **Mirror Clone at 100%** (clearly-marked `TEMP TEST HOOK` block) so the clone is easy to test. The original ~6% rare-random-item roll is commented right below it. **Revert when clone testing is done.**
 
-- **Autoloads**: `QuestManager` (all persistent state, save/load, side quests, `ITEM_META`, `item_unlocks`, tutorial/fishing/combat flags), `KeybindManager`, `Toast`, `DialogueManager` (`say`/`start`, `dialogue_finished` signal, `is_active`), `PromptHUD` (`[E]` chips; `request`/`release`; nodes may implement `get_prompt_target()`), **`ScreenFade`** (NEW).
-- **Preload-const modules**: `PlayerSkin`, `LevelGate`, `SideQuestDB` — `const X = preload("res://X.gd")`.
-- **Combat**: `MobEnemy.gd` (state machine; `use_player_item`, `_check_combat_end_conditions`, supply drops, camera switch, `async start_combat`). `CombatUI.gd` = combat HUD (attack/item buttons now fire on first click — no confirm popup). Combat mobs in `character.tscn`. `main.gd` = overworld; `main_menu.tscn` = `run/main_scene`.
-- **NPCs**: `QuestGiverNPC` (Street Kid, quest giver + relic turn-in = WIN), `ElderNPC` (Wizard save/respawn), `FishermanNPC` (fishing, lvl-5 gate; note: it's a CharacterBody2D with a child `Area2D` for detection, wired in `_ready`). Overworld interact = `Input.is_action_just_pressed("interact")` (E), guarded per-NPC by `QuestManager.ui_arrow_nav_open` and `QuestManager.is_fishing`.
-- **Keybinds** (`project.godot`): move WASD/arrows, interact=E, sprint=Shift.
-- **Save/load**: `QuestManager.save_game/load_game`, `reset_to_defaults()` at char creation. New persistent var → wire into ALL THREE.
-- **Verify**: `run_project` → `get_debug_output`. Clean = only the QuestManager:314 integer-division warning.
+## 7. Suggested next steps
+1. New named icons dropped in `Asset/Selected Icon/` → re-check folder, add to `IconDB.MAP`, confirm they load (`ResourceLoader.exists` + `load`), then wire.
+2. On **"wire the rest"** → swap HUD hearts / coin / toasts / menu buttons to icons in one consistent pass (§5).
+3. **Sound** (later): assets in `Asset/Main Sound/fx` + `/music` (incl. new `click.mp3`, `game coin.mp3`, `upgrade.mp3`, `OvenDing.mp3`, music tracks). Nothing wired to audio yet; user will say which sound fires on which event (item use, level-up, coin, hit, menu click…).
+4. Revert the fishing test hook (§6) before shipping.
 
----
-
-## 5. Workflow gotchas learned across sessions
-
-- **Throwaway probe scenes** are the reliable headless way to verify UI/placement/coords: write `_x_probe.gd` (`extends Node2D`) + `_x_probe.tscn`, `load(...).instantiate()`, add a `Camera2D` (`make_current()`), `await` a couple frames, `get_viewport().get_texture().get_image().save_png("user://x.png")`, then Read `C:\Users\User\AppData\Roaming\Godot\app_userdata\JRPG\x.png`. **ALWAYS delete probe files after** (`rm _x_probe.*` + the png). None remain now — confirmed.
-- Map coords read-only: instance `map.tscn`, walk `TileMapLayer`s, `get_used_cells_by_id(source_id)` where the atlas texture path contains e.g. `Water_tiles`; convert `layer.to_global(layer.map_to_local(cell))`.
-- **Recolor shader gotcha** (memory `player-recolor-shader`): on canvas_item, built-in `COLOR` = texture×modulate — OVERWRITE, never multiply. `MODULATE` builtin does NOT exist in 4.6. Preview must be a Sprite2D (sheet-normalized UV), not TextureRect+AtlasTexture.
-- Making a func `async` (adding `await`): check callers — fire-and-forget is fine; callers needing the result must `await`.
-- **Memory dir**: `C:\Users\User\.claude\projects\E--Code-Godot-DAD-The-relic\memory\` (MEMORY.md index).
-
----
-
-## 6. Immediate next steps (suggested)
-
-1. `run_project` once to confirm clean (only QuestManager:314 warning).
-2. Finish **Task 10**: bars (XP first — screen-space, easiest to verify), then banners, then a full 12-icon pass. Verify each with a probe.
-3. When Heng says so, do the **on-hold buff-item once-per-turn** change (§3).
-4. Consider committing this session's work on `testingHeng` (nothing committed yet).
+## 8. Workflow reminders
+- After ANY edit → run the two verification commands (§3).
+- Full asset import (2600+ PNGs) takes >2 min — run `--headless --import` in the background if a fresh import is needed; the 603 Selected Icon files are already imported.
+- Keep temp/scratch files out of the repo root (use the scratchpad dir).

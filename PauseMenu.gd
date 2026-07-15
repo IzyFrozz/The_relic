@@ -92,11 +92,11 @@ func _ready() -> void:
 		resume_button.pressed.connect(close_menu)
 
 	if is_instance_valid(load_button):
-		load_button.text = "📂  Load Game"
+		IconDB.decorate_button(load_button, "📂", "Load Game")
 		load_button.pressed.connect(_show_load_view)
 
 	if is_instance_valid(exit_button):
-		exit_button.text = "🏠  Main Menu"
+		IconDB.decorate_button(exit_button, "🏠", "Main Menu")
 		exit_button.pressed.connect(_on_exit_pressed)
 
 	for i in range(3):
@@ -278,10 +278,10 @@ func _build_combat_overlay() -> void:
 	btn_hbox.add_child(combat_resume_button)
 
 	flee_button = Button.new()
-	flee_button.text = "🏃  Flee & Restart"
 	flee_button.focus_mode = Control.FOCUS_NONE
 	flee_button.custom_minimum_size = Vector2(150, 44)
 	flee_button.add_theme_font_size_override("font_size", 14)
+	IconDB.decorate_button(flee_button, "🏃", "Flee & Restart")
 	var flee_style = StyleBoxFlat.new()
 	flee_style.bg_color = Color(0.28, 0.10, 0.10)
 	flee_style.set_corner_radius_all(6); flee_style.set_border_width_all(1)
@@ -375,6 +375,10 @@ func _load_slot_button(slot: int) -> Button:
 	return null
 
 func _other_menu_is_open() -> bool:
+	# The full-screen world map counts as an open menu, so Esc closes the map first
+	# (one press) instead of also opening the pause menu on the same press.
+	if is_instance_valid(WorldMap) and WorldMap.has_method("is_full_open") and WorldMap.is_full_open():
+		return true
 	for n in ["EquipmentMenu", "RoadmapPopup", "SavePopup", "QuestLogPanel"]:
 		var node = get_tree().root.find_child(n, true, false)
 		if is_instance_valid(node) and node.visible:
@@ -540,7 +544,11 @@ func _build_keybinds_ui() -> void:
 	keybind_view.name = "KeybindView"
 	keybind_view.visible = false
 	keybind_view.add_theme_constant_override("separation", 8)
-	keybind_view.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT, Control.PRESET_MODE_MINSIZE, 12)
+	# `host` is MainVBox — a Container, so it drives its children's rects and any
+	# anchor preset here would be ignored (that collapsed the scroll box to 0px and
+	# hid every row). Size flags are what actually claim the space.
+	keybind_view.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	keybind_view.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	host.add_child(keybind_view)
 
 	var title = Label.new()
@@ -562,6 +570,9 @@ func _build_keybinds_ui() -> void:
 	var scroll = ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	# A ScrollContainer reports ~0 minimum height, so without a floor it vanishes
+	# whenever the parent doesn't hand it spare space.
+	scroll.custom_minimum_size = Vector2(0, 240)
 	keybind_view.add_child(scroll)
 	var rows_vb = VBoxContainer.new()
 	rows_vb.size_flags_horizontal = Control.SIZE_EXPAND_FILL

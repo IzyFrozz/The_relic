@@ -76,10 +76,10 @@ func _build() -> void:
 	vbox.add_child(play_again_btn)
 
 	var exit_btn = Button.new()
-	exit_btn.text = "🏠  Main Menu"
 	exit_btn.focus_mode = Control.FOCUS_NONE
 	exit_btn.custom_minimum_size = Vector2(340, 58)
 	_style_btn(exit_btn, Color(0.08, 0.10, 0.22), Color(0.20, 0.30, 0.65))
+	IconDB.decorate_button(exit_btn, "🏠", "Main Menu")
 	exit_btn.pressed.connect(_on_exit_pressed)
 	vbox.add_child(exit_btn)
 

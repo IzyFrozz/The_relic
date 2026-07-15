@@ -136,14 +136,21 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/separation = 6
 
-[node name="PlayerHPLabel" type="Label" parent="CombatUI/TopLeftCard/PlayerCardVBox" unique_id=-2094967293]
+[node name="PlayerHPLabel" type="RichTextLabel" parent="CombatUI/TopLeftCard/PlayerCardVBox" unique_id=-2094967293]
 layout_mode = 2
+bbcode_enabled = true
+fit_content = true
+scroll_active = false
+autowrap_mode = 3
 text = "YOU"
 
-[node name="PlayerBuffsLabel" type="Label" parent="CombatUI/TopLeftCard/PlayerCardVBox" unique_id=-2094967292]
+[node name="PlayerBuffsLabel" type="RichTextLabel" parent="CombatUI/TopLeftCard/PlayerCardVBox" unique_id=-2094967292]
 layout_mode = 2
-text = "Normal"
+bbcode_enabled = true
+fit_content = true
+scroll_active = false
 autowrap_mode = 3
+text = "Normal"
 
 [node name="TopRightCard" type="Panel" parent="CombatUI" unique_id=-2094967291]
 anchors_preset = 1
@@ -168,21 +175,28 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/separation = 6
 
-[node name="EnemyHPLabel" type="Label" parent="CombatUI/TopRightCard/EnemyCardVBox" unique_id=-2094967289]
+[node name="EnemyHPLabel" type="RichTextLabel" parent="CombatUI/TopRightCard/EnemyCardVBox" unique_id=-2094967289]
 layout_mode = 2
+bbcode_enabled = true
+fit_content = true
+scroll_active = false
+autowrap_mode = 3
 text = "ENEMY LV.1"
 
-[node name="EnemyBuffsLabel" type="Label" parent="CombatUI/TopRightCard/EnemyCardVBox" unique_id=-2094967288]
+[node name="EnemyBuffsLabel" type="RichTextLabel" parent="CombatUI/TopRightCard/EnemyCardVBox" unique_id=-2094967288]
 layout_mode = 2
-text = "Normal"
+bbcode_enabled = true
+fit_content = true
+scroll_active = false
 autowrap_mode = 3
+text = "Normal"
 
 [node name="BottomPanel" type="Panel" parent="CombatUI" unique_id=-2094967287]
 anchors_preset = 12
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_top = -262.0
+offset_top = -150.0
 grow_horizontal = 2
 grow_vertical = 0
 
@@ -219,11 +233,13 @@ size_flags_vertical = 3
 theme_override_constants/separation = 10
 alignment = 2
 
-[node name="DropCountdownLabel" type="Label" parent="CombatUI/BottomPanel/BottomHBox/BottomCenterVBox" unique_id=-2094967282]
+[node name="DropCountdownLabel" type="RichTextLabel" parent="CombatUI/BottomPanel/BottomHBox/BottomCenterVBox" unique_id=-2094967282]
 layout_mode = 2
 size_flags_horizontal = 3
+bbcode_enabled = true
+fit_content = true
+scroll_active = false
 text = "Drop in 1 round (+1 items)"
-horizontal_alignment = 1
 
 [node name="fight_button" type="Button" parent="CombatUI/BottomPanel/BottomHBox/BottomCenterVBox" unique_id=741457388]
 custom_minimum_size = Vector2(420, 86)
@@ -407,11 +423,13 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/separation = 12
 
-[node name="TitleLabel" type="Label" parent="SavePopup/Panel/MainVBox" unique_id=-1894967292]
+[node name="TitleLabel" type="RichTextLabel" parent="SavePopup/Panel/MainVBox" unique_id=-1894967292]
 layout_mode = 2
 size_flags_horizontal = 3
-text = "🧙  Elder NPC"
-horizontal_alignment = 1
+bbcode_enabled = true
+fit_content = true
+scroll_active = false
+text = "[center]🧙  Elder NPC[/center]"
 
 [node name="StatusLabel" type="Label" parent="SavePopup/Panel/MainVBox" unique_id=-1894967291]
 layout_mode = 2

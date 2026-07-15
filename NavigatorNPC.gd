@@ -12,6 +12,7 @@ extends CharacterBody2D
 const NPC_NAME := "Navigator"
 
 var player_nearby: bool = false
+var _talk_marker: Sprite2D = null
 
 func _ready() -> void:
 	# Now a CharacterBody2D (so it blocks the player). Player detection comes from
@@ -22,16 +23,19 @@ func _ready() -> void:
 			area.body_entered.connect(_on_body_entered)
 		if not area.body_exited.is_connected(_on_body_exited):
 			area.body_exited.connect(_on_body_exited)
+	_talk_marker = IconDB.add_talk_marker(self)
 
+# The floating chat icon replaces the old "[E] Talk" text prompt — it just shows
+# while the player is in range.
 func _on_body_entered(body: Node2D) -> void:
 	if body.name == "mainplayer":
 		player_nearby = true
-		PromptHUD.request(self, "[E]  Talk")
+		if is_instance_valid(_talk_marker): _talk_marker.visible = true
 
 func _on_body_exited(body: Node2D) -> void:
 	if body.name == "mainplayer":
 		player_nearby = false
-		PromptHUD.release(self)
+		if is_instance_valid(_talk_marker): _talk_marker.visible = false
 
 func _process(_delta: float) -> void:
 	if not (player_nearby and Input.is_action_just_pressed("interact")):

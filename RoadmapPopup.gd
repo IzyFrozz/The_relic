@@ -122,4 +122,4 @@ func refresh_display() -> void:
 		out += "\n"
 
 	rich_text.bbcode_enabled = true
-	rich_text.text = out
+	rich_text.text = IconDB.iconify(out, 18)

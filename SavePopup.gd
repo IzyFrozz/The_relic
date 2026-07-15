@@ -1,6 +1,7 @@
 extends CanvasLayer
 
 @onready var panel: Panel = find_child("Panel") as Panel
+@onready var title_label: RichTextLabel = find_child("TitleLabel") as RichTextLabel
 @onready var status_label: Label = find_child("StatusLabel") as Label
 @onready var slot1_button: Button = find_child("Slot1Button") as Button
 @onready var slot2_button: Button = find_child("Slot2Button") as Button
@@ -14,6 +15,9 @@ const COL_GREEN := Color(0.45, 0.85, 0.45)
 
 func _ready() -> void:
 	visible = false
+
+	if is_instance_valid(title_label):
+		title_label.text = "[center]%s[/center]" % IconDB.iconify("🧙  Elder NPC", 24)
 
 	if is_instance_valid(panel):
 		var s = StyleBoxFlat.new()
@@ -59,9 +63,9 @@ func _refresh_slot_labels() -> void:
 		if not is_instance_valid(btn): continue
 		var info = QuestManager.save_slot_info(session, slot)
 		if info.get("exists", false):
-			btn.text = "💾  Slot %d — Level %d  (Overwrite)" % [slot, info.get("level", 1)]
+			IconDB.decorate_button(btn, "💾", "Slot %d — Level %d  (Overwrite)" % [slot, info.get("level", 1)])
 		else:
-			btn.text = "💾  Slot %d — Empty" % slot
+			IconDB.decorate_button(btn, "💾", "Slot %d — Empty" % slot)
 		btn.disabled = false
 		btn.modulate.a = 1.0
 

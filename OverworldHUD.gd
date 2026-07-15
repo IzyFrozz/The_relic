@@ -9,7 +9,7 @@ var roadmap_popup:  CanvasLayer = null
 
 # Quest objective banner (built in code, top-centre).
 var quest_panel: Panel = null
-var quest_label: Label = null
+var quest_label: RichTextLabel = null
 var key_icon:    TextureRect = null
 const KEY_TEX_PATH := "res://Asset/Meta data assets files/Visuals/OBJECTS/items/key.png"
 
@@ -26,8 +26,8 @@ var _sel_index: int = -1
 
 # Themed bottom-left stat panel (replaces the plain LV/HP labels).
 var stat_panel: Panel = null
-var stat_lv: Label = null
-var stat_hp: Label = null
+var stat_lv: RichTextLabel = null
+var stat_hp: RichTextLabel = null
 
 const BTN_SIZE   := Vector2(150, 46)   # shared size for every overworld button
 const COL_GOLD   := Color(1.00, 0.85, 0.30, 1.0)
@@ -89,13 +89,13 @@ func _ready() -> void:
 		xp_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 
 	if is_instance_valid(roadmap_button):
-		roadmap_button.text = "📜  Roadmap"
 		roadmap_button.focus_mode = Control.FOCUS_NONE
 		roadmap_button.custom_minimum_size = BTN_SIZE
 		roadmap_button.add_theme_stylebox_override("normal", _s(Color(0.12, 0.14, 0.20), COL_BORDER, 7))
 		roadmap_button.add_theme_stylebox_override("hover",  _s(Color(0.20, 0.22, 0.32), COL_GOLD,   7))
 		roadmap_button.add_theme_color_override("font_color", Color(0.85, 0.85, 1.0))
 		roadmap_button.add_theme_font_size_override("font_size", 15)
+		IconDB.decorate_button(roadmap_button, "📜", "Roadmap", 26)
 		roadmap_button.pressed.connect(_on_roadmap_pressed)
 		# Dock the button column tight to the top-left corner, unscaled, so every
 		# overworld button shares BTN_SIZE.
@@ -151,10 +151,14 @@ func _build_quest_tracker() -> void:
 	key_icon.visible = false
 	hb.add_child(key_icon)
 
-	quest_label = Label.new()
-	quest_label.add_theme_font_size_override("font_size", 15)
-	quest_label.add_theme_color_override("font_color", Color(0.95, 0.92, 0.80))
-	quest_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	quest_label = RichTextLabel.new()
+	quest_label.bbcode_enabled = true
+	quest_label.fit_content = true
+	quest_label.scroll_active = false
+	quest_label.autowrap_mode = TextServer.AUTOWRAP_OFF
+	quest_label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	quest_label.add_theme_font_size_override("normal_font_size", 15)
+	quest_label.add_theme_color_override("default_color", Color(0.95, 0.92, 0.80))
 	hb.add_child(quest_label)
 
 func _refresh_quest_tracker() -> void:
@@ -172,7 +176,7 @@ func _refresh_quest_tracker() -> void:
 		t = "🪙  Coins  %d / %d   →  bring to the Street Kid" % [QuestManager.coins_collected, QuestManager.COINS_NEEDED]
 	else:
 		t = "❔  Seek out the Street Kid near the village"
-	quest_label.text = t
+	quest_label.text = IconDB.iconify(t, 18)
 	if is_instance_valid(key_icon):
 		key_icon.visible = show_key
 
@@ -210,9 +214,9 @@ func _refresh() -> void:
 	if is_instance_valid(xp_text):
 		xp_text.text = "XP  %d / %d" % [QuestManager.current_xp, QuestManager.xp_required]
 	if is_instance_valid(stat_lv):
-		stat_lv.text = "⭐  LV. %d" % QuestManager.player_level
+		stat_lv.text = IconDB.iconify("⭐  LV. %d" % QuestManager.player_level, 22)
 	if is_instance_valid(stat_hp):
-		stat_hp.text = "❤️  %d HP" % QuestManager.MAX_HEALTH
+		stat_hp.text = IconDB.iconify("❤️  %d HP" % QuestManager.MAX_HEALTH, 20)
 	# NOTE: the quest log is refreshed on open, on page change, and via the
 	# side_quests_changed signal — NOT every frame (it builds Accept buttons).
 
@@ -237,14 +241,18 @@ func _build_stat_panel() -> void:
 	vb.alignment = BoxContainer.ALIGNMENT_CENTER
 	stat_panel.add_child(vb)
 
-	stat_lv = Label.new()
-	stat_lv.add_theme_font_size_override("font_size", 22)
-	stat_lv.add_theme_color_override("font_color", COL_GOLD)
+	stat_lv = RichTextLabel.new()
+	stat_lv.bbcode_enabled = true; stat_lv.fit_content = true; stat_lv.scroll_active = false
+	stat_lv.autowrap_mode = TextServer.AUTOWRAP_OFF
+	stat_lv.add_theme_font_size_override("normal_font_size", 22)
+	stat_lv.add_theme_color_override("default_color", COL_GOLD)
 	vb.add_child(stat_lv)
 
-	stat_hp = Label.new()
-	stat_hp.add_theme_font_size_override("font_size", 18)
-	stat_hp.add_theme_color_override("font_color", Color(0.96, 0.48, 0.48))
+	stat_hp = RichTextLabel.new()
+	stat_hp.bbcode_enabled = true; stat_hp.fit_content = true; stat_hp.scroll_active = false
+	stat_hp.autowrap_mode = TextServer.AUTOWRAP_OFF
+	stat_hp.add_theme_font_size_override("normal_font_size", 18)
+	stat_hp.add_theme_color_override("default_color", Color(0.96, 0.48, 0.48))
 	vb.add_child(stat_hp)
 
 func _fmt(sec: float) -> String:
@@ -274,13 +282,13 @@ func _build_quest_button() -> void:
 	if not is_instance_valid(roadmap_button):
 		return
 	quest_button = Button.new()
-	quest_button.text = "🗒️  Quest"
 	quest_button.focus_mode = Control.FOCUS_NONE
 	quest_button.custom_minimum_size = BTN_SIZE
 	quest_button.add_theme_stylebox_override("normal", _s(Color(0.12, 0.14, 0.20), COL_BORDER, 7))
 	quest_button.add_theme_stylebox_override("hover",  _s(Color(0.20, 0.22, 0.32), COL_GOLD,   7))
 	quest_button.add_theme_color_override("font_color", Color(0.85, 0.85, 1.0))
 	quest_button.add_theme_font_size_override("font_size", 15)
+	IconDB.decorate_button(quest_button, "🗒️", "Quest", 26)
 	quest_button.pressed.connect(_on_quest_pressed)
 	# Add it into Roadmap's own VBoxContainer so it flows directly below it,
 	# with matching width/alignment/scale — no manual offsets to get wrong.
@@ -433,12 +441,14 @@ func _refresh_quest_log() -> void:
 		"  (%d)" % done_n]
 	if is_instance_valid(quest_page_title):
 		quest_page_title.text = "◈  %s%s" % [QUEST_PAGES[_quest_page], counts[_quest_page]]
+	var body_bb := ""
 	match _quest_page:
-		0: quest_log_text.text = _main_quest_bbcode()
-		1: quest_log_text.text = _available_bbcode()
-		2: quest_log_text.text = _side_list_bbcode("active")
-		3: quest_log_text.text = _rumors_bbcode()
-		4: quest_log_text.text = _side_list_bbcode("done")
+		0: body_bb = _main_quest_bbcode()
+		1: body_bb = _available_bbcode()
+		2: body_bb = _side_list_bbcode("active")
+		3: body_bb = _rumors_bbcode()
+		4: body_bb = _side_list_bbcode("done")
+	quest_log_text.text = IconDB.iconify(body_bb, 18)
 
 func _main_quest_bbcode() -> String:
 	var qm = QuestManager
