@@ -5,6 +5,7 @@
 [ext_resource type="PackedScene" uid="uid://kdxi5lf0kmey" path="res://ui.tscn" id="2_ryguw"]
 [ext_resource type="Script" uid="uid://cxn105fiix3v" path="res://mainplayer.gd" id="3_82xsv"]
 [ext_resource type="PackedScene" uid="uid://d4g0bdlo6sbss" path="res://map.tscn" id="3_d13ii"]
+[ext_resource type="PackedScene" uid="uid://dg10mi6wvc7bq" path="res://sfx.tscn" id="3_lswn8"]
 [ext_resource type="PackedScene" uid="uid://b5s0bfhkjp1hq" path="res://character.tscn" id="4_vivmo"]
 [ext_resource type="PackedScene" uid="uid://bthp4nwyq6ewh" path="res://quest.tscn" id="5_dg77c"]
 [ext_resource type="Script" uid="uid://ch7qn1m4lhwlc" path="res://ItemsStation.gd" id="9_lswn8"]
@@ -628,6 +629,8 @@ layout_mode = 2
 layout_mode = 2
 text = "                                                                "
 
+[node name="SFX" parent="." unique_id=896281284 instance=ExtResource("3_lswn8")]
+
 [node name="ui" parent="." unique_id=560062949 instance=ExtResource("2_ryguw")]
 
 [node name="CombatUI" parent="ui" index="2" unique_id=313349406]
@@ -873,7 +876,7 @@ shape = SubResource("CircleShape2D_qsp4k")
 debug_color = Color(0.1767202, 0.64351225, 0, 0.41960785)
 
 [node name="ElderNPC2" type="CharacterBody2D" parent="." unique_id=1976935503]
-position = Vector2(902, 276)
+position = Vector2(931, 307)
 script = ExtResource("23_1u8w0")
 
 [node name="InteractPrompt" type="Label" parent="ElderNPC2" unique_id=220691380]

@@ -25,6 +25,7 @@ PromptHUD="*res://PromptHUD.gd"
 ScreenFade="*res://ScreenFade.gd"
 WorldMap="*res://WorldMap.gd"
 IconDB="*res://IconDB.gd"
+SFX="*res://sfx.tscn"
 
 [display]
 
