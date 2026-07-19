@@ -31,11 +31,20 @@ var _music_bus := "Master"
 
 # ── Playback tuning ──────────────────────────────────────────────────────────────
 @export_group("Playback")
+# OFF by default: the game plays ONLY the sounds you've dragged into slots (empty
+# slot = silent). Turn ON to auto-fill any empty slot with a rough stand-in from
+# Asset/Main Sound so every event makes *some* noise while you're still building.
+@export var use_placeholder_sounds: bool = false
 @export var sfx_volume_db: float = 0.0      # global trim for one-shot SFX
 @export var music_volume_db: float = -6.0   # music usually sits under SFX
 @export var default_pitch_variation: float = 0.06   # ±6% random pitch so repeats don't machine-gun
 @export var music_crossfade_sec: float = 0.8
 @export var sfx_voices: int = 12            # how many SFX can overlap at once
+# Footstep cadence. Sprinting reuses the SAME footstep samples, just quicker and a
+# touch higher-pitched, so the run reads as the same boots moving faster.
+@export var footstep_interval: float = 0.45      # seconds between steps when walking
+@export var sprint_step_interval: float = 0.27   # …when sprinting
+@export var sprint_step_pitch: float = 1.18      # pitch multiplier while sprinting
 
 # ═══════════════════════════════════════════════════════════════════════════════
 #  SOUND SLOTS  — drag files onto these in the Inspector
@@ -114,9 +123,10 @@ var _music_bus := "Master"
 
 # ── Movement (overworld) ─────────────────────────────────────────────────────────
 @export_group("Movement")
+# Sprinting deliberately has NO slot of its own — it replays these same samples
+# faster + pitched up (see sprint_step_interval / sprint_step_pitch above).
 @export var footstep_a: AudioStream       # walking — alternates A/B for a natural gait
 @export var footstep_b: AudioStream
-@export var sprint: AudioStream           # sprint start / loop
 @export var bump: AudioStream             # walking into a wall / solid NPC
 
 # ── World & pickups ───────────────────────────────────────────────────────────────
@@ -157,13 +167,15 @@ var _music: AudioStreamPlayer
 var _music_fade: AudioStreamPlayer   # second deck for crossfading
 var _foot_toggle := false
 var _item_map: Dictionary = {}
+var _current_music: AudioStream = null   # the SLOT currently playing (decks hold copies)
+var _loops: Dictionary = {}              # key -> dedicated looping AudioStreamPlayer
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS   # UI/menus keep clicking while paused
-	if AudioServer.get_bus_index("SFX") != -1:
-		_sfx_bus = "SFX"
-	if AudioServer.get_bus_index("Music") != -1:
-		_music_bus = "Music"
+	_ensure_buses()
+	_sfx_bus = "SFX"
+	_music_bus = "Music"
+	_load_audio_settings()
 
 	for i in range(max(1, sfx_voices)):
 		var p := AudioStreamPlayer.new()
@@ -175,10 +187,10 @@ func _ready() -> void:
 	_music = _make_music_player()
 	_music_fade = _make_music_player()
 
-	# Fill any slot left EMPTY with a temporary sound so the game has audio now.
-	# Anything you drag onto a slot in the Inspector wins over these (exports are
-	# applied before _ready, so a filled slot is already non-null here).
-	_apply_placeholders()
+	# Only when explicitly enabled — otherwise unset slots stay silent so you hear
+	# exactly what you've assigned.
+	if use_placeholder_sounds:
+		_apply_placeholders()
 
 	# id -> item-use slot, so item("potion") finds item_potion, etc.
 	_item_map = {
@@ -190,6 +202,124 @@ func _ready() -> void:
 		"overcharge": item_overcharge, "phoenix_feather": item_phoenix_feather,
 		"clone": item_clone, "relic": item_relic,
 	}
+
+	# Auto-play a click on EVERY button press and a blip on hover, game-wide, by
+	# watching for buttons as they're added — no per-button wiring needed.
+	get_tree().node_added.connect(_on_node_added)
+
+# ── Global button feedback ───────────────────────────────────────────────────────
+func _on_node_added(n: Node) -> void:
+	if n is BaseButton:
+		# Checkboxes/switches get the distinct "toggle" sound; everything else clicks.
+		if n is CheckButton or n is CheckBox:
+			if not n.pressed.is_connected(_btn_toggle):
+				n.pressed.connect(_btn_toggle)
+		elif not n.pressed.is_connected(_btn_click):
+			n.pressed.connect(_btn_click)
+		if not n.mouse_entered.is_connected(_btn_hover):
+			n.mouse_entered.connect(_btn_hover)
+	elif n is Slider:
+		if not n.drag_ended.is_connected(_slider_done):
+			n.drag_ended.connect(_slider_done)
+
+func _btn_click() -> void:
+	play(ui_click)
+
+func _btn_toggle() -> void:
+	play(ui_toggle if ui_toggle else ui_click)
+
+func _slider_done(_changed: bool) -> void:
+	play(ui_slider, -4.0)
+
+func _btn_hover() -> void:
+	play(ui_hover, -6.0)
+
+# ═══════════════════════════════════════════════════════════════════════════════
+#  AUDIO BUSES & VOLUME  (Master → Music + SFX)  — settings sliders drive these
+# ═══════════════════════════════════════════════════════════════════════════════
+const AUDIO_CFG := "user://audio.cfg"
+# Order shown in the settings Audio section. "Master" already exists at index 0.
+const MIX_BUSES := ["Master", "Music", "SFX"]
+
+# Creates the Music + SFX buses (routed into Master) if the project doesn't already
+# define them, so each can be mixed independently by its own slider.
+func _ensure_buses() -> void:
+	for b in ["Music", "SFX"]:
+		if AudioServer.get_bus_index(b) == -1:
+			var idx := AudioServer.bus_count
+			AudioServer.add_bus(idx)
+			AudioServer.set_bus_name(idx, b)
+			AudioServer.set_bus_send(idx, "Master")
+
+# Volume as a 0..1 slider value (linear). 0 = silent.
+func get_bus_linear(bus: String) -> float:
+	var i := AudioServer.get_bus_index(bus)
+	if i < 0:
+		return 1.0
+	# Deliberately ignores mute: mute is a separate toggle. Folding it in here made
+	# saving-while-muted write 0.0 and wipe the real level for good.
+	return clampf(db_to_linear(AudioServer.get_bus_volume_db(i)), 0.0, 1.0)
+
+func _apply_bus_linear(bus: String, v: float) -> void:
+	var i := AudioServer.get_bus_index(bus)
+	if i < 0:
+		return
+	v = clampf(v, 0.0, 1.0)
+	if v <= 0.001:
+		AudioServer.set_bus_volume_db(i, -80.0)
+	else:
+		AudioServer.set_bus_volume_db(i, linear_to_db(v))
+
+# Set + persist (call from a slider's value_changed).
+func set_bus_linear(bus: String, v: float) -> void:
+	_apply_bus_linear(bus, v)
+	_save_audio_settings()
+
+func set_master_mute(muted: bool) -> void:
+	AudioServer.set_bus_mute(0, muted)
+	_save_audio_settings()
+
+func is_master_muted() -> bool:
+	return AudioServer.is_bus_mute(0)
+
+func _save_audio_settings() -> void:
+	var cfg := ConfigFile.new()
+	for b in MIX_BUSES:
+		cfg.set_value("audio", b, get_bus_linear(b))
+	cfg.set_value("audio", "mute", AudioServer.is_bus_mute(0))
+	cfg.save(AUDIO_CFG)
+
+func _load_audio_settings() -> void:
+	var cfg := ConfigFile.new()
+	if cfg.load(AUDIO_CFG) != OK:
+		return
+	for b in MIX_BUSES:
+		_apply_bus_linear(b, float(cfg.get_value("audio", b, 1.0)))
+	AudioServer.set_bus_mute(0, bool(cfg.get_value("audio", "mute", false)))
+
+# Returns a LOOPING copy of `stream`. It duplicates first on purpose: the loop flag
+# lives on the imported resource, so flipping it in place would also make the same
+# file loop forever anywhere else it's used (e.g. the same mp3 in an SFX slot).
+func _looping_copy(stream: AudioStream) -> AudioStream:
+	if stream == null:
+		return null
+	var s: AudioStream = stream.duplicate()
+	if s is AudioStreamWAV:
+		s.loop_mode = AudioStreamWAV.LOOP_FORWARD
+	elif "loop" in s:
+		s.loop = true
+	return s
+
+# ── Music by context (with sensible fallbacks so nothing is dead silent) ─────────
+func play_menu_music() -> void:      play_music(music_menu)
+func play_overworld_music() -> void: play_music(music_overworld if music_overworld else music_town)
+func play_victory_music() -> void:   play_music(music_victory)
+func play_interior_music() -> void:  play_music(music_interior if music_interior else music_overworld)
+# Combat only switches if a combat track exists; otherwise the overworld music
+# keeps playing (so a fight is never abruptly silent).
+func play_combat_music() -> void:
+	if music_combat:
+		play_music(music_combat)
 
 # Loads an audio file if it exists, else null (so a deleted placeholder is safe).
 func _ph(path: String) -> AudioStream:
@@ -243,7 +373,8 @@ func _make_music_player() -> AudioStreamPlayer:
 # Plays `stream` on a free pooled voice. Null (an unfilled slot) is a silent no-op,
 # so callers never have to null-check. `pitch_rand` adds ± that fraction of random
 # pitch; pass 0 for an exact repeat.
-func play(stream: AudioStream, volume_db: float = 0.0, pitch_rand: float = -1.0) -> void:
+func play(stream: AudioStream, volume_db: float = 0.0, pitch_rand: float = -1.0,
+		base_pitch: float = 1.0) -> void:
 	if stream == null:
 		return
 	var p := _pool[_next]
@@ -251,7 +382,7 @@ func play(stream: AudioStream, volume_db: float = 0.0, pitch_rand: float = -1.0)
 	p.stream = stream
 	p.volume_db = sfx_volume_db + volume_db
 	var pr := default_pitch_variation if pitch_rand < 0.0 else pitch_rand
-	p.pitch_scale = 1.0 + randf_range(-pr, pr) if pr > 0.0 else 1.0
+	p.pitch_scale = base_pitch * (1.0 + randf_range(-pr, pr)) if pr > 0.0 else base_pitch
 	p.play()
 
 # The item-use sound for a QuestManager item id ("potion", "relic", …).
@@ -267,10 +398,18 @@ func mob_attack_snd(level: int) -> void:
 		s = enemy_attack_default
 	play(s)
 
-# Walking: alternates the two footstep samples with a little pitch wobble.
-func footstep() -> void:
+# One footstep. Alternates the A/B samples with a little pitch wobble. Sprinting
+# uses the SAME samples, just pitched up (the caller also steps more often).
+func footstep(sprinting: bool = false) -> void:
 	_foot_toggle = not _foot_toggle
-	play(footstep_b if _foot_toggle else footstep_a, -3.0, 0.10)
+	var s: AudioStream = footstep_b if _foot_toggle else footstep_a
+	if s == null:   # only one sample filled → use whichever exists
+		s = footstep_a if footstep_a != null else footstep_b
+	play(s, -3.0, 0.10, sprint_step_pitch if sprinting else 1.0)
+
+# Seconds between steps for the current gait — drives the walk loop in mainplayer.
+func step_interval(sprinting: bool) -> float:
+	return sprint_step_interval if sprinting else footstep_interval
 
 # ── Music ─────────────────────────────────────────────────────────────────────────
 # Crossfades to `stream` (looping). Same track already playing → no-op.
@@ -278,13 +417,15 @@ func play_music(stream: AudioStream) -> void:
 	if stream == null:
 		stop_music()
 		return
-	if _music.playing and _music.stream == stream:
+	# Compare against the ORIGINAL slot (the deck holds a looping duplicate).
+	if _music.playing and _current_music == stream:
 		return
+	_current_music = stream
 	# Swap decks so the old track fades out while the new one fades in.
 	var tmp := _music
 	_music = _music_fade
 	_music_fade = tmp
-	_music.stream = stream
+	_music.stream = _looping_copy(stream)   # music always loops
 	_music.volume_db = -40.0
 	_music.play()
 	var tw := create_tween().set_parallel(true)
@@ -294,10 +435,43 @@ func play_music(stream: AudioStream) -> void:
 		tw.chain().tween_callback(_music_fade.stop)
 
 func stop_music() -> void:
+	_current_music = null
 	if _music.playing:
 		var deck := _music
 		create_tween().tween_property(deck, "volume_db", -40.0, music_crossfade_sec) \
 			.finished.connect(deck.stop)
+
+# ── Continuous / looping SFX ─────────────────────────────────────────────────────
+# For sounds that run WHILE something is happening (reeling a fish, an engine, an
+# ambience bed). Each `key` gets its own player, so several can loop at once.
+#   SFX.start_loop("reel", SFX.fish_reel)   …later…   SFX.stop_loop("reel")
+# Calling start_loop again with the same key while it's already playing is a no-op,
+# so it's safe to call every frame.
+func start_loop(key: String, stream: AudioStream, volume_db: float = 0.0, pitch: float = 1.0) -> void:
+	if stream == null:
+		return
+	var p: AudioStreamPlayer = _loops.get(key)
+	if not is_instance_valid(p):
+		p = AudioStreamPlayer.new()
+		p.bus = _sfx_bus
+		p.process_mode = Node.PROCESS_MODE_ALWAYS
+		add_child(p)
+		_loops[key] = p
+	p.volume_db = sfx_volume_db + volume_db
+	p.pitch_scale = pitch
+	if p.playing:
+		return                      # already looping this key
+	p.stream = _looping_copy(stream)
+	p.play()
+
+func stop_loop(key: String) -> void:
+	var p: AudioStreamPlayer = _loops.get(key)
+	if is_instance_valid(p) and p.playing:
+		p.stop()
+
+func stop_all_loops() -> void:
+	for k in _loops.keys():
+		stop_loop(k)
 
 func stop_all_sfx() -> void:
 	for p in _pool:

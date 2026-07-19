@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://dyd78y6x763ni"
+path="res://.godot/imported/tuomas_data-game-countdown-62-199828.mp3-87cc06f739c1de747c069353aa7775ef.mp3str"
+
+[deps]
+
+source_file="res://Asset/Main Sound/fx/tuomas_data-game-countdown-62-199828.mp3"
+dest_files=["res://.godot/imported/tuomas_data-game-countdown-62-199828.mp3-87cc06f739c1de747c069353aa7775ef.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

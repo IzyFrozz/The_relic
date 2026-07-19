@@ -21,6 +21,7 @@ var _index: int = 0
 var _typing: bool = false
 var _char_progress: float = 0.0
 var _total_chars: int = 0
+var _last_blip_char: int = 0   # throttles the typewriter blip
 
 var _root: Control
 var _panel: Panel
@@ -33,6 +34,7 @@ const COL_BORDER := Color(0.35, 0.40, 0.60, 1.0)
 const COL_GOLD   := Color(1.00, 0.85, 0.30, 1.0)
 const COL_TEXT   := Color(0.92, 0.93, 1.00, 1.0)
 const TYPE_CPS   := 48.0   # characters revealed per second
+const BLIP_EVERY := 3      # play the typewriter blip once per N revealed chars
 
 func _ready() -> void:
 	layer = 120                       # above HUD, below hard end-screens
@@ -183,6 +185,7 @@ func _show_line() -> void:
 	_total_chars = _body_label.get_total_character_count()
 	_body_label.visible_characters = 0
 	_char_progress = 0.0
+	_last_blip_char = 0
 	_typing = _total_chars > 0
 	_hint_label.text = "▸  Space" if not _typing else "…"
 
@@ -194,6 +197,10 @@ func _process(delta: float) -> void:
 	if shown >= _total_chars:
 		_finish_typing()
 	else:
+		# Blip every few revealed characters — one per char would be a machine-gun.
+		if shown > _last_blip_char and (shown - _last_blip_char) >= BLIP_EVERY:
+			_last_blip_char = shown
+			SFX.play(SFX.dialogue_blip, -8.0, 0.12)
 		_body_label.visible_characters = shown
 
 func _finish_typing() -> void:

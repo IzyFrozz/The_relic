@@ -625,4 +625,5 @@ func show_magnet_choice_popup(stealable_pool: Array) -> String:
 	var chosen = await magnet_choice_resolved; mv.queue_free(); popup_overlay.visible = false; return chosen
 
 func _resolve_popup(confirmed: bool) -> void:
+	SFX.play(SFX.ui_confirm if confirmed else SFX.ui_cancel)
 	popup_resolved.emit(confirmed)

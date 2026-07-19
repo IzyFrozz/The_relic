@@ -72,6 +72,7 @@ func _refresh_slot_labels() -> void:
 
 func open_popup() -> void:
 	visible = true
+	SFX.play(SFX.ui_open)
 	_refresh_slot_labels()
 	if is_instance_valid(status_label):
 		status_label.text = "Choose a slot to save your progress:"

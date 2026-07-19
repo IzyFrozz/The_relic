@@ -509,6 +509,8 @@ func _on_deadzone_body_entered(body: Node2D) -> void:
 func start_combat() -> void:
 	is_in_combat = true
 	QuestManager.is_in_combat = true
+	SFX.play(SFX.combat_start)
+	SFX.play_combat_music()
 	_refresh_level_label_visibility()   # hide the overhead level tag for the fight
 	if is_instance_valid(player_ref) and "velocity" in player_ref:
 		player_ref.velocity = Vector2.ZERO
@@ -588,6 +590,10 @@ func use_player_item(item_type: String) -> void:
 			combat_ui._refresh_ui_states()
 		return
 
+	# Per-item use sound (relic also has its unleash cue below). Unfilled slots are
+	# silent, so this is safe for every item.
+	SFX.item(item_type)
+
 	match item_type:
 		"magnet":
 			var stealable = enemy_inventory.filter(func(i: String) -> bool:
@@ -646,6 +652,7 @@ func use_player_item(item_type: String) -> void:
 			# Each use raises the future charge requirement (persisted).
 			QuestManager.relic_uses += 1
 			QuestManager.has_unsaved_progress = true
+			SFX.play(SFX.relic_unleash)
 			await _fx_status("enemy", Color(1.0, 0.55, 1.0, 1.0), "🏺")
 			await _fx_damage("enemy")
 			await _fx_heal("player")
@@ -909,6 +916,7 @@ func process_player_attack_phase() -> void:
 		actual_dmg_dealt = dmg
 		await _fx_status("enemy", Color(1.0, 0.45, 0.05, 1.0), "🔥")
 		await _fx_damage("enemy")
+		SFX.play(SFX.player_crit)
 		if combat_ui: combat_ui.display_round_history("🔥 OVERCHARGED HIT — %d damage, every defense pierced!" % dmg, true)
 	elif player_cursed:
 		player_cursed = false
@@ -920,24 +928,28 @@ func process_player_attack_phase() -> void:
 	elif enemy_dodge_active:
 		enemy_dodge_active = false
 		player_lifesteal_active = false
+		SFX.play(SFX.player_dodge)
 		await _fx_status("enemy", Color(0.30, 0.90, 1.0, 1.0), "💨")
 		if combat_ui: combat_ui.display_round_history("💨 Enemy dodged — missed!", true)
 	elif enemy_reflect_active:
 		enemy_reflect_active = false
 		player_lifesteal_active = false
 		QuestManager.player_health = clampi(QuestManager.player_health - dmg, 0, QuestManager.MAX_HEALTH)
+		SFX.play(SFX.player_hit)
 		await _fx_status("enemy", Color(1.0, 0.90, 0.22, 1.0), "🪞")
 		await _fx_damage("player")
 		if combat_ui: combat_ui.display_round_history("🪞 REFLECTED — %d dmg bounced back at you!" % dmg, true)
 	elif enemy_active_armor and not player_piercing:
 		enemy_active_armor = false
 		player_lifesteal_active = false
+		SFX.play(SFX.player_block)
 		await _fx_status("enemy", Color(0.50, 0.76, 1.0, 1.0), "🛡️")
 		if combat_ui: combat_ui.display_round_history("🛡️ Enemy shield blocked your hit!", true)
 	else:
 		if player_piercing: player_piercing = false
 		enemy_health = clampi(enemy_health - dmg, 0, enemy_max_health)
 		actual_dmg_dealt = dmg
+		SFX.play(SFX.enemy_hit)
 		await _fx_damage("enemy")
 		if combat_ui: combat_ui.display_round_history("⚔️ You attacked for %d damage!" % dmg, true)
 
@@ -1036,6 +1048,10 @@ func _execute_enemy_turn_ai() -> void:
 
 	if not is_in_combat: return
 
+	# The enemy commits to its swing — per-LEVEL attack sound (falls back to
+	# enemy_attack_default when that level's slot is empty).
+	SFX.mob_attack_snd(enemy_level)
+
 	var raw = 20 + enemy_damage_bonus
 	enemy_damage_bonus = 0; enemy_sharpened = false; enemy_overcharged = false
 	if enemy_weakened:
@@ -1065,6 +1081,7 @@ func _execute_enemy_turn_ai() -> void:
 		actual_dmg_to_player = raw
 		if is_instance_valid(player_ref) and player_ref.has_method("do_enemy_lunge"):
 			await player_ref.do_enemy_lunge(self, player_ref.global_position, false)
+		SFX.play(SFX.player_hit)
 		await _fx_status("enemy", Color(1.0, 0.45, 0.05, 1.0), "🔥")
 		await _fx_damage("player")
 		if combat_ui: combat_ui.display_round_history("🔥 Enemy OVERCHARGED HIT — %d damage, every defense pierced!" % raw, false)
@@ -1082,6 +1099,7 @@ func _execute_enemy_turn_ai() -> void:
 		enemy_lifesteal_active = false
 		if is_instance_valid(player_ref) and player_ref.has_method("do_enemy_lunge"):
 			await player_ref.do_enemy_lunge(self, player_ref.global_position, false)
+		SFX.play(SFX.player_dodge)
 		await _fx_status("player", Color(0.30, 0.90, 1.0, 1.0), "💨")
 		if combat_ui: combat_ui.display_round_history("💨 DODGED — enemy attack missed!", false)
 	elif player_reflect_active:
@@ -1090,6 +1108,8 @@ func _execute_enemy_turn_ai() -> void:
 		enemy_health = clampi(enemy_health - raw, 0, enemy_max_health)
 		if is_instance_valid(player_ref) and player_ref.has_method("do_enemy_lunge"):
 			await player_ref.do_enemy_lunge(self, player_ref.global_position, false)
+		SFX.play(SFX.player_reflect)
+		SFX.play(SFX.enemy_hit)
 		await _fx_status("player", Color(1.0, 0.90, 0.22, 1.0), "🪞")
 		await _fx_damage("enemy")
 		if combat_ui: combat_ui.display_round_history(
@@ -1099,6 +1119,7 @@ func _execute_enemy_turn_ai() -> void:
 		enemy_lifesteal_active = false
 		if is_instance_valid(player_ref) and player_ref.has_method("do_enemy_lunge"):
 			await player_ref.do_enemy_lunge(self, player_ref.global_position, false)
+		SFX.play(SFX.player_block)
 		await _fx_status("player", Color(0.50, 0.76, 1.0, 1.0), "🛡️")
 		if combat_ui: combat_ui.display_round_history("🛡️ Your shield blocked the hit!", false)
 	elif enemy_piercing:
@@ -1107,6 +1128,7 @@ func _execute_enemy_turn_ai() -> void:
 		actual_dmg_to_player = raw
 		if is_instance_valid(player_ref) and player_ref.has_method("do_enemy_lunge"):
 			await player_ref.do_enemy_lunge(self, player_ref.global_position, false)
+		SFX.play(SFX.player_hit)
 		await _fx_damage("player")
 		if combat_ui: combat_ui.display_round_history("📌 Enemy needle pierced for %d dmg!" % raw, false)
 	else:
@@ -1114,6 +1136,7 @@ func _execute_enemy_turn_ai() -> void:
 		actual_dmg_to_player = raw
 		if is_instance_valid(player_ref) and player_ref.has_method("do_enemy_lunge"):
 			await player_ref.do_enemy_lunge(self, player_ref.global_position, false)
+		SFX.play(SFX.player_hit)
 		await _fx_damage("player")
 		if combat_ui: combat_ui.display_round_history("⚔️ Enemy dealt %d damage!" % raw, false)
 
@@ -1264,6 +1287,7 @@ func _conclude_round_cycle_ticks() -> void:
 	if not _relic_announced_charged and relic_is_charged():
 		_relic_announced_charged = true
 		if combat_ui:
+			SFX.play(SFX.relic_ready)
 			combat_ui.display_round_history("🏺✨ The Ancient Relic is FULLY CHARGED — unleash it!", true)
 	_sync_ground_fx()
 	if combat_ui: combat_ui._refresh_ui_states()
@@ -1271,6 +1295,7 @@ func _conclude_round_cycle_ticks() -> void:
 	cycles_until_drop -= 1
 	if cycles_until_drop <= 0:
 		_apply_supply_drop_rewards()
+		SFX.play(SFX.crate_drop)
 		if combat_ui: combat_ui.display_round_history("📦 The Quartermaster lobs in a matched crate — both fighters resupply!", true)
 	if combat_ui:
 		combat_ui.start_player_turn()
@@ -1434,6 +1459,8 @@ func _check_combat_end_conditions() -> bool:
 		await ScreenFade.fade_out()
 		self.global_position = enemy_overworld_position
 		_switch_to_overworld_camera()
+		SFX.play(SFX.defeat)
+		SFX.stop_music()
 		if is_instance_valid(lose_ui) and lose_ui.has_method("show_death_screen"):
 			lose_ui.show_death_screen()
 		await ScreenFade.fade_in()
@@ -1442,6 +1469,8 @@ func _check_combat_end_conditions() -> bool:
 	if enemy_health <= 0:
 		if player_clone_active: _dismiss_clone()
 		is_in_combat = false; QuestManager.is_in_combat = false
+		SFX.play(SFX.enemy_death)
+		SFX.play(SFX.victory)
 		_reset_sprite_modulates()
 		_clear_ground_fx_visibility()
 		if is_instance_valid(combat_ui): combat_ui.visible = false
@@ -1478,6 +1507,7 @@ func _check_combat_end_conditions() -> bool:
 			if "velocity" in player_ref: player_ref.velocity = Vector2.ZERO
 			player_ref.global_position = QuestManager.player_overworld_position
 		_switch_to_overworld_camera()
+		SFX.play_overworld_music()   # back from the fight → resume the overworld theme
 
 		# Hard reset once more after the death-animation wait, defensive
 		# against anything that may have queued during that 1s window.

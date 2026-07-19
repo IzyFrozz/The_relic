@@ -30,6 +30,8 @@ const SPRINT_RECHARGE_TIME := 6.0   # seconds to refill from empty
 
 var stamina: float = SPRINT_MAX
 var is_sprinting: bool = false
+var _step_timer: float = 0.0   # counts down to the next footstep while walking
+var _bump_cooldown: float = 0.0 # rate-limits the wall-bump thud
 var sprint_exhausted: bool = false
 
 # Stamina STATE ICON under the player (built in code, follows the player). Rather
@@ -111,8 +113,10 @@ func _physics_process(delta: float) -> void:
 		var target_speed = max_speed * (SPRINT_SPEED_MULT if is_sprinting else 1.0)
 		velocity = velocity.move_toward(input_dir * target_speed, acceleration * delta)
 		_play_walk_animation(input_dir)
+		_tick_footsteps(delta)
 	else:
 		velocity = velocity.move_toward(Vector2.ZERO, friction * delta)
+		_reset_footsteps()
 		# Hold the last facing direction's idle frame instead of always
 		# snapping to "default" (which is the down-facing pose). This is what
 		# was causing the character to always look down on release no matter
@@ -120,6 +124,14 @@ func _physics_process(delta: float) -> void:
 		_set_idle_facing(last_input_dir)
 
 	move_and_slide()
+
+	# Walked into something solid: pushing toward it but barely moving. Rate-limited
+	# so it thuds once instead of buzzing every frame against the wall.
+	_bump_cooldown = maxf(0.0, _bump_cooldown - delta)
+	if input_dir != Vector2.ZERO and get_slide_collision_count() > 0 \
+			and velocity.length() < max_speed * 0.25 and _bump_cooldown <= 0.0:
+		SFX.play(SFX.bump, -6.0)
+		_bump_cooldown = 0.45
 
 # ── Facing ────────────────────────────────────────────────────────────────────
 
@@ -201,6 +213,8 @@ func _play_walk_animation(dir: Vector2) -> void:
 
 # ── Player attack lunge ───────────────────────────────────────────────────────
 func do_attack_lunge(enemy_pos: Vector2, enemy_node: Node2D = null, is_disarmed: bool = false) -> void:
+	if not is_disarmed:
+		SFX.play(SFX.player_attack)
 	var start_pos       = global_position
 	var enemy_start_pos = enemy_node.global_position if is_instance_valid(enemy_node) else enemy_pos
 
@@ -323,6 +337,20 @@ func _build_stamina_bar() -> void:
 	_stamina_icon.visible = false
 	_stamina_icon.scale = Vector2(0.4, 0.4)   # 32px icon -> ~13px indicator under the player
 	add_child(_stamina_icon)
+
+# ── Footstep loop ────────────────────────────────────────────────────────────────
+# Repeats a footstep for as long as the player is actually walking. Sprinting uses
+# the same samples at a tighter interval (SFX.step_interval), so the run is just
+# the walk sped up. The first step fires immediately so moving off feels instant.
+func _tick_footsteps(delta: float) -> void:
+	_step_timer -= delta
+	if _step_timer <= 0.0:
+		SFX.footstep(is_sprinting)
+		_step_timer = SFX.step_interval(is_sprinting)
+
+# Standing still re-arms the next step so it lands the moment you move again.
+func _reset_footsteps() -> void:
+	_step_timer = 0.0
 
 func _update_stamina_bar() -> void:
 	if not is_instance_valid(_stamina_icon): return

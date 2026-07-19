@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://c55fc0sic4d54"
+path="res://.godot/imported/inono777-combat-epic-425365.mp3-2c45cb447cf921ff000436a294461e3a.mp3str"
+
+[deps]
+
+source_file="res://Asset/Main Sound/fx/inono777-combat-epic-425365.mp3"
+dest_files=["res://.godot/imported/inono777-combat-epic-425365.mp3-2c45cb447cf921ff000436a294461e3a.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

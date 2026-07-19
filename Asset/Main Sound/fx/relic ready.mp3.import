@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://bupdjk0m0g5hx"
+path="res://.godot/imported/relic ready.mp3-0e9c0096f640e32f30f88248a834a36e.mp3str"
+
+[deps]
+
+source_file="res://Asset/Main Sound/fx/relic ready.mp3"
+dest_files=["res://.godot/imported/relic ready.mp3-0e9c0096f640e32f30f88248a834a36e.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

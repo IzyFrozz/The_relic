@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://25eocxmigor6"
+path="res://.godot/imported/litupsubway-ui-open-sfx-513358.mp3-cea606927e9361e87ad27ee923aa6144.mp3str"
+
+[deps]
+
+source_file="res://Asset/Main Sound/fx/litupsubway-ui-open-sfx-513358.mp3"
+dest_files=["res://.godot/imported/litupsubway-ui-open-sfx-513358.mp3-cea606927e9361e87ad27ee923aa6144.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

@@ -30,6 +30,8 @@ var pause_timer_label: Label = null
 # ── Keybinds (built in code) ──
 var keybind_button: Button = null
 var keybind_view: VBoxContainer = null
+var audio_button: Button = null
+var audio_view: VBoxContainer = null
 var keybind_rows: Dictionary = {}
 var _rebinding_action: String = ""
 
@@ -70,17 +72,11 @@ func _ready() -> void:
 	_build_pause_timer_label()
 	_capture_overworld_menu_position()
 
-	if is_instance_valid(volume_slider):
-		volume_slider.min_value = 0.0
-		volume_slider.max_value = 1.0
-		volume_slider.step = 0.01
-		volume_slider.value = db_to_linear(AudioServer.get_bus_volume_db(MASTER_BUS))
-		volume_slider.value_changed.connect(_on_volume_changed)
-
-	if is_instance_valid(mute_check):
-		mute_check.text = "Mute"
-		mute_check.button_pressed = AudioServer.is_bus_mute(MASTER_BUS)
-		mute_check.toggled.connect(_on_mute_toggled)
+	# Audio now lives in its own view behind the "Audio" button (see _build_audio_ui),
+	# so hide the old inline controls that sat in the main pause list.
+	for n in ["AudioLabel", "VolumeSlider", "MuteCheck"]:
+		var old = find_child(n)
+		if is_instance_valid(old): old.visible = false
 
 	if is_instance_valid(fullscreen_check):
 		fullscreen_check.text = "Fullscreen"
@@ -123,6 +119,7 @@ func _ready() -> void:
 		menu_button.pressed.connect(_on_menu_button_pressed)
 
 	_build_keybinds_ui()
+	_build_audio_ui()
 
 func _capture_overworld_menu_position() -> void:
 	if not is_instance_valid(menu_button) or _captured_overworld_position:
@@ -247,8 +244,8 @@ func _build_combat_overlay() -> void:
 	mute_btn.focus_mode = Control.FOCUS_NONE
 	mute_btn.custom_minimum_size = Vector2(140, 38)
 	mute_btn.pressed.connect(func():
-		var muted = not AudioServer.is_bus_mute(MASTER_BUS)
-		AudioServer.set_bus_mute(MASTER_BUS, muted)
+		var muted = not SFX.is_master_muted()
+		SFX.set_master_mute(muted)
 		mute_btn.text = "🔊  Unmute" if muted else "🔇  Toggle Mute"
 	)
 	audio_hbox.add_child(mute_btn)
@@ -309,6 +306,7 @@ func _close_combat_menu() -> void:
 		combat_panel.visible = false
 
 func _on_flee_pressed() -> void:
+	SFX.play(SFX.combat_flee)
 	_close_combat_menu()
 	var combat_ui = get_tree().root.find_child("CombatUI", true, false)
 	if is_instance_valid(combat_ui):
@@ -410,6 +408,7 @@ func _input(event: InputEvent) -> void:
 		if event.keycode != KEY_ESCAPE:
 			var kc = event.physical_keycode if event.physical_keycode != 0 else event.keycode
 			KeybindManager.rebind(_rebinding_action, kc)
+			SFX.play(SFX.ui_rebind)
 		_rebinding_action = ""
 		_refresh_keybind_labels()
 		return
@@ -426,6 +425,8 @@ func _input(event: InputEvent) -> void:
 			return
 		if _is_panel_open():
 			if is_instance_valid(keybind_view) and keybind_view.visible:
+				_show_main_view(); get_viewport().set_input_as_handled(); return
+			if is_instance_valid(audio_view) and audio_view.visible:
 				_show_main_view(); get_viewport().set_input_as_handled(); return
 			if is_instance_valid(confirm_view) and confirm_view.visible:
 				_show_main_view(); get_viewport().set_input_as_handled(); return
@@ -447,23 +448,27 @@ func _on_menu_button_pressed() -> void:
 func open_menu() -> void:
 	if is_instance_valid(panel): panel.visible = true
 	Engine.time_scale = 0.0
+	SFX.play(SFX.ui_pause)
 	_show_main_view()
 
 func close_menu() -> void:
 	if is_instance_valid(panel): panel.visible = false
 	Engine.time_scale = 1.0
+	SFX.play(SFX.ui_unpause)
 
 func _show_main_view() -> void:
 	if is_instance_valid(main_view):    main_view.visible    = true
 	if is_instance_valid(load_view):    load_view.visible    = false
 	if is_instance_valid(confirm_view): confirm_view.visible = false
 	if is_instance_valid(keybind_view): keybind_view.visible = false
+	if is_instance_valid(audio_view):   audio_view.visible   = false
 
 func _show_load_view() -> void:
 	if is_instance_valid(main_view):    main_view.visible    = false
 	if is_instance_valid(load_view):    load_view.visible    = true
 	if is_instance_valid(confirm_view): confirm_view.visible = false
 	if is_instance_valid(keybind_view): keybind_view.visible = false
+	if is_instance_valid(audio_view):   audio_view.visible   = false
 	_refresh_load_slot_labels()
 	if is_instance_valid(load_status_label):
 		load_status_label.text = "Load one of this session's save slots:"
@@ -523,6 +528,95 @@ func _go_to_main_menu() -> void:
 	Engine.time_scale = 1.0
 	QuestManager.is_in_combat = false
 	get_tree().change_scene_to_file("res://main_menu.tscn")
+
+# ── Audio view ──────────────────────────────────────────────────────────────────
+# Its own screen behind an "Audio" button, mirroring the Keybinds view: one slider
+# per mix bus (Master / Music / SFX) plus a global mute. All values route through
+# SFX and persist to user://audio.cfg.
+func _build_audio_ui() -> void:
+	# Insert the "Audio" button just above "Keybinds".
+	if is_instance_valid(load_button) and is_instance_valid(load_button.get_parent()):
+		audio_button = Button.new()
+		audio_button.text = "🔊  Audio"
+		audio_button.focus_mode = Control.FOCUS_NONE
+		audio_button.custom_minimum_size = Vector2(0, 42)
+		audio_button.pressed.connect(_show_audio_view)
+		var p = load_button.get_parent()
+		p.add_child(audio_button)
+		p.move_child(audio_button, load_button.get_index() + 1)
+
+	var host: Node = main_view.get_parent() if is_instance_valid(main_view) else panel
+	if not is_instance_valid(host):
+		return
+	audio_view = VBoxContainer.new()
+	audio_view.name = "AudioView"
+	audio_view.visible = false
+	audio_view.add_theme_constant_override("separation", 10)
+	audio_view.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	audio_view.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	host.add_child(audio_view)
+
+	var title = Label.new()
+	title.text = "🔊  Audio"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 18)
+	title.add_theme_color_override("font_color", Color(1.0, 0.85, 0.3))
+	audio_view.add_child(title)
+
+	var hint = Label.new()
+	hint.text = "Drag a slider to set each channel. Saved automatically."
+	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	hint.add_theme_font_size_override("font_size", 12)
+	hint.add_theme_color_override("font_color", Color(0.72, 0.74, 0.84))
+	audio_view.add_child(hint)
+
+	for pair in [["Master", "Master"], ["Music", "Music"], ["SFX", "SFX"]]:
+		_add_audio_row(audio_view, pair[0], pair[1])
+
+	var mute = CheckButton.new()
+	mute.text = "Mute All"
+	mute.focus_mode = Control.FOCUS_NONE
+	mute.button_pressed = SFX.is_master_muted()
+	mute.toggled.connect(func(p): SFX.set_master_mute(p))
+	audio_view.add_child(mute)
+
+	var back = Button.new()
+	back.text = "↩  Back"
+	back.focus_mode = Control.FOCUS_NONE
+	back.custom_minimum_size = Vector2(0, 40)
+	back.pressed.connect(_show_main_view)
+	audio_view.add_child(back)
+
+# "Caption ▬▬▬ 80%" row bound to a mix bus.
+func _add_audio_row(parent: Node, caption: String, bus: String) -> void:
+	var row = HBoxContainer.new()
+	row.add_theme_constant_override("separation", 10)
+	var lbl = Label.new()
+	lbl.text = caption
+	lbl.custom_minimum_size = Vector2(80, 0)
+	row.add_child(lbl)
+	var s = HSlider.new()
+	s.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	s.custom_minimum_size = Vector2(180, 24)
+	s.min_value = 0.0; s.max_value = 1.0; s.step = 0.01
+	s.value = SFX.get_bus_linear(bus)
+	row.add_child(s)
+	var pct = Label.new()
+	pct.custom_minimum_size = Vector2(46, 0)
+	pct.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	pct.text = "%d%%" % roundi(s.value * 100.0)
+	row.add_child(pct)
+	s.value_changed.connect(func(v):
+		SFX.set_bus_linear(bus, v)
+		pct.text = "%d%%" % roundi(v * 100.0))
+	parent.add_child(row)
+
+func _show_audio_view() -> void:
+	if is_instance_valid(main_view):    main_view.visible    = false
+	if is_instance_valid(load_view):    load_view.visible    = false
+	if is_instance_valid(confirm_view): confirm_view.visible = false
+	if is_instance_valid(keybind_view): keybind_view.visible = false
+	if is_instance_valid(audio_view):   audio_view.visible   = true
 
 # ── Keybinds view ───────────────────────────────────────────────────────────────
 func _build_keybinds_ui() -> void:
@@ -620,6 +714,7 @@ func _show_keybind_view() -> void:
 	if is_instance_valid(load_view):    load_view.visible    = false
 	if is_instance_valid(confirm_view): confirm_view.visible = false
 	if is_instance_valid(keybind_view): keybind_view.visible = true
+	if is_instance_valid(audio_view):   audio_view.visible   = false
 	_rebinding_action = ""
 	_refresh_keybind_labels()
 

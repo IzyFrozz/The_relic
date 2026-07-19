@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://ctjnea68t23wf"
+path="res://.godot/imported/yodguard-shield_impact-3-382411.mp3-60aadeec9ff5e77c7f36c9b8c93a1276.mp3str"
+
+[deps]
+
+source_file="res://Asset/Main Sound/fx/yodguard-shield_impact-3-382411.mp3"
+dest_files=["res://.godot/imported/yodguard-shield_impact-3-382411.mp3-60aadeec9ff5e77c7f36c9b8c93a1276.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

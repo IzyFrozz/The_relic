@@ -36,6 +36,12 @@ func _process(_delta: float) -> void:
 	if player_ref and Input.is_action_just_pressed("interact") and not QuestManager.ui_arrow_nav_open:
 		if target_marker:
 			player_ref.global_position = target_marker.global_position
+			# Marker names are InsideSpawnMarker / OutsideSpawnMarker, so they tell
+			# us which side we just stepped into — swap the music to match.
+			if "Inside" in target_marker.name:
+				SFX.play_interior_music()
+			else:
+				SFX.play_overworld_music()
 		else:
 			print("⚠️ DOORWAY WARNING: Target Marker is empty in the Inspector!")
 

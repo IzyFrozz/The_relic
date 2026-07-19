@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://bcf4k8erphaw8"
+path="res://.godot/imported/universfield-new-notification-040-493469.mp3-fa89092b86f659e3642c108e1cfaf1c2.mp3str"
+
+[deps]
+
+source_file="res://Asset/Main Sound/fx/universfield-new-notification-040-493469.mp3"
+dest_files=["res://.godot/imported/universfield-new-notification-040-493469.mp3-fa89092b86f659e3642c108e1cfaf1c2.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

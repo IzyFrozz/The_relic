@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://bockkcick2l0l"
+path="res://.godot/imported/yodguard-healing-magic-2-378663.mp3-30cb40c3782ac39db64c37b09af2f97c.mp3str"
+
+[deps]
+
+source_file="res://Asset/Main Sound/fx/yodguard-healing-magic-2-378663.mp3"
+dest_files=["res://.godot/imported/yodguard-healing-magic-2-378663.mp3-30cb40c3782ac39db64c37b09af2f97c.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

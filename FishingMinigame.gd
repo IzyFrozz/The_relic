@@ -218,6 +218,11 @@ func _process(delta: float) -> void:
 		return
 
 	var lifting := Input.is_action_pressed("fish_reel")
+	# Reel sound loops for exactly as long as the key is held.
+	if lifting:
+		SFX.start_loop("fish_reel", SFX.fish_reel)
+	else:
+		SFX.stop_loop("fish_reel")
 	_bar_vel += (LIFT if lifting else GRAVITY) * delta
 	_bar_vel = clamp(_bar_vel, -MAX_VEL, MAX_VEL)
 	_bar_pos += _bar_vel * delta
@@ -271,6 +276,7 @@ func _finish(success: bool) -> void:
 	if _ended:
 		return
 	_ended = true
+	SFX.stop_loop("fish_reel")   # never leave the reel droning after the round
 	_result.visible = true
 	if success:
 		_result.text = "✅  Caught it!"

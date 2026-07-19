@@ -155,9 +155,11 @@ func accept_side_quest(id: String) -> void:
 	if side_quest_states.get(id, "rumour") != "available":
 		return
 	if active_quest_count() >= MAX_ACTIVE_QUESTS:
+		SFX.play(SFX.ui_error)
 		Toast.show_toast("📋  Quest log full (%d/%d) — finish one first." % [MAX_ACTIVE_QUESTS, MAX_ACTIVE_QUESTS])
 		return
 	side_quest_states[id] = "active"
+	SFX.play(SFX.quest_accept)
 	has_unsaved_progress = true
 	var d = SideQuestDB.get_def(id)
 	Toast.show_toast("%s  Quest activated: %s" % [d.get("emoji", "📜"), d.get("title", id)])
@@ -258,6 +260,7 @@ func _advance_side_quest(id: String, d: Dictionary) -> bool:
 
 func _complete_side_quest(id: String, d: Dictionary) -> void:
 	side_quest_states[id] = "done"
+	SFX.play(SFX.quest_complete)
 	var reward: Dictionary = d.get("reward", {})
 	var parts: Array = []
 	if reward.has("xp"):
@@ -304,6 +307,7 @@ func unlock_random_new_item() -> String:
 # strongest in the game). Turning it in wins the run and permanently removes it
 # from the loadout so post-game play no longer has access to it.
 func grant_relic() -> void:
+	SFX.play(SFX.relic_get)
 	has_relic = true
 	if not unlocked_items.has("relic"):
 		unlocked_items.append("relic")
@@ -322,6 +326,7 @@ func collect_coin() -> void:
 	# saves still load; it is no longer used for anything.)
 	coins_collected += 1
 	has_unsaved_progress = true
+	SFX.play(SFX.coin)
 
 const HP_PER_HEART := 20
 const HEARTS_PER_LAP := 15
@@ -432,6 +437,7 @@ func _read_save(path: String) -> bool:
 func save_to_slot(slot: int) -> void:
 	if active_session == 0: active_session = 1
 	last_used_save_slot = slot
+	SFX.play(SFX.ui_save)
 	if _write_save(_save_path(active_session, slot)):
 		has_unsaved_progress = false
 		session_saved_once = true
@@ -439,6 +445,7 @@ func save_to_slot(slot: int) -> void:
 # Load a specific session's slot (Main Menu load, or in-game reload).
 func load_from(session: int, slot: int) -> bool:
 	if not _read_save(_save_path(session, slot)): return false
+	SFX.play(SFX.ui_load)
 	active_session = session
 	last_used_save_slot = slot
 	session_saved_once = true
@@ -644,7 +651,10 @@ func can_heal_player() -> bool:
 # above heal_cap(), and never lowers it if already in the gold zone.
 func heal_player(amount: int) -> void:
 	var cap := maxi(heal_cap(), player_health)
+	var before := player_health
 	player_health = clampi(player_health + amount, 0, cap)
+	if player_health > before:
+		SFX.play(SFX.player_heal)
 
 # ── Relic charge requirement (climbs with every use, persisted) ───────────────
 const RELIC_CHARGE_BASE := 100
@@ -659,6 +669,7 @@ func gain_xp(amount: int) -> void:
 		current_xp -= xp_required
 		player_level += 1
 		MAX_HEALTH += 20   # keeps growing forever — no level cap
+		SFX.play(SFX.level_up)
 		Toast.show_toast("⭐  Level up!  You're now Level %d  (+20 max HP)" % player_level)
 		if item_unlocks.has(player_level):
 			var new_item = item_unlocks[player_level]

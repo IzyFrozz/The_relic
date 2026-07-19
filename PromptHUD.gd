@@ -37,6 +37,9 @@ func request(source: Object, text: String) -> void:
 	if not (source is Node2D):
 		return
 	var key = source.get_instance_id()
+	# Only chirp when this source is NEWLY in range (not on every refresh).
+	if not _requests.has(key):
+		SFX.play(SFX.interact_prompt, -4.0)
 	_requests[key] = { "node": source, "text": text }
 	_order.erase(key)
 	_order.append(key)

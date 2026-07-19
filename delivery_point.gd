@@ -39,6 +39,7 @@ func _process(_delta: float) -> void:
 			DialogueManager.say(QuestManager.player_name, "An ancient chest, locked fast. Perhaps someone in the village knows of it.")
 		return
 	# Has the key → open it.
+	SFX.play(SFX.chest_open)
 	QuestManager.chest_unlocked = true
 	QuestManager.grant_relic()   # sets has_relic AND unlocks it as an equippable item
 	QuestManager.has_key = false

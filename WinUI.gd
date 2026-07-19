@@ -104,6 +104,7 @@ func _style_btn(btn: Button, bg: Color, border: Color) -> void:
 # Call this after enemy dies so XP earned shows on screen
 func show_win_screen(xp_earned: int = 0) -> void:
 	visible = true
+	SFX.play_victory_music()
 	var xp_lbl = find_child("XPEarnedLabel", true, false) as Label
 	if is_instance_valid(xp_lbl) and xp_earned > 0:
 		xp_lbl.text = "✨  +%d XP earned" % xp_earned

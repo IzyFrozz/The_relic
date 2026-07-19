@@ -1,64 +1,84 @@
-# Placeholder / temp assets to replace
+# Assets still needed (exact list)
 
-Everything below is **stand-in art** (mostly the free *Pixel Crawler* pack + a few
-"Meta data" sprites). The `Asset/Selected Icon/` folder is **your real icon pack** —
-it is NOT a placeholder and is intentionally left out.
+## Enemies (by level — currently 8 sheets reused across Lv.1–20)
+1. Lv.1 — Orc Rogue
+2. Lv.2 — Orc Shaman
+3. Lv.3 — Orc Warrior
+4. Lv.4 — Skeleton Mage
+5. Lv.5 — Skeleton Warrior
+6. Lv.6 — Orc
+7. Lv.7 — Skeleton Base
+8. Lv.8 — Skeleton Rogue
+9. Lv.9 — Orc (reuse)
+10. Lv.10 — Skeleton Base (reuse)
+11. Lv.11 — Skeleton Rogue (reuse)
+12. Lv.12 — Orc (reuse)
+13. Lv.13 — Skeleton Base (reuse)
+14. Lv.14 — Skeleton Rogue (reuse)
+15. Lv.15 — Orc (reuse)
+16. Lv.16 — Orc (reuse)
+17. Lv.17 — Skeleton Base (reuse)
+18. Lv.18 — Skeleton Rogue (reuse)
+19. Lv.19 — Orc (reuse)
+20. Lv.20 — Skeleton Base (reuse)
 
-Replace by swapping the file at the same path (keep the filename to avoid re-wiring),
-or by repointing the texture in the scene's Inspector.
+Each needs an **Idle** sheet + a **Death** sheet. Lv.9–20 currently just repeat the
+Lv.1–8 sheets, so the minimum is **8 unique enemies**; for a distinct enemy every
+level you need up to **20**.
 
----
+## NPCs
+1. Elder / Wizard (save point)
+2. Fisherman
+3. Navigator
+4. Street Kid (quest giver)
 
-## 1. Player
-| Role | File |
-|---|---|
-| Hero sprite sheet (overworld + combat, 48×48) | `Asset/sprites/characters/player.png` |
+## Player
+1. Hero sprite sheet (walk + combat, recolorable)
 
-The player is recolorable via a mask shader — see the `player-recolor-shader` memory
-before swapping (the sheet's layout matters).
+## Objects
+1. Ancient chest (closed + open)
+2. World coin pickup
+3. Anvil / crafting station
+4. Signpost
+5. Projectile / hit FX
 
-## 2. Enemies / mobs  → `Asset/Pixel Crawler - Free Pack/Entities/Mobs/`
-Used by the 22 mob instances in `character.tscn` (levels 1–20). Each mob has an
-**Idle-Sheet** and a **Death-Sheet**.
-- **Orc Crew:** `Orc/`, `Orc - Rogue/`, `Orc - Shaman/`, `Orc - Warrior/`
-- **Skeleton Crew:** `Skeleton - Base/`, `Skeleton - Mage/`, `Skeleton - Rogue/`, `Skeleton - Warrior/`
+## World / Tilemap
+1. Ground & water tiles
+2. Wall / building tiles
+3. Trees, rocks, vegetation
+4. Furniture / interior props
+5. Stations (bonfire, sawmill, workbench, alchemy)
 
-> If you want a **distinct enemy per level**, this is where to add sheets — the
-> mob→level assignment lives in `character.tscn` (each `mobN` node's `enemy_level`).
+## UI
+1. Main-menu key art (title banner)
 
-## 3. NPCs
-| In-game NPC | Placeholder file |
-|---|---|
-| Elder / Wizard (save point, "Create Your Hero") | `Asset/Pixel Crawler - Free Pack/Entities/Npc's/Wizzard/Idle/Idle-Sheet.png` |
-| Fisherman & Navigator (Citizen) | `Asset/Pixel Crawler - Free Pack/Entities/Npc's/Citizen_F/Tavern_A/Idle/Idle_Side-Sheet.png` |
-| Street Kid (quest giver) | `Asset/Meta data assets files/Visuals/CHARACTERS/npc/hood/poor-kid1.png` + `poor-kid2.png` |
+## Missing icons (still emoji)
+1. Display / monitor
+2. Keyboard / controls
+3. Mute
+4. Pause
+5. Restart / reset
+6. Delete / trash
+7. Lock
+8. Unlock
+9. Timer / clock
+10. Warning
+11. Hamburger menu
 
-## 4. Objects & props
-| Object | Placeholder file |
-|---|---|
-| Ancient chest (closed/opened) | `Asset/Meta data assets files/Visuals/OBJECTS/sprites/chest-closed.png` (and `chest-opened.png`, referenced in `delivery_point.gd`) |
-| World coin pickup | `Asset/Meta data assets files/Visuals/OBJECTS/coin/coin1.png` |
-| Projectile / FX | `Asset/Meta data assets files/Visuals/FX/shot.png` |
-| ItemsStation (anvil) | `Asset/Pixel Crawler - Free Pack/Environment/Structures/Stations/Anvil/Anvil only.png` (+ `Anvil.png`) |
-| Signpost | uses `Asset/Selected Icon/help.png` (the "?" icon) as a stand-in — see `Sign.gd` |
-| Fishing-spot marker | uses the fishing-rod icon (final) — not a placeholder |
+## Audio (SFX slots in sfx.tscn)
+1. Menu / UI (open, close, click, hover, confirm, cancel, error, tab, toggle, slider, save, load, pause, rebind)
+2. Player combat (attack, hit, block, dodge, reflect, heal, crit)
+3. Combat flow (start, flee, victory, defeat, level-up, crate, relic ready, relic unleash)
+4. Item use — one per item (19 items)
+5. Enemy hit + death, and one attack sound per level (Lv.1–20)
+6. Movement (footstep A/B, sprint, bump)
+7. World (coin, chest, key, relic, quest accept, quest complete, dialogue blip, interact)
+8. Fishing (cast, countdown, reel, catch, fail)
 
-## 5. World / tilemap  → `Asset/Pixel Crawler - Free Pack/Environment/`
-The whole overworld & interiors are built from the free pack. **Do not edit
-`map.tscn` / `foreground.tscn` directly** (project rule) — swap the source images:
-- **Tilesets:** `Tilesets/` — `Water_tiles`, `Floors_Tiles`, `Wall_Tiles`, `Wall_Variations`, `Dungeon_Tiles`
-- **Props:** `Props/Static/` — `Trees/` (Model_01–03), `Rocks`, `Vegetation`, `Furniture`, `Farm`, `Tools`, `Resources`, `Meat`, `Pan`, `Esoteric`, `Dungeon_Props`, `Shadows`
-- **Buildings:** `Structures/Buildings/` — `Walls`, `Roofs`, `Floors`, `Props`, `Interior/`, `Shadows`
-- **Stations:** `Structures/Stations/` — `Bonfire/`, `Sawmill/`, `Workbench/`, `Alchemy/`, `Anvil/`
-
-## 6. Main-menu key art
-Not a file yet — it's the text label **"🖼 Artwork Placeholder"** in
-`main_menu.gd` (~line 111). Drop in real key art and replace that label with a
-`TextureRect`.
-
----
-
-## Audio (now handled by the SFX system)
-The files in `Asset/Main Sound/` are also placeholders, but they're now wired as
-**temporary slots in `sfx.tscn`** — replace them there via the Inspector (see
-`SFX.gd`), not by hand-editing paths.
+## Music
+1. Menu
+2. Overworld
+3. Combat
+4. Town
+5. Interior
+6. Victory

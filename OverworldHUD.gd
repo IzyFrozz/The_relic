@@ -274,6 +274,7 @@ func _on_roadmap_pressed() -> void:
 		quest_log.visible = false
 	if is_instance_valid(roadmap_popup):
 		roadmap_popup.visible = true
+		SFX.play(SFX.ui_open)
 		if roadmap_popup.has_method("refresh_display"):
 			roadmap_popup.refresh_display()
 
@@ -313,8 +314,9 @@ func _on_quest_pressed() -> void:
 func _close_roadmap() -> void:
 	if not is_instance_valid(roadmap_popup):
 		roadmap_popup = get_tree().root.find_child("RoadmapPopup", true, false) as CanvasLayer
-	if is_instance_valid(roadmap_popup):
+	if is_instance_valid(roadmap_popup) and roadmap_popup.visible:
 		roadmap_popup.visible = false
+		SFX.play(SFX.ui_close)
 
 # ── Quest log popup ─────────────────────────────────────────────────────────────
 func _build_quest_log() -> void:
@@ -418,6 +420,7 @@ func _make_nav_btn(txt: String) -> Button:
 	return b
 
 func _cycle_quest_page(dir: int) -> void:
+	SFX.play(SFX.ui_tab)
 	_quest_page = (_quest_page + dir + QUEST_PAGES.size()) % QUEST_PAGES.size()
 	_refresh_quest_log()
 
