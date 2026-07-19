@@ -11,6 +11,9 @@ extends Node2D
 
 func _ready() -> void:
 	_apply_respawn_position()
+	# Overworld theme (unless we're loading straight into a fight — combat swaps it).
+	if not QuestManager.is_in_combat:
+		SFX.play_overworld_music()
 	# The old auto-playing intro dialogue is gone — the "how to play" notes now
 	# live on a readable Signpost next to the player's spawn (see Sign.gd), so the
 	# player reads them at their own pace by pressing E.

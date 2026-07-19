@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://c8inrccsi622w"
+path="res://.godot/imported/freesound_community-samurai-slash-6845.mp3-7bce4b696a4313bd2080ac3f668c479d.mp3str"
+
+[deps]
+
+source_file="res://Asset/Main Sound/fx/freesound_community-samurai-slash-6845.mp3"
+dest_files=["res://.godot/imported/freesound_community-samurai-slash-6845.mp3-7bce4b696a4313bd2080ac3f668c479d.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

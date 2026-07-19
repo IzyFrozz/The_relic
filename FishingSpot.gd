@@ -98,6 +98,7 @@ func _run_countdown() -> void:
 	lbl.add_theme_constant_override("shadow_offset_y", 3)
 	layer.add_child(lbl)
 	for n in ["3", "2", "1", "Cast!"]:
+		SFX.play(SFX.fish_cast if n == "Cast!" else SFX.fish_countdown)
 		lbl.text = n
 		# reset_size() first: otherwise pivot_offset uses the PREVIOUS text's size and
 		# the pop-in scales around the wrong point (it reads as a ghosted double).
@@ -116,8 +117,10 @@ func _on_fish_result(success: bool, size_name: String, xp_mult: float) -> void:
 	if player_nearby and is_instance_valid(_rod_icon):
 		_rod_icon.visible = true
 	if not success:
+		SFX.play(SFX.fish_fail)
 		Toast.show_toast("🎣  The fish slipped the line — cast again!")
 		return
+	SFX.play(SFX.fish_catch)
 	QuestManager.record_fish_caught()   # progresses the "Gone Fishing" quest
 	# Bigger (harder) fish are worth proportionally more XP.
 	var xp := int(round(randi_range(18, 30) * xp_mult))

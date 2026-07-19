@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://cjibkmtmo88l5"
+path="res://.godot/imported/audiopapkin-fishing-reel-302355.mp3-d063f71cbf187e71591bcc52bffaf004.mp3str"
+
+[deps]
+
+source_file="res://Asset/Main Sound/fx/audiopapkin-fishing-reel-302355.mp3"
+dest_files=["res://.godot/imported/audiopapkin-fishing-reel-302355.mp3-d063f71cbf187e71591bcc52bffaf004.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

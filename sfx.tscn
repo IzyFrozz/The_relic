@@ -1,0 +1,104 @@
+[gd_scene format=3 uid="uid://dg10mi6wvc7bq"]
+
+[ext_resource type="Script" uid="uid://cqlple614br0g" path="res://SFX.gd" id="1_sfx"]
+[ext_resource type="AudioStream" uid="uid://bcf4k8erphaw8" path="res://Asset/Main Sound/fx/universfield-new-notification-040-493469.mp3" id="2_hwani"]
+[ext_resource type="AudioStream" uid="uid://brgltt8621tqi" path="res://Asset/Main Sound/fx/vadim_makes_sound-soft-app-button-tap-sound-2-547872.mp3" id="3_4gtne"]
+[ext_resource type="AudioStream" uid="uid://cqamww6g6v662" path="res://Asset/Main Sound/fx/universfield-error-08-206492.mp3" id="4_1spvx"]
+[ext_resource type="AudioStream" uid="uid://d23lwvgexk8qi" path="res://Asset/Main Sound/fx/click.mp3" id="4_yhbrh"]
+[ext_resource type="AudioStream" uid="uid://ci8503d838qnd" path="res://Asset/Main Sound/fx/dragon-studio-armor-impact-from-sword-393843.mp3" id="5_1spvx"]
+[ext_resource type="AudioStream" uid="uid://bpkrtd81keywi" path="res://Asset/Main Sound/fx/game coin.mp3" id="5_ji11y"]
+[ext_resource type="AudioStream" uid="uid://c03pbj7pi2mag" path="res://Asset/Main Sound/fx/litupsubway-ui-hover-sfx-513360.mp3" id="5_pywn7"]
+[ext_resource type="AudioStream" uid="uid://cygcimxsddncc" path="res://Asset/Main Sound/music/ghost-town.ogg" id="6_bpjvb"]
+[ext_resource type="AudioStream" uid="uid://cxrswdda6m6fx" path="res://Asset/Main Sound/fx/click ui.mp3" id="6_c4ohl"]
+[ext_resource type="AudioStream" uid="uid://dvus4kiiie280" path="res://Asset/Main Sound/fx/universfield-level-up-191997.mp3" id="6_ji11y"]
+[ext_resource type="AudioStream" uid="uid://34d5paxs0n3i" path="res://Asset/Main Sound/fx/upgrade.mp3" id="7_b5u7j"]
+[ext_resource type="AudioStream" uid="uid://cm3boddmfij22" path="res://Asset/Main Sound/fx/dragon-studio-sword-slice-393847.mp3" id="8_46q2p"]
+[ext_resource type="AudioStream" uid="uid://c8inrccsi622w" path="res://Asset/Main Sound/fx/freesound_community-samurai-slash-6845.mp3" id="8_mwlvx"]
+[ext_resource type="AudioStream" uid="uid://bockkcick2l0l" path="res://Asset/Main Sound/fx/yodguard-healing-magic-2-378663.mp3" id="9_5fgdh"]
+[ext_resource type="AudioStream" uid="uid://bvit524xhmyp2" path="res://Asset/Main Sound/fx/universfield-punch-03-352040.mp3" id="9_7qmv8"]
+[ext_resource type="AudioStream" uid="uid://ctjnea68t23wf" path="res://Asset/Main Sound/fx/yodguard-shield_impact-3-382411.mp3" id="9_46q2p"]
+[ext_resource type="AudioStream" uid="uid://c86rhjbyryxtc" path="res://Asset/Main Sound/fx/djartmusic-real-swish_3-304242.mp3" id="10_5fgdh"]
+[ext_resource type="AudioStream" uid="uid://jj5fg4l35me8" path="res://Asset/Main Sound/fx/flee.mp3" id="11_n04gt"]
+[ext_resource type="AudioStream" uid="uid://bsouey3hp657g" path="res://Asset/Main Sound/fx/cyberwave-orchestra-fantasy-game-sword-cut-sound-effect-get-more-on-my-patreon-339824.mp3" id="12_ny7ps"]
+[ext_resource type="AudioStream" uid="uid://25eocxmigor6" path="res://Asset/Main Sound/fx/litupsubway-ui-open-sfx-513358.mp3" id="13_j7ilf"]
+[ext_resource type="AudioStream" uid="uid://4ttieqsk5hh6" path="res://Asset/Main Sound/fx/dragon-studio-lightning-spell-386163.mp3" id="14_v8a3w"]
+[ext_resource type="AudioStream" uid="uid://hqbqg3ddok6b" path="res://Asset/Main Sound/fx/puyopuyomegafan1234-winner-game-sound-404167.mp3" id="17_ccu0v"]
+[ext_resource type="AudioStream" uid="uid://vvdom4d43urv" path="res://Asset/Main Sound/fx/voicebosch-sword-block-the-ballad-of-blades-257226.mp3" id="17_n04gt"]
+[ext_resource type="AudioStream" uid="uid://byn8px84mwv0e" path="res://Asset/Main Sound/fx/alphix-game-over-417465.mp3" id="18_d1pu6"]
+[ext_resource type="AudioStream" uid="uid://bupdjk0m0g5hx" path="res://Asset/Main Sound/fx/relic ready.mp3" id="21_ngyqj"]
+[ext_resource type="AudioStream" uid="uid://dns7lvjx6mgxb" path="res://Asset/Main Sound/fx/universfield-character-fall-impact-352287.mp3" id="24_vnkdg"]
+[ext_resource type="AudioStream" uid="uid://beb6pqnxix0eo" path="res://Asset/Main Sound/fx/data_pion-st2-footstep-sfx-323055.mp3" id="25_qq0c2"]
+[ext_resource type="AudioStream" uid="uid://cycjknn5mc6be" path="res://Asset/Main Sound/fx/freesound_community-item-pickup-37089.mp3" id="27_ogdet"]
+[ext_resource type="AudioStream" uid="uid://bedc8cfiyj1a0" path="res://Asset/Main Sound/fx/floraphonic-wooden-trunk-latch-1-183944.mp3" id="28_4dc2a"]
+[ext_resource type="AudioStream" uid="uid://cpy7sykkabisw" path="res://Asset/Main Sound/fx/prmodrai-key-404884.mp3" id="29_02mh6"]
+[ext_resource type="AudioStream" uid="uid://ci8pt5d66qbok" path="res://Asset/Main Sound/fx/relic get.mp3" id="30_svynh"]
+[ext_resource type="AudioStream" uid="uid://cisj3hbi6n0fv" path="res://Asset/Main Sound/fx/yodguard-quest-accept-2-540182.mp3" id="31_duai0"]
+[ext_resource type="AudioStream" uid="uid://dp8mf534saqlo" path="res://Asset/Main Sound/fx/yodguard-quest-complete-1-540192.mp3" id="32_wl7r4"]
+[ext_resource type="AudioStream" uid="uid://djto3h6s73fik" path="res://Asset/Main Sound/fx/freesound_community-medium-text-blip-14855.mp3" id="33_scftg"]
+[ext_resource type="AudioStream" uid="uid://s1l0s0g4cs8m" path="res://Asset/Main Sound/fx/spinopel-fishing-rod-whoosh-411640.mp3" id="34_s8rp1"]
+[ext_resource type="AudioStream" uid="uid://dbvrie2goi4uw" path="res://Asset/Main Sound/fx/beep.mp3" id="35_mwlvx"]
+[ext_resource type="AudioStream" uid="uid://cjibkmtmo88l5" path="res://Asset/Main Sound/fx/audiopapkin-fishing-reel-302355.mp3" id="36_xxemo"]
+[ext_resource type="AudioStream" uid="uid://dvhgracabruvv" path="res://Asset/Main Sound/fx/fishing win.mp3" id="37_q2xyo"]
+[ext_resource type="AudioStream" uid="uid://d85ub54isptx" path="res://Asset/Main Sound/fx/soundshelfstudio-ui-loading-end-fail-522858.mp3" id="38_256ju"]
+[ext_resource type="AudioStream" uid="uid://d1ob52hpdpxgc" path="res://Asset/Main Sound/fx/finley-chill-sunset-chill-nature-529994.mp3" id="39_tr3an"]
+[ext_resource type="AudioStream" uid="uid://dowsp0pw0ghex" path="res://Asset/Main Sound/fx/eaglaxle-a-nature-453405.mp3" id="40_xvxb0"]
+[ext_resource type="AudioStream" uid="uid://c55fc0sic4d54" path="res://Asset/Main Sound/fx/inono777-combat-epic-425365.mp3" id="41_sr0ml"]
+
+[node name="SFX" type="Node" unique_id=896281284]
+script = ExtResource("1_sfx")
+sfx_volume_db = -4.0
+ui_open = ExtResource("2_hwani")
+ui_close = ExtResource("3_4gtne")
+ui_click = ExtResource("4_yhbrh")
+ui_hover = ExtResource("5_pywn7")
+ui_confirm = ExtResource("6_c4ohl")
+ui_cancel = ExtResource("6_c4ohl")
+ui_error = ExtResource("4_1spvx")
+ui_tab = ExtResource("6_c4ohl")
+ui_toggle = ExtResource("4_yhbrh")
+ui_slider = ExtResource("6_c4ohl")
+ui_save = ExtResource("6_c4ohl")
+ui_load = ExtResource("6_c4ohl")
+ui_pause = ExtResource("6_c4ohl")
+ui_unpause = ExtResource("6_c4ohl")
+ui_rebind = ExtResource("4_yhbrh")
+player_attack = ExtResource("8_mwlvx")
+player_hit = ExtResource("9_7qmv8")
+player_block = ExtResource("9_46q2p")
+player_dodge = ExtResource("10_5fgdh")
+player_reflect = ExtResource("12_ny7ps")
+player_heal = ExtResource("9_5fgdh")
+player_crit = ExtResource("8_46q2p")
+combat_start = ExtResource("5_1spvx")
+combat_flee = ExtResource("11_n04gt")
+victory = ExtResource("17_ccu0v")
+defeat = ExtResource("18_d1pu6")
+level_up = ExtResource("6_ji11y")
+crate_drop = ExtResource("13_j7ilf")
+relic_ready = ExtResource("21_ngyqj")
+relic_unleash = ExtResource("14_v8a3w")
+item_relic = ExtResource("17_n04gt")
+enemy_hit = ExtResource("9_7qmv8")
+enemy_death = ExtResource("24_vnkdg")
+enemy_attack_default = ExtResource("9_7qmv8")
+footstep_a = ExtResource("25_qq0c2")
+coin = ExtResource("5_ji11y")
+item_pickup = ExtResource("27_ogdet")
+chest_open = ExtResource("28_4dc2a")
+key_get = ExtResource("29_02mh6")
+relic_get = ExtResource("30_svynh")
+quest_accept = ExtResource("31_duai0")
+quest_complete = ExtResource("32_wl7r4")
+dialogue_blip = ExtResource("33_scftg")
+interact_prompt = ExtResource("6_c4ohl")
+fish_cast = ExtResource("34_s8rp1")
+fish_countdown = ExtResource("35_mwlvx")
+fish_reel = ExtResource("36_xxemo")
+fish_catch = ExtResource("37_q2xyo")
+fish_fail = ExtResource("38_256ju")
+music_menu = ExtResource("39_tr3an")
+music_overworld = ExtResource("40_xvxb0")
+music_combat = ExtResource("41_sr0ml")
+music_town = ExtResource("6_bpjvb")
+music_interior = ExtResource("40_xvxb0")
+music_victory = ExtResource("7_b5u7j")

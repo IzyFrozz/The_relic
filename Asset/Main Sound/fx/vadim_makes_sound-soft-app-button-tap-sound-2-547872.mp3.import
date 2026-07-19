@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://brgltt8621tqi"
+path="res://.godot/imported/vadim_makes_sound-soft-app-button-tap-sound-2-547872.mp3-dac9787ee3230f0fa8ab282c0de239b8.mp3str"
+
+[deps]
+
+source_file="res://Asset/Main Sound/fx/vadim_makes_sound-soft-app-button-tap-sound-2-547872.mp3"
+dest_files=["res://.godot/imported/vadim_makes_sound-soft-app-button-tap-sound-2-547872.mp3-dac9787ee3230f0fa8ab282c0de239b8.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

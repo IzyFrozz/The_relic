@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://jj5fg4l35me8"
+path="res://.godot/imported/flee.mp3-d06c8f4e26e9499fdf56552f0fc3c7c7.mp3str"
+
+[deps]
+
+source_file="res://Asset/Main Sound/fx/flee.mp3"
+dest_files=["res://.godot/imported/flee.mp3-d06c8f4e26e9499fdf56552f0fc3c7c7.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

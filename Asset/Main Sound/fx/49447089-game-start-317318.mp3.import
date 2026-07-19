@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://xomni3ujv2fc"
+path="res://.godot/imported/49447089-game-start-317318.mp3-2139da31e3fe59726aa5a83e983b5a1c.mp3str"
+
+[deps]
+
+source_file="res://Asset/Main Sound/fx/49447089-game-start-317318.mp3"
+dest_files=["res://.godot/imported/49447089-game-start-317318.mp3-2139da31e3fe59726aa5a83e983b5a1c.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

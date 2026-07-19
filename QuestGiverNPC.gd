@@ -86,6 +86,7 @@ func _handle_interact() -> void:
 		QuestManager.has_key = true
 		QuestManager.has_unsaved_progress = true
 		_update_prompt()
+		SFX.play(SFX.key_get)
 		Toast.show_toast("🔑  Received the chest key — open the ancient chest!")
 		DialogueManager.start([
 			{ "name": QuestManager.player_name, "text": "Here — ten coins, as promised." },

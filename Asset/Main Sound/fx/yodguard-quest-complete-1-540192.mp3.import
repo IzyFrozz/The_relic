@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://dp8mf534saqlo"
+path="res://.godot/imported/yodguard-quest-complete-1-540192.mp3-c84e9f2a91116a007ec470233baade47.mp3str"
+
+[deps]
+
+source_file="res://Asset/Main Sound/fx/yodguard-quest-complete-1-540192.mp3"
+dest_files=["res://.godot/imported/yodguard-quest-complete-1-540192.mp3-c84e9f2a91116a007ec470233baade47.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

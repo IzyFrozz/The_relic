@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://b1pqtq0c2jew4"
+path="res://.godot/imported/fish success.mp3-192942e61425d7f929aafd3b03612916.mp3str"
+
+[deps]
+
+source_file="res://Asset/Main Sound/fx/fish success.mp3"
+dest_files=["res://.godot/imported/fish success.mp3-192942e61425d7f929aafd3b03612916.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

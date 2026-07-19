@@ -14,8 +14,12 @@ const COL_GOLD    := Color(1.00, 0.85, 0.30, 1.0)
 
 var main_view:     VBoxContainer
 var load_view:      VBoxContainer
-var settings_view:  VBoxContainer
+var settings_view:  VBoxContainer   # hub: Audio / Display / Controls
+var audio_view:     VBoxContainer
+var display_view:   VBoxContainer
+var controls_view:  VBoxContainer
 var customize_view: VBoxContainer
+var _current_view: String = "main"   # drives Esc's "step back one screen"
 
 var name_input:    LineEdit
 var width_slider:  HSlider
@@ -65,6 +69,7 @@ func _ready() -> void:
 	for c in get_children():
 		c.queue_free()
 	_build()
+	SFX.play_menu_music()
 
 # ── Build ─────────────────────────────────────────────────────────────────
 func _build() -> void:
@@ -153,6 +158,29 @@ func _build() -> void:
 	settings_view.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	vbox.add_child(settings_view)
 	_build_settings_view()
+
+	# Each settings section is its own screen with its own Back button, so nothing
+	# spills off the bottom of the card.
+	audio_view = VBoxContainer.new()
+	audio_view.visible = false
+	audio_view.add_theme_constant_override("separation", 14)
+	audio_view.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	vbox.add_child(audio_view)
+	_build_audio_view()
+
+	display_view = VBoxContainer.new()
+	display_view.visible = false
+	display_view.add_theme_constant_override("separation", 14)
+	display_view.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	vbox.add_child(display_view)
+	_build_display_view()
+
+	controls_view = VBoxContainer.new()
+	controls_view.visible = false
+	controls_view.add_theme_constant_override("separation", 10)
+	controls_view.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	vbox.add_child(controls_view)
+	_build_controls_view()
 
 	customize_view = VBoxContainer.new()
 	customize_view.visible = false
@@ -323,27 +351,108 @@ func _on_saveselect_pressed(slot: int) -> void:
 	load_status_label.add_theme_color_override("font_color", Color(0.8, 0.85, 0.95))
 
 # ── Settings view ──────────────────────────────────────────────────────────
-func _build_settings_view() -> void:
-	var audio_lbl = Label.new()
-	audio_lbl.text = "🔊  Audio"
-	settings_view.add_child(audio_lbl)
+# One "Caption ▬▬▬ 80%" row wired to a mix bus via SFX (persists automatically).
+# Takes an explicit parent — it must land in the Audio view, not the Settings hub.
+func _add_audio_slider(parent: Node, caption: String, bus: String) -> void:
+	var row = HBoxContainer.new()
+	row.add_theme_constant_override("separation", 12)
+	var lbl = Label.new()
+	lbl.text = caption
+	lbl.custom_minimum_size = Vector2(90, 0)
+	row.add_child(lbl)
+	var s = HSlider.new()
+	s.custom_minimum_size = Vector2(240, 24)
+	s.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	s.min_value = 0.0; s.max_value = 1.0; s.step = 0.01
+	# Seed from the live bus BEFORE connecting, so the handle shows the real level
+	# and the connect doesn't fire a spurious save.
+	s.value = SFX.get_bus_linear(bus)
+	row.add_child(s)
+	var pct = Label.new()
+	pct.custom_minimum_size = Vector2(50, 0)
+	pct.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	pct.text = "%d%%" % roundi(s.value * 100.0)
+	row.add_child(pct)
+	s.value_changed.connect(func(v):
+		SFX.set_bus_linear(bus, v)
+		pct.text = "%d%%" % roundi(v * 100.0))
+	parent.add_child(row)
 
-	volume_slider = HSlider.new()
-	volume_slider.custom_minimum_size = Vector2(0, 24)
-	volume_slider.min_value = 0.0; volume_slider.max_value = 1.0; volume_slider.step = 0.01
-	volume_slider.value = db_to_linear(AudioServer.get_bus_volume_db(MASTER_BUS))
-	volume_slider.value_changed.connect(func(v): AudioServer.set_bus_volume_db(MASTER_BUS, linear_to_db(v)))
-	settings_view.add_child(volume_slider)
+# A section heading inside one of the settings sub-views.
+func _section_title(parent: Node, text: String) -> void:
+	var l = Label.new()
+	l.text = text
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	l.add_theme_font_size_override("font_size", 22)
+	l.add_theme_color_override("font_color", COL_GOLD)
+	parent.add_child(l)
+
+# "↩ Back" that returns to the settings hub (cancels any in-progress rebind).
+func _add_back_to_settings(parent: Node) -> void:
+	var b = Button.new()
+	b.text = "↩  Back"
+	_style_btn(b, Color(0.12, 0.12, 0.14), Color(0.40, 0.40, 0.48))
+	b.pressed.connect(func():
+		_rebinding_action = ""
+		_refresh_keybind_labels()
+		_show_view("settings"))
+	parent.add_child(b)
+
+# ── Settings hub: just picks a section (each opens its own screen) ──────────────
+func _build_settings_view() -> void:
+	_section_title(settings_view, "⚙️  Settings")
+
+	var audio_btn = Button.new()
+	audio_btn.text = "🔊  Audio"
+	_style_btn(audio_btn, Color(0.09, 0.12, 0.20), Color(0.30, 0.42, 0.75))
+	audio_btn.pressed.connect(func(): _show_view("audio"))
+	settings_view.add_child(audio_btn)
+
+	var display_btn = Button.new()
+	display_btn.text = "🖥️  Display"
+	_style_btn(display_btn, Color(0.09, 0.12, 0.20), Color(0.30, 0.42, 0.75))
+	display_btn.pressed.connect(func(): _show_view("display"))
+	settings_view.add_child(display_btn)
+
+	var controls_btn = Button.new()
+	controls_btn.text = "⌨  Controls"
+	_style_btn(controls_btn, Color(0.09, 0.12, 0.20), Color(0.30, 0.42, 0.75))
+	controls_btn.pressed.connect(func(): _show_view("controls"))
+	settings_view.add_child(controls_btn)
+
+	var back_btn = Button.new()
+	back_btn.text = "↩  Back"
+	_style_btn(back_btn, Color(0.12, 0.12, 0.14), Color(0.40, 0.40, 0.48))
+	back_btn.pressed.connect(func(): _show_view("main"))
+	settings_view.add_child(back_btn)
+
+# ── Audio section ───────────────────────────────────────────────────────────────
+func _build_audio_view() -> void:
+	_section_title(audio_view, "🔊  Audio")
+
+	var hint = Label.new()
+	hint.text = "Set each channel's level. Saved automatically."
+	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	hint.add_theme_font_size_override("font_size", 11)
+	hint.add_theme_color_override("font_color", Color(0.68, 0.72, 0.82))
+	audio_view.add_child(hint)
+
+	# One labelled slider per mix bus, driven by SFX (persists to user://audio.cfg).
+	_add_audio_slider(audio_view, "Master", "Master")
+	_add_audio_slider(audio_view, "Music",  "Music")
+	_add_audio_slider(audio_view, "SFX",    "SFX")
 
 	mute_check = CheckButton.new()
-	mute_check.text = "Mute"
-	mute_check.button_pressed = AudioServer.is_bus_mute(MASTER_BUS)
-	mute_check.toggled.connect(func(p): AudioServer.set_bus_mute(MASTER_BUS, p))
-	settings_view.add_child(mute_check)
+	mute_check.text = "Mute All"
+	mute_check.button_pressed = SFX.is_master_muted()
+	mute_check.toggled.connect(func(p): SFX.set_master_mute(p))
+	audio_view.add_child(mute_check)
 
-	var display_lbl = Label.new()
-	display_lbl.text = "🖥️  Display"
-	settings_view.add_child(display_lbl)
+	_add_back_to_settings(audio_view)
+
+# ── Display section ─────────────────────────────────────────────────────────────
+func _build_display_view() -> void:
+	_section_title(display_view, "🖥️  Display")
 
 	fullscreen_check = CheckButton.new()
 	fullscreen_check.text = "Fullscreen"
@@ -351,18 +460,20 @@ func _build_settings_view() -> void:
 	fullscreen_check.toggled.connect(func(p):
 		DisplayServer.window_set_mode(
 			DisplayServer.WINDOW_MODE_FULLSCREEN if p else DisplayServer.WINDOW_MODE_WINDOWED))
-	settings_view.add_child(fullscreen_check)
+	display_view.add_child(fullscreen_check)
 
-	# ── Controls / keybinds ──
-	var controls_lbl = Label.new()
-	controls_lbl.text = "⌨  Controls"
-	settings_view.add_child(controls_lbl)
+	_add_back_to_settings(display_view)
+
+# ── Controls section ────────────────────────────────────────────────────────────
+func _build_controls_view() -> void:
+	_section_title(controls_view, "⌨  Controls")
 
 	var kb_hint = Label.new()
 	kb_hint.text = "Click a key, then press the new key. Saved automatically."
+	kb_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	kb_hint.add_theme_font_size_override("font_size", 11)
 	kb_hint.add_theme_color_override("font_color", Color(0.68, 0.72, 0.82))
-	settings_view.add_child(kb_hint)
+	controls_view.add_child(kb_hint)
 
 	keybind_rows = {}
 	for action in KeybindManager.action_ids():
@@ -381,7 +492,7 @@ func _build_settings_view() -> void:
 		var b: Button = key_btn
 		key_btn.pressed.connect(func(): _begin_rebind(a, b))
 		row.add_child(key_btn)
-		settings_view.add_child(row)
+		controls_view.add_child(row)
 		keybind_rows[action] = key_btn
 
 	var reset_btn = Button.new()
@@ -391,16 +502,9 @@ func _build_settings_view() -> void:
 	reset_btn.pressed.connect(func():
 		KeybindManager.reset_defaults()
 		_refresh_keybind_labels())
-	settings_view.add_child(reset_btn)
+	controls_view.add_child(reset_btn)
 
-	var back_btn = Button.new()
-	back_btn.text = "↩  Back"
-	_style_btn(back_btn, Color(0.12, 0.12, 0.14), Color(0.40, 0.40, 0.48))
-	back_btn.pressed.connect(func():
-		_rebinding_action = ""
-		_refresh_keybind_labels()
-		_show_view("main"))
-	settings_view.add_child(back_btn)
+	_add_back_to_settings(controls_view)
 
 # ── Keybind rebinding ────────────────────────────────────────────────────────
 func _begin_rebind(action: String, btn: Button) -> void:
@@ -415,15 +519,30 @@ func _refresh_keybind_labels() -> void:
 			keybind_rows[a].text = KeybindManager.key_display(a)
 
 func _input(event: InputEvent) -> void:
-	if _rebinding_action == "":
+	# While rebinding, the next key press IS the new binding (Esc cancels).
+	if _rebinding_action != "":
+		if event is InputEventKey and event.pressed and not event.is_echo():
+			get_viewport().set_input_as_handled()
+			var kc: int = event.physical_keycode if event.physical_keycode != 0 else event.keycode
+			if event.keycode != KEY_ESCAPE:   # Esc cancels the rebind
+				KeybindManager.rebind(_rebinding_action, kc)
+				SFX.play(SFX.ui_rebind)
+			_rebinding_action = ""
+			_refresh_keybind_labels()
 		return
-	if event is InputEventKey and event.pressed and not event.is_echo():
-		get_viewport().set_input_as_handled()
-		var kc: int = event.physical_keycode if event.physical_keycode != 0 else event.keycode
-		if event.keycode != KEY_ESCAPE:   # Esc cancels the rebind
-			KeybindManager.rebind(_rebinding_action, kc)
-		_rebinding_action = ""
-		_refresh_keybind_labels()
+
+	# Esc steps back one screen, so you're never stranded on a sub-view.
+	if event is InputEventKey and event.pressed and not event.is_echo() \
+			and event.keycode == KEY_ESCAPE:
+		var back := {
+			"audio": "settings", "display": "settings", "controls": "settings",
+			"settings": "main", "session": "main", "customize": "main",
+			"saveselect": "session",
+		}
+		if back.has(_current_view):
+			get_viewport().set_input_as_handled()
+			SFX.play(SFX.ui_cancel)
+			_show_view(back[_current_view])
 
 # ── Character creation ───────────────────────────────────────────────────────
 func _build_customize_view() -> void:
@@ -612,21 +731,25 @@ func _on_confirm_customize() -> void:
 
 # ── View switching ───────────────────────────────────────────────────────────
 func _show_view(which: String) -> void:
+	_current_view = which
 	main_view.visible      = which == "main"
 	load_view.visible      = which == "session"
 	settings_view.visible  = which == "settings"
+	audio_view.visible     = which == "audio"
+	display_view.visible   = which == "display"
+	controls_view.visible  = which == "controls"
 	customize_view.visible = which == "customize"
 	saveselect_view.visible = which == "saveselect"
-	# Cancel any in-progress key rebind when leaving the settings view.
+	# Cancel any in-progress key rebind when leaving the controls view.
 	_rebinding_action = ""
-	if which == "settings":
+	if which == "controls":
 		_refresh_keybind_labels()
 	# Views with more content grow the card so nothing spills out.
 	if is_instance_valid(card_panel):
 		if which == "customize":
 			card_panel.custom_minimum_size.y = 1010
-		elif which == "settings":
-			card_panel.custom_minimum_size.y = 1080   # taller: now includes Map + Reel keybinds
+		elif which == "controls":
+			card_panel.custom_minimum_size.y = 900   # 8 keybind rows + reset + back
 		else:
 			card_panel.custom_minimum_size.y = 700
 	if which == "customize":

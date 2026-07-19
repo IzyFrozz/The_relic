@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://cycjknn5mc6be"
+path="res://.godot/imported/freesound_community-item-pickup-37089.mp3-797caa05d1df2ec15b805f7f1940018b.mp3str"
+
+[deps]
+
+source_file="res://Asset/Main Sound/fx/freesound_community-item-pickup-37089.mp3"
+dest_files=["res://.godot/imported/freesound_community-item-pickup-37089.mp3-797caa05d1df2ec15b805f7f1940018b.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4
