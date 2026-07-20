@@ -12,6 +12,7 @@ const COL_BG      := Color(0.05, 0.06, 0.10, 1.0)
 const COL_CARD_BG := Color(0.07, 0.08, 0.12, 0.98)
 const COL_BORDER  := Color(0.35, 0.40, 0.60, 1.0)
 const COL_GOLD    := Color(1.00, 0.85, 0.30, 1.0)
+const COL_DANGER  := Color(0.95, 0.34, 0.32, 1.0)
 
 var main_view:     VBoxContainer
 var load_view:      VBoxContainer
@@ -449,7 +450,6 @@ func _build_settings_view() -> void:
 	settings_view.add_child(controls_btn)
 
 	settings_view.add_child(HSeparator.new())
-	_add_difficulty_picker(settings_view)
 
 	var back_btn = Button.new()
 	back_btn.text = "↩  Back"
@@ -694,10 +694,10 @@ func _build_customize_view() -> void:
 	_update_colors()
 
 # ── Difficulty picker ────────────────────────────────────────────────────────
-# Shared by the character-creation screen and the Settings hub, so both places
-# stay in step and there's only one description of what the modes mean.
-# NOT cleared per call — the picker exists in BOTH views, and every copy has to
-# repaint when the mode changes, or the other screen shows a stale selection.
+# Character creation only — difficulty is chosen per run, not as a global
+# setting, so it does not belong in the Settings hub.
+# NOT cleared per call: the arrays outlive a single build so every live copy
+# repaints when the mode changes.
 var _difficulty_buttons: Array = []
 var _difficulty_blurbs: Array = []
 
@@ -752,8 +752,14 @@ func _refresh_difficulty_picker() -> void:
 			continue
 		var on: bool = QuestManager.difficulty == int(entry["mode"])
 		if on:
-			_style_btn(b, Color(0.16, 0.11, 0.04), COL_GOLD)
-			b.add_theme_color_override("font_color", COL_GOLD)
+			# Relic mode reads as a warning, not just "the other option" — red,
+			# so the harder run is never picked by accident.
+			if int(entry["mode"]) == QuestManager.Difficulty.RELIC:
+				_style_btn(b, Color(0.20, 0.06, 0.06), COL_DANGER)
+				b.add_theme_color_override("font_color", COL_DANGER)
+			else:
+				_style_btn(b, Color(0.16, 0.11, 0.04), COL_GOLD)
+				b.add_theme_color_override("font_color", COL_GOLD)
 		else:
 			_style_btn(b, Color(0.10, 0.11, 0.16), Color(0.32, 0.34, 0.46))
 			b.add_theme_color_override("font_color", Color(0.72, 0.75, 0.86))
@@ -763,7 +769,7 @@ func _refresh_difficulty_picker() -> void:
 			continue
 		if hard:
 			bl.text = "Every foe carries a threat trait, the late tiers field deeper loadouts, levels cost 25% more XP and fishing pays 12% less."
-			bl.add_theme_color_override("font_color", Color(0.95, 0.78, 0.45))
+			bl.add_theme_color_override("font_color", COL_DANGER)
 		else:
 			bl.text = "The adventure as it was written. A fair fight."
 			bl.add_theme_color_override("font_color", Color(0.68, 0.72, 0.82))
@@ -861,8 +867,7 @@ func _show_view(which: String) -> void:
 	_rebinding_action = ""
 	if which == "controls":
 		_refresh_keybind_labels()
-	# The picker exists on two screens — resync whichever one is being shown.
-	if which == "settings" or which == "customize":
+	if which == "customize":
 		_refresh_difficulty_picker()
 	# NOTE: the card no longer resizes per view — it fills the window height and
 	# the views scroll inside it, so nothing can spill past its edge.

@@ -101,6 +101,10 @@ var is_in_combat: bool = false
 var enemy_overworld_position: Vector2 = Vector2.ZERO
 
 const ACTION_PAUSE := 0.90
+# The enemy's turn is a spectator moment — the player can only read it, not act
+# in it — so its beats are deliberately slower than the player's. At ACTION_PAUSE
+# a three-item turn flashed past in under two seconds and read as one blur.
+const ENEMY_ACTION_PAUSE := 1.5
 const FX_TINT_DUR  := 0.42
 
 var _player_ground_fx: ColorRect = null
@@ -131,8 +135,23 @@ func _get_sprite(target: String) -> AnimatedSprite2D:
 		return get_node_or_null("AnimatedSprite2D") as AnimatedSprite2D
 	return null
 
+# Push the current combat state into the HUD right now.
+#
+# Every fx function calls this on entry. Combat state (HP, buffs, inventories) is
+# mutated the instant an action resolves, but the HUD used to be repainted only
+# at a few checkpoints — so a whole turn's worth of actions played out visually
+# while the bars still showed the values from the START of the round, and the
+# numbers all snapped at once at the end. Refreshing as each effect BEGINS means
+# the bar moves in lockstep with the thing that caused it: heal sparkle and the
+# HP going up are the same beat, and the player can follow the turn action by
+# action. Cheap and idempotent, so calling it often is fine.
+func _sync_ui() -> void:
+	if combat_ui and is_instance_valid(combat_ui):
+		combat_ui._refresh_ui_states()
+
 func _fx_heal(target: String) -> void:
 	if not is_in_combat: return
+	_sync_ui()
 	var s = _get_sprite(target)
 	if not is_instance_valid(s): return
 	var orig = s.modulate
@@ -148,6 +167,7 @@ func _fx_heal(target: String) -> void:
 
 func _fx_damage(target: String) -> void:
 	if not is_in_combat: return
+	_sync_ui()
 	var s = _get_sprite(target)
 	if not is_instance_valid(s): return
 	var orig = s.modulate
@@ -158,6 +178,7 @@ func _fx_damage(target: String) -> void:
 
 func _fx_status(target: String, color: Color, icon: String = "") -> void:
 	if not is_in_combat: return
+	_sync_ui()
 	var s = _get_sprite(target)
 	if not is_instance_valid(s): return
 	var orig = s.modulate
@@ -169,6 +190,7 @@ func _fx_status(target: String, color: Color, icon: String = "") -> void:
 
 func _fx_poison_tick(target: String) -> void:
 	if not is_in_combat: return
+	_sync_ui()
 	var s = _get_sprite(target)
 	if not is_instance_valid(s): return
 	var orig = s.modulate
@@ -182,6 +204,7 @@ func _fx_poison_tick(target: String) -> void:
 
 func _fx_steal(from_target: String) -> void:
 	if not is_in_combat: return
+	_sync_ui()
 	var s = _get_sprite(from_target)
 	if not is_instance_valid(s): return
 	var orig = s.modulate
@@ -756,10 +779,21 @@ const ENEMY_THREATS := [
 	{ "id": "warded",     "min_level": 10, "proc": 0.34, "emoji": "🪞", "name": "Warded",     "desc": "May raise a reflecting ward each round." },
 	{ "id": "thorned",    "min_level": 11, "proc": 0.32, "emoji": "📌", "name": "Thorned",    "desc": "Landing a hit can cost you 10 HP." },
 	{ "id": "hexer",      "min_level": 12, "proc": 0.29, "emoji": "🗿", "name": "Hexer",      "desc": "Its hits can weaken your next attack." },
-	{ "id": "jammer",     "min_level": 13, "proc": 0.27, "emoji": "⚡", "name": "Jammer",     "desc": "May jam your items for a round." },
-	{ "id": "disarming",  "min_level": 14, "proc": 0.25, "emoji": "❌", "name": "Disarming",  "desc": "Its hits can knock your next swing away." },
+	# JAMMER + DISARMING are the two LOCKOUT traits — between them they can take
+	# away your items and your swing. Individually the anti-lockout rules already
+	# stop them landing on the same round, but at their old rates (0.27 / 0.25) a
+	# mob carrying both could alternate them almost every round and leave you with
+	# nothing to do for most of the fight. Rated well below the other traits so
+	# losing a turn stays an occasional setback rather than the default state.
+	{ "id": "jammer",     "min_level": 13, "proc": 0.16, "emoji": "⚡", "name": "Jammer",     "desc": "May jam your items for a round." },
+	{ "id": "disarming",  "min_level": 14, "proc": 0.14, "emoji": "❌", "name": "Disarming",  "desc": "Its hits can knock your next swing away." },
 	{ "id": "relentless", "min_level": 15, "proc": 0.23, "emoji": "⏳", "name": "Relentless", "desc": "Sometimes strikes twice in a round." },
-	{ "id": "undying",    "min_level": 17, "proc": 0.18, "emoji": "🪶", "name": "Undying",    "desc": "Might cheat a killing blow once, at 10 HP." },
+	# UNDYING is GUARANTEED, not rolled: `proc` is 1.0 and the call site uses
+	# has_threat. What limits it is the once-per-fight latch (_undying_spent), the
+	# same way the player's Phoenix Feather it mirrors is guaranteed but single-use.
+	# As a coin flip it was pure noise — you could never plan around whether the
+	# killing blow would stick. Always firing makes it a fact you fight around.
+	{ "id": "undying",    "min_level": 17, "proc": 1.00, "emoji": "🪶", "name": "Undying",    "desc": "Cheats a killing blow once, clinging on at 10 HP." },
 	# ── Threshold traits ──────────────────────────────────────────────────────
 	# proc = 0 on purpose: these two are NOT rolled. They fire off hard counters,
 	# so they're predictable and can be played around, which is what stops a foe
@@ -808,15 +842,26 @@ func _run_threshold_threats() -> void:
 				break                      # only one double at a time
 			await _summon_enemy_clone()
 
-	# RELICBOUND — fires when current HP falls past each 100 mark. Driven by the
-	# mark it is IN, not by damage dealt, so healing back over a mark re-arms it.
+	# RELICBOUND — fires ONCE as the enemy's HP first falls past each 100 mark
+	# (400, 300, 200, 100 …), and never again for that same mark.
+	#
+	# `_last_beam_mark` is a RATCHET: it only ever goes down. It used to re-arm
+	# when the enemy healed back over a boundary, which meant a mob that heals —
+	# potions, lifesteal, LEECHING — could be walked across the same mark over and
+	# over and fire a beam every time. That is what made beams look like they were
+	# riding along with the Splitter's 80-damage proc instead of tracking HP: both
+	# fire in the same pre-turn pass, and a healing mob re-crossing 200 produced a
+	# beam at ~140 HP with no new boundary actually reached. Crossing a mark is a
+	# one-time event for the whole fight, so healing must NOT re-arm it.
+	#
+	# Deliberately one beam per turn even when a single hit skips several marks:
+	# the ratchet still latches to the new low, so the skipped marks are consumed
+	# rather than queued up to fire later.
 	if has_threat("relicbound") and is_in_combat:
 		var mark := int(floor(float(enemy_health) / float(BEAM_HP_MARK)))
 		if mark < _last_beam_mark:
 			_last_beam_mark = mark
 			await _enemy_relic_beam()
-		elif mark > _last_beam_mark:
-			_last_beam_mark = mark         # healed back up — re-arm
 
 # The enemy's answer to the Ancient Relic: a slimmer red-orange column onto the
 # player, using the exact same FX path.
@@ -1213,6 +1258,11 @@ func _summon_enemy_clone() -> void:
 	c.scale = es.scale
 	c.animation = es.animation
 	c.frame = es.frame
+	# Copy the FACING too. The enemy is flipped to face left at combat start; a
+	# double built without this looked the wrong way and appeared to attack away
+	# from the player.
+	c.flip_h = es.flip_h
+	c.flip_v = es.flip_v
 	c.modulate = Color(1.0, 0.42, 0.42, 0.7)     # spectral RED, to read as "theirs"
 	c.z_index = 4
 	get_parent().add_child(c)
@@ -1376,27 +1426,78 @@ func _enemy_lunge_at_clone() -> void:
 func process_player_attack_phase() -> void:
 	if player_items_locked: player_items_locked = false
 
-	# Mirror Clone strikes FIRST on your turn — a flat, unbuffed 20 — then your
-	# own (buffed) attack lands right after, for two hits in one turn.
-	if player_clone_active:
-		await _clone_strike()
-		if await _check_combat_end_conditions(): return
-
+	# ── Your side acts, one readable beat at a time ──────────────────────────
+	# YOU swing first, then your Mirror Clone follows up. Each combatant travels
+	# to its own target and its result lands before the next one moves, so all
+	# four board states read clearly:
+	#
+	#   1. you            v enemy           — you hit the enemy.
+	#   2. you + clone    v enemy           — you hit it, then your clone does.
+	#   3. you            v enemy + double  — you cut down the double; the mob is
+	#                                         untouched behind it.
+	#   4. you + clone    v enemy + double  — you cut down the double, THEN your
+	#                                         clone goes on to hit the mob.
+	#
+	# Previously the lunge was fired from CombatUI before any of this ran, so the
+	# player always charged the mob itself and the double just evaporated where it
+	# stood — and the clone struck at the same time with nothing separating them.
 	if player_is_disarmed:
 		player_is_disarmed = false
 		if player_stun_extra_turns > 0:
 			player_stun_extra_turns -= 1; player_is_disarmed = true
 		player_damage_bonus = 0; player_sharpened = false; player_overcharged = false
 		player_lifesteal_active = false; player_god_pierce = false
+		await _player_lunge(null, true)
 		await _fx_status("player", Color(1.0, 0.68, 0.10, 1.0), "❌")
 		if combat_ui:
 			combat_ui.display_round_history("💥 DISARMED — your attack was skipped!", true)
-			combat_ui._refresh_ui_states()
-		await get_tree().create_timer(ACTION_PAUSE).timeout
+		_sync_ui()
+	else:
+		await _resolve_player_swing()
+		if not is_in_combat: return
 		if await _check_combat_end_conditions(): return
-		if combat_ui: combat_ui.start_enemy_turn_visuals()
-		await get_tree().create_timer(1.0).timeout
-		_execute_enemy_turn_ai()
+
+	# The clone is a SECOND combatant taking its own turn — never simultaneous
+	# with yours. A disarm silences your swing, not the double you summoned.
+	if player_clone_active:
+		await get_tree().create_timer(ACTION_PAUSE).timeout
+		if not is_in_combat: return
+		await _clone_strike()
+		if await _check_combat_end_conditions(): return
+
+	_sync_ground_fx()
+	_sync_ui()
+	await get_tree().create_timer(ACTION_PAUSE).timeout
+	if await _check_combat_end_conditions(): return
+	if combat_ui: combat_ui.start_enemy_turn_visuals()
+	await get_tree().create_timer(1.0).timeout
+	_execute_enemy_turn_ai()
+
+# Runs the player to `target` and back. `target` null (or a disarmed swing) just
+# shakes them in place. Targeting lives here rather than in CombatUI because only
+# the combat state knows whether a double is standing in the way.
+func _player_lunge(target: Node2D, disarmed: bool = false) -> void:
+	if not is_instance_valid(player_ref) or not player_ref.has_method("do_attack_lunge"):
+		return
+	var pos: Vector2 = target.global_position if is_instance_valid(target) else player_ref.global_position
+	await player_ref.do_attack_lunge(pos, target, disarmed)
+
+# The player's own swing: picks its target, travels to it, and resolves.
+func _resolve_player_swing() -> void:
+	# The enemy's double throws itself in the way, exactly as your Mirror Clone
+	# does — so it is what you RUN AT, and it eats the whole hit whatever its
+	# size, even a pierce, then shatters. The mob behind it is untouched.
+	if enemy_clone_active and is_instance_valid(_enemy_clone_node):
+		await _player_lunge(_enemy_clone_node)
+		# Spent on the double, buffs and all — the mirror of how your clone eats
+		# the enemy's one-shots.
+		player_damage_bonus = 0; player_sharpened = false; player_overcharged = false
+		player_god_pierce = false; player_piercing = false
+		player_cursed = false; player_lifesteal_active = false
+		await _shatter_enemy_clone()
+		if combat_ui: combat_ui.display_round_history(
+			"👥 Its double threw itself in the way and shattered — the mob is untouched!", true)
+		_sync_ui()
 		return
 
 	var dmg = 20 + player_damage_bonus
@@ -1414,15 +1515,9 @@ func process_player_attack_phase() -> void:
 
 	var actual_dmg_dealt := 0
 
-	# The enemy's double throws itself in the way FIRST, exactly as the player's
-	# Mirror Clone does — it eats the whole hit whatever its size, even a pierce,
-	# then shatters.
-	if enemy_clone_active:
-		await _shatter_enemy_clone()
-		player_lifesteal_active = false
-		if combat_ui: combat_ui.display_round_history(
-			"👥 Its double took the hit and shattered — no damage!", true)
-	elif player_god_pierce:
+	await _player_lunge(self)
+
+	if player_god_pierce:
 		# Overcharge: the hit is guaranteed to land no matter what the enemy has
 		# active — it ignores this attack being cursed, and it pierces straight
 		# through dodge, reflect, and shield. Shield itself is left standing
@@ -1494,13 +1589,7 @@ func process_player_attack_phase() -> void:
 		if combat_ui: combat_ui.display_round_history(
 			"📌 THORNED — its hide tears you for 10 as you strike!", true)
 
-	_sync_ground_fx()
-	if combat_ui: combat_ui._refresh_ui_states()
-	await get_tree().create_timer(ACTION_PAUSE).timeout
-	if await _check_combat_end_conditions(): return
-	if combat_ui: combat_ui.start_enemy_turn_visuals()
-	await get_tree().create_timer(1.0).timeout
-	_execute_enemy_turn_ai()
+	_sync_ui()
 
 # =============================================================================
 #  ENEMY AI TURN
@@ -1527,6 +1616,10 @@ func _execute_enemy_turn_ai() -> void:
 	if enemy_clone_active:
 		await _enemy_clone_strike()
 		if await _check_combat_end_conditions(): return
+		# The double's hit is its own beat — let it land before the enemy's own
+		# turn starts, or the two attacks read as a single event.
+		await get_tree().create_timer(ENEMY_ACTION_PAUSE).timeout
+		if not is_in_combat: return
 
 	# ── Start-of-round threat rolls ──────────────────────────────────────────
 	# WARDED re-raises its mirror on a roll rather than being permanently up.
@@ -1535,6 +1628,8 @@ func _execute_enemy_turn_ai() -> void:
 		await _fx_status("enemy", Color(1.0, 0.90, 0.22, 1.0), "🪞")
 		if combat_ui: combat_ui.display_round_history(
 			"🪞 WARDED — a reflecting ward shimmers into place!", false)
+		await get_tree().create_timer(ENEMY_ACTION_PAUSE).timeout
+		if not is_in_combat: return
 	# JAMMER shorts out your kit. Same anti-lockout rule as Static Field: never
 	# applied on a round you're already disarmed, so you keep one legal move.
 	if not player_is_disarmed and player_stun_extra_turns <= 0 and not player_items_locked \
@@ -1543,6 +1638,8 @@ func _execute_enemy_turn_ai() -> void:
 		await _fx_status("player", Color(0.70, 0.90, 1.0, 1.0), "⚡")
 		if combat_ui: combat_ui.display_round_history(
 			"⚡ JAMMER — your items are shorted out this round!", false)
+		await get_tree().create_timer(ENEMY_ACTION_PAUSE).timeout
+		if not is_in_combat: return
 
 	var tracking: Dictionary = {}
 	var sg_eval := false
@@ -1551,7 +1648,7 @@ func _execute_enemy_turn_ai() -> void:
 		enemy_items_locked = false
 		await _fx_status("enemy", Color(0.70, 0.90, 1.0, 1.0), "⚡")
 		if combat_ui: combat_ui.display_round_history("⚡ Enemy items LOCKED — basic attack only!", false)
-		await get_tree().create_timer(ACTION_PAUSE).timeout
+		await get_tree().create_timer(ENEMY_ACTION_PAUSE).timeout
 	else:
 		var going := true
 		while going:
@@ -1610,7 +1707,7 @@ func _execute_enemy_turn_ai() -> void:
 			if pick != "":
 				await _enemy_execute_item(pick, tracking)
 				if not is_in_combat: return
-				await get_tree().create_timer(ACTION_PAUSE).timeout
+				await get_tree().create_timer(ENEMY_ACTION_PAUSE).timeout
 			else:
 				going = false
 
@@ -1751,7 +1848,7 @@ func _execute_enemy_turn_ai() -> void:
 
 	_sync_ground_fx()
 	if combat_ui: combat_ui._refresh_ui_states()
-	await get_tree().create_timer(ACTION_PAUSE).timeout
+	await get_tree().create_timer(ENEMY_ACTION_PAUSE).timeout
 	if await _check_combat_end_conditions(): return
 
 	# ── RELENTLESS: one extra full action ────────────────────────────────────
@@ -2143,9 +2240,10 @@ func _check_combat_end_conditions() -> bool:
 		return true
 
 	# ── UNDYING: one death save, mirroring the player's Phoenix Feather ───────
-	# Checked BEFORE the death branch so the fight simply continues. Spent once
-	# per fight, and reset in _reset_all_combat_modifiers.
-	if enemy_health <= 0 and not _undying_spent and threat_procs("undying"):
+	# Checked BEFORE the death branch so the fight simply continues. has_threat,
+	# NOT threat_procs — the save always fires; `_undying_spent` is what makes it
+	# once per fight, and it is reset in _reset_all_combat_modifiers.
+	if enemy_health <= 0 and not _undying_spent and has_threat("undying"):
 		_undying_spent = true
 		enemy_health = 10
 		SFX.play(SFX.enemy_heal if SFX.enemy_heal else SFX.player_heal)

@@ -400,15 +400,18 @@ func _apply_status_tints() -> void:
 # ─── MAIN UI REFRESH ──────────────────────────────────────────────────────────
 # ── Threat strip ────────────────────────────────────────────────────────────────
 # RELIC-difficulty threat traits are PERMANENT for the whole fight, unlike the
-# buff icons that flicker on and off each round — so they get their own panel
-# under the enemy card rather than being mixed into that line, where they'd read
-# as "just another temporary buff". Hidden entirely on Normal difficulty.
+# buff icons that flicker on and off each round — so they get their own panel in
+# the bottom-right corner rather than being mixed into that line, where they'd
+# read as "just another temporary buff". Hidden entirely on Normal difficulty.
 var threat_panel: PanelContainer = null
 var threat_rows: VBoxContainer = null
 var _threat_shown: Array = []          # what's currently drawn, to avoid rebuilding every frame
 
-const THREAT_PANEL_W    := 430.0
-const THREAT_PANEL_GAP  := 10.0   # breathing room between the strip and the card
+# Width matches the enemy nameplate above it (main.tscn overrides TopRightCard to
+# 448 wide, flush to the corner), so the two right-hand panels line up.
+const THREAT_PANEL_W      := 448.0
+# Flush against the screen edge — the nameplates sit at offset 0, not inset.
+const THREAT_PANEL_MARGIN := 0.0
 const THREAT_COL_BG     := Color(0.16, 0.05, 0.06, 0.95)
 const THREAT_COL_BORDER := Color(0.72, 0.22, 0.24, 1.0)
 const THREAT_COL_TEXT   := Color(1.00, 0.80, 0.72, 1.0)
@@ -425,19 +428,21 @@ func _build_threat_strip() -> void:
 	threat_panel.name = "ThreatStrip"
 	threat_panel.visible = false
 	threat_panel.mouse_filter = Control.MOUSE_FILTER_PASS
-	# Immediately LEFT of the enemy nameplate, top-aligned with it, so the traits
-	# read as belonging to that foe. It hangs off the card's left edge rather than
-	# below it — below is where the enemy's item arc lives, and 5-6 traits would
-	# have buried the column.
+	# Pinned to the BOTTOM-RIGHT corner, the same way the nameplates are pinned to
+	# their corners: anchors at 1.0 with a fixed margin, so the strip hugs the
+	# screen edge at every resolution instead of drifting with the card's offsets.
+	# Zero-height rect + GROW_BEGIN on both axes means it grows up and to the left
+	# to fit however many traits it has, while the bottom-right corner stays put.
 	threat_panel.anchor_left = 1.0
 	threat_panel.anchor_right = 1.0
-	threat_panel.anchor_top = 0.0
-	threat_panel.anchor_bottom = 0.0
+	threat_panel.anchor_top = 1.0
+	threat_panel.anchor_bottom = 1.0
 	threat_panel.grow_horizontal = Control.GROW_DIRECTION_BEGIN
-	threat_panel.grow_vertical = Control.GROW_DIRECTION_END
-	threat_panel.offset_right = card.offset_left - THREAT_PANEL_GAP
-	threat_panel.offset_left = threat_panel.offset_right - THREAT_PANEL_W
-	threat_panel.offset_top = card.offset_top + 8.0
+	threat_panel.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	threat_panel.offset_right  = -THREAT_PANEL_MARGIN
+	threat_panel.offset_left   = threat_panel.offset_right - THREAT_PANEL_W
+	threat_panel.offset_bottom = -THREAT_PANEL_MARGIN
+	threat_panel.offset_top    = threat_panel.offset_bottom
 	var st = StyleBoxFlat.new()
 	st.bg_color = THREAT_COL_BG
 	st.set_corner_radius_all(8)
@@ -494,8 +499,20 @@ func _refresh_threat_strip() -> void:
 
 func _refresh_ui_states() -> void:
 	if not current_enemy: return
-	if is_waiting_on_action: _lock_all_player_inputs(); return
-	if fight_button: fight_button.disabled = false
+	# This used to read:
+	#     if is_waiting_on_action: _lock_all_player_inputs(); return
+	# `is_waiting_on_action` is true for the WHOLE time an action is resolving —
+	# your swing, the clone's follow-up, and the entire enemy turn. So every
+	# mid-turn refresh returned before painting anything, and the HP bars only
+	# caught up once the round was over: both sides' numbers jumped at once, with
+	# no way to tell which blow did what.
+	#
+	# The READOUTS (HP, buffs, threat strip, both inventories) now always repaint,
+	# so each hit's damage shows the instant that hit lands and before the next
+	# combatant moves. Only the INPUTS stay locked while busy — that's what the
+	# early return was actually protecting.
+	var busy: bool = is_waiting_on_action
+	if fight_button: fight_button.disabled = busy
 	var is_disarmed: bool = current_enemy.player_is_disarmed if "player_is_disarmed" in current_enemy else false
 
 	# ── Player buffs ──
@@ -575,7 +592,10 @@ func _refresh_ui_states() -> void:
 		var head = "" if icon_tex else meta["emoji"] + "\n"
 		btn.text         = "%s[%s] ×%d" % [head, slot_key, count]
 		btn.tooltip_text = QuestManager.item_tooltip(meta, "[%s]" % slot_key)
-		var usable = count > 0 and not is_disarmed
+		# `busy` keeps every tile locked while an action resolves — the job the old
+		# early return did — while the count and label above still update live, so
+		# you can watch an item leave your kit the moment the enemy steals it.
+		var usable = count > 0 and not is_disarmed and not busy
 		if "player_items_locked" in current_enemy and current_enemy.player_items_locked: usable = false
 		# Heal items gray out at the gold-heart cap (can't heal above 300 red HP).
 		if item_id == "potion"       and not QuestManager.can_heal_player():  usable = false
@@ -640,12 +660,10 @@ func _on_fight_pressed() -> void:
 	if is_waiting_on_action: return
 	is_waiting_on_action = true; _lock_all_player_inputs()
 	# No confirmation prompt — attack fires immediately on click.
-	var player = get_tree().get_first_node_in_group("player")
-	if not is_instance_valid(player): player = get_tree().root.find_child("mainplayer", true, false)
-	if is_instance_valid(player) and player.has_method("do_attack_lunge"):
-		var enemy_pos   = current_enemy.global_position if is_instance_valid(current_enemy) else player.global_position
-		var is_dis      = current_enemy.player_is_disarmed if "player_is_disarmed" in current_enemy else false
-		await player.do_attack_lunge(enemy_pos, current_enemy, is_dis)
+	# The lunge is NOT played here. It used to be, which meant the player always
+	# charged the mob itself even when its Splitter double was interposed — the
+	# swing has to travel to whatever is actually being hit, and only the combat
+	# state knows what that is, so process_player_attack_phase owns the movement.
 	if current_enemy.has_method("process_player_attack_phase"):
 		await current_enemy.process_player_attack_phase()
 	if not _is_enemy_turn:
