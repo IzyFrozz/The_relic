@@ -793,7 +793,7 @@ const ENEMY_THREATS := [
 	# same way the player's Phoenix Feather it mirrors is guaranteed but single-use.
 	# As a coin flip it was pure noise — you could never plan around whether the
 	# killing blow would stick. Always firing makes it a fact you fight around.
-	{ "id": "undying",    "min_level": 17, "proc": 1.00, "emoji": "🪶", "name": "Undying",    "desc": "Cheats a killing blow once, clinging on at 10 HP." },
+	{ "id": "undying",    "min_level": 17, "proc": 1.00, "emoji": "🪶", "name": "Undying",    "desc": "Cheats a killing blow once, rising again with %d HP." % PHOENIX_REVIVE_HP },
 	# ── Threshold traits ──────────────────────────────────────────────────────
 	# proc = 0 on purpose: these two are NOT rolled. They fire off hard counters,
 	# so they're predictable and can be played around, which is what stops a foe
@@ -2084,10 +2084,10 @@ func enemy_heal_cap() -> int:
 
 # Phoenix death→rebirth flourish: the player goes limp for a beat (a faked death
 # cycle, since there's no death animation), then flashes golden and rises.
-func _play_phoenix_revive() -> void:
-	var spr: AnimatedSprite2D = null
-	if is_instance_valid(player_ref):
-		spr = player_ref.get_node_or_null("AnimatedSprite2D") as AnimatedSprite2D
+# `target` is "player" for the Phoenix Feather or "enemy" for the Undying threat
+# — the death beat and golden rebirth are identical, only the sprite differs.
+func _play_phoenix_revive(target: String = "player") -> void:
+	var spr := _get_sprite(target)
 	if not is_instance_valid(spr):
 		await get_tree().create_timer(0.8).timeout
 		return
@@ -2152,6 +2152,32 @@ func _clear_player_status() -> void:
 	player_regen_rounds = 0
 	player_poison_rounds = 0
 	player_stun_extra_turns = 0
+	_sync_ground_fx()
+	if is_instance_valid(combat_ui):
+		combat_ui._apply_status_tints()
+
+# The enemy's mirror of the above, for an UNDYING revive. Same principle: a mob
+# that just came back from the dead comes back CLEAN, so it isn't still carrying
+# the stun/poison/curse from the blow that killed it. This does clear the
+# debuffs the player spent items applying — which is exactly what the player's
+# own Phoenix does to the enemy's, so both revives cost the other side the same.
+func _clear_enemy_status() -> void:
+	enemy_active_armor = false
+	enemy_sharpened = false
+	enemy_overcharged = false
+	enemy_piercing = false
+	enemy_is_disarmed = false
+	enemy_weakened = false
+	enemy_cursed = false
+	enemy_reflect_active = false
+	enemy_dodge_active = false
+	enemy_items_locked = false
+	enemy_lifesteal_active = false
+	enemy_god_pierce = false
+	enemy_damage_bonus = 0
+	enemy_regen_rounds = 0
+	enemy_poison_rounds = 0
+	enemy_stun_extra_turns = 0
 	_sync_ground_fx()
 	if is_instance_valid(combat_ui):
 		combat_ui._apply_status_tints()
@@ -2245,13 +2271,21 @@ func _check_combat_end_conditions() -> bool:
 	# once per fight, and it is reset in _reset_all_combat_modifiers.
 	if enemy_health <= 0 and not _undying_spent and has_threat("undying"):
 		_undying_spent = true
-		enemy_health = 10
 		SFX.play(SFX.enemy_heal if SFX.enemy_heal else SFX.player_heal)
-		await _fx_status("enemy", Color(1.0, 0.85, 0.30, 1.0), "🪶")
-		if combat_ui:
-			combat_ui.display_round_history(
-				"🪶 UNDYING — it refuses to fall, clinging on at 10 HP!", false)
-			combat_ui._refresh_ui_states()
+		if combat_ui: combat_ui.display_round_history(
+			"🪶 UNDYING — it refuses to fall!", false)
+		# The full Phoenix treatment: it keels over and sinks, then flashes gold
+		# and rights itself. Snapping it back to 10 HP with a one-frame tint gave
+		# no sense that anything had died, so a revive the player had no way to
+		# prevent also read as if the hit simply had not registered.
+		await _play_phoenix_revive("enemy")
+		if not is_in_combat: return true
+		# Reborn clean, exactly as the player's Phoenix revive is.
+		_clear_enemy_status()
+		enemy_health = PHOENIX_REVIVE_HP
+		if combat_ui: combat_ui.display_round_history(
+			"🪶 It rises again with %d HP!" % PHOENIX_REVIVE_HP, false)
+		_sync_ui()
 		return false
 
 	if enemy_health <= 0:

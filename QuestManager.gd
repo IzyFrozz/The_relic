@@ -768,7 +768,7 @@ func heal_player(amount: int) -> void:
 # another RELIC_CHARGE_STEP. (`relic_uses` is still tallied and saved, but only
 # as a lifetime stat — it no longer gates anything, so a long save file can't
 # price the relic out of reach forever.)
-const RELIC_CHARGE_BASE := 200
+const RELIC_CHARGE_BASE := 150
 const RELIC_CHARGE_STEP := 40
 var relic_uses_fight: int = 0   # reset at the start of every combat — NOT saved
 
