@@ -82,7 +82,7 @@ func open_popup() -> void:
 func _on_slot_pressed(slot: int) -> void:
 	QuestManager.save_to_slot(slot)   # saves to this session's slot
 	if is_instance_valid(status_label):
-		status_label.text = "✅  Saved to Slot %d!" % slot
+		status_label.text = "Saved to Slot %d!" % slot
 		status_label.add_theme_color_override("font_color", COL_GREEN)
 	_refresh_slot_labels()
 	await get_tree().create_timer(0.9).timeout

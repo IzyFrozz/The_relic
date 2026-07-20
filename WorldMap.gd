@@ -186,7 +186,7 @@ func _build_fullmap() -> void:
 	_full_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_full_hint.add_theme_font_size_override("font_size", 14)
 	_full_hint.add_theme_color_override("font_color", Color(0.7, 0.75, 0.9))
-	_full_hint.text = "🔵 You    🟡 Objective    ▪ explored    ·  press  M  or  Esc  to close"
+	_full_hint.text = "blue = you   ·   gold = objective   ·   ▪ explored   ·   press  M  or  Esc  to close"
 	panel.add_child(_full_hint)
 
 # ── Update loop ───────────────────────────────────────────────────────────────
@@ -480,7 +480,10 @@ func _map_gate_ok() -> bool:
 		return false
 	for n in ["LoseUI", "WinUI"]:
 		var node := get_tree().root.find_child(n, true, false)
-		if is_instance_valid(node) and node is CanvasItem and (node as CanvasItem).visible:
+		# NOT `node is CanvasItem` — both end screens are CanvasLayer, which is not
+		# a CanvasItem, so that test was always false and the compass + mini-map
+		# stayed on top of the victory/defeat screen.
+		if is_instance_valid(node) and "visible" in node and node.visible:
 			return false
 	var pause := get_tree().root.find_child("PauseMenu", true, false)
 	if is_instance_valid(pause) and pause.has_method("is_open") and pause.is_open():

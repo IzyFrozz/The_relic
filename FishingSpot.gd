@@ -19,6 +19,58 @@ const FishingMinigame = preload("res://FishingMinigame.gd")
 const CLONE_CHANCE := 0.05
 const CLONE_FISH := ["exotic", "rare", "legendary"]
 
+# ── XP nerf ──────────────────────────────────────────────────────────────────
+# Fishing was out-earning every other XP source, so the whole payout is scaled
+# down here (one knob, so the per-tier xp_mult curve stays untouched).
+# Two stacked 25% cuts: 0.75 × 0.75 — fishing now pays ~56% of its original XP.
+const XP_SCALE := 0.5625
+
+# ── XP bands per tier ────────────────────────────────────────────────────────
+# The payout used to be one shared randi_range(18, 30) scaled by the tier's
+# multiplier. That ±25% spread is wider than the gap between neighbouring tiers,
+# so the bands overlapped badly — a lucky `medium` could out-earn an unlucky
+# `large`, and a `massive` could beat an `exotic` two tiers above it.
+#
+# Each tier now gets its own band, ±XP_JITTER around its midpoint. ±7% is the
+# widest spread the ladder tolerates: the tightest neighbouring ratio is
+# rare→exotic at 1.158, and (1-j)/(1+j) >= 1/1.158 solves to j <= 0.073.
+# _build_xp_bands() then walks the ladder and nudges any floor that integer
+# rounding left touching the previous ceiling, so the order can NEVER invert.
+const XP_JITTER   := 0.07
+const XP_MID_ROLL := 24.0   # midpoint of the old 18-30 roll
+
+var _xp_bands: Dictionary = {}   # tier name -> Vector2i(min_xp, max_xp)
+var _bands_difficulty: int = -1  # which difficulty the cached bands were built for
+
+func _build_xp_bands() -> void:
+	_xp_bands.clear()
+	_bands_difficulty = QuestManager.difficulty
+	# RELIC difficulty trims the whole ladder by the same factor, so the bands stay
+	# ordered (a uniform scale can't reorder them) and the non-overlap pass below
+	# still guarantees a bigger fish always pays more.
+	var diff_mult: float = QuestManager.DIFF_FISHING_XP_MULT if QuestManager.is_relic_difficulty() else 1.0
+	var tiers: Array = FishingMinigame.SIZES.keys()
+	tiers.sort_custom(func(a, b):
+		return float(FishingMinigame.SIZES[a]["xp"]) < float(FishingMinigame.SIZES[b]["xp"]))
+	var prev_max := 0
+	for t in tiers:
+		var mid: float = XP_MID_ROLL * float(FishingMinigame.SIZES[t]["xp"]) * XP_SCALE * diff_mult
+		var lo: int = maxi(1, int(round(mid * (1.0 - XP_JITTER))))
+		var hi: int = maxi(lo, int(round(mid * (1.0 + XP_JITTER))))
+		if lo <= prev_max:          # rounding closed the gap — force it open
+			lo = prev_max + 1
+			hi = maxi(hi, lo)
+		prev_max = hi
+		_xp_bands[t] = Vector2i(lo, hi)
+
+# XP for landing `size_name`, always inside that tier's own band.
+func xp_for_catch(size_name: String) -> int:
+	# Rebuild if difficulty changed mid-run (Settings can flip it any time).
+	if _xp_bands.is_empty() or _bands_difficulty != QuestManager.difficulty:
+		_build_xp_bands()
+	var band: Vector2i = _xp_bands.get(size_name, Vector2i(10, 17))
+	return randi_range(band.x, band.y)
+
 var player_nearby: bool = false
 var _busy: bool = false
 
@@ -39,12 +91,12 @@ func _ready() -> void:
 func _on_body_entered(body: Node2D) -> void:
 	if body.name == "mainplayer":
 		player_nearby = true
-		if is_instance_valid(_rod_icon): _rod_icon.visible = true
+		IconDB.set_marker_visible(_rod_icon, true)
 
 func _on_body_exited(body: Node2D) -> void:
 	if body.name == "mainplayer":
 		player_nearby = false
-		if is_instance_valid(_rod_icon): _rod_icon.visible = false
+		IconDB.set_marker_visible(_rod_icon, false)
 
 func _process(_delta: float) -> void:
 	if _busy or QuestManager.is_fishing:
@@ -70,7 +122,7 @@ func _try_cast() -> void:
 
 func _cast() -> void:
 	_busy = true
-	if is_instance_valid(_rod_icon): _rod_icon.visible = false
+	IconDB.set_marker_visible(_rod_icon, false)
 	await _run_countdown()
 	if not is_instance_valid(self) or not is_inside_tree():
 		return
@@ -114,16 +166,16 @@ func _run_countdown() -> void:
 
 func _on_fish_result(success: bool, size_name: String, xp_mult: float) -> void:
 	_busy = false
-	if player_nearby and is_instance_valid(_rod_icon):
-		_rod_icon.visible = true
+	if player_nearby:
+		IconDB.set_marker_visible(_rod_icon, true)
 	if not success:
 		SFX.play(SFX.fish_fail)
 		Toast.show_toast("🎣  The fish slipped the line — cast again!")
 		return
 	SFX.play(SFX.fish_catch)
 	QuestManager.record_fish_caught()   # progresses the "Gone Fishing" quest
-	# Bigger (harder) fish are worth proportionally more XP.
-	var xp := int(round(randi_range(18, 30) * xp_mult))
+	# Bigger (harder) fish are worth strictly more XP — bands never overlap.
+	var xp := xp_for_catch(size_name)
 	QuestManager.gain_xp(xp)
 	var msg := "%s   +%d XP" % [_lead_for(size_name), xp]
 	# ── Mirror Clone drop ──────────────────────────────────────────────────────
@@ -162,5 +214,7 @@ func _lead_for(size_name: String) -> String:
 # Builds "<fish-icon>  <text>" — the toast is a RichTextLabel, so an inline [img]
 # renders the chosen fish; falls back to the emoji if the icon is missing.
 func _fish_lead(id: String, emoji: String, text: String) -> String:
-	var bb := IconDB.bbcode_for_id(id, 28)
+	# Random sprite from this tier's pool, so landing the same tier twice still
+	# shows a different fish (IconDB.FISH_VARIANTS).
+	var bb := IconDB.fish_bbcode(id, 28)
 	return "%s  %s" % [bb if bb != "" else emoji, text]

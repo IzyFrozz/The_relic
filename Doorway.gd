@@ -3,10 +3,13 @@ extends Area2D
 var prompt_label: Label = null
 
 # Drag and drop your destination Marker2D into this slot in the Inspector!
-@export var target_marker: Marker2D 
+@export var target_marker: Marker2D
+# Kept for the scene instances that still set it; the affordance is the floating
+# door icon now, so this text is no longer displayed.
 @export var prompt_text: String = "[E] Interact"
 
 var player_ref: Node2D = null
+var _marker: Sprite2D = null
 
 func _ready() -> void:
 	# 1. DEEP SCAN: Look through ALL sub-folders and child nodes to find the label
@@ -21,6 +24,10 @@ func _ready() -> void:
 		body_entered.connect(_on_body_entered)
 	if not body_exited.is_connected(_on_body_exited):
 		body_exited.connect(_on_body_exited)
+
+	# 3. Floating door icon instead of the old "[E] …" text chip. It hangs on the
+	#    door itself (get_prompt_target), not this Area2D's origin.
+	_marker = IconDB.add_marker(get_prompt_target(), "exit")
 
 # Recursive function that searches deep into the node tree to find and kill the label visibility
 func _find_label_deep_scan(current_node: Node) -> void:
@@ -61,9 +68,9 @@ func get_prompt_target() -> Node2D:
 func _on_body_entered(body: Node2D) -> void:
 	if body.name == "mainplayer":
 		player_ref = body
-		PromptHUD.request(self, prompt_text)
+		IconDB.set_marker_visible(_marker, true)
 
 func _on_body_exited(body: Node2D) -> void:
 	if body.name == "mainplayer":
 		player_ref = null
-		PromptHUD.release(self)
+		IconDB.set_marker_visible(_marker, false)

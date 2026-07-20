@@ -152,6 +152,7 @@ func _apply_card_styles() -> void:
 		enemy_hp.add_theme_color_override("default_color", Color(1.00, 0.75, 0.75))
 		enemy_hp.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		enemy_hp.bbcode_enabled = true; enemy_hp.fit_content = true; enemy_hp.scroll_active = false
+	_build_threat_strip()
 	for lbl in [player_buffs_lbl, enemy_buffs_lbl]:
 		if is_instance_valid(lbl):
 			lbl.add_theme_font_size_override("normal_font_size", 12)
@@ -220,8 +221,8 @@ func _build_item_buttons() -> void:
 		# Uniform square tile: icon centred on top, tiny key/count line below.
 		btn.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		btn.vertical_icon_alignment = VERTICAL_ALIGNMENT_TOP
-		btn.tooltip_text = "%s\n%s\n[%s]" % [meta["label"], meta["desc"],
-			SLOT_KEYS[i] if i < SLOT_KEYS.size() else ""]
+		btn.tooltip_text = QuestManager.item_tooltip(meta,
+			"[%s]" % (SLOT_KEYS[i] if i < SLOT_KEYS.size() else ""))
 		var style = StyleBoxFlat.new()
 		style.bg_color = Color(0.10, 0.11, 0.16, 0.96); style.set_corner_radius_all(7); style.set_border_width_all(1)
 		style.border_color = Color(0.32, 0.32, 0.50)
@@ -299,11 +300,11 @@ func _build_dynamic_popup_window() -> void:
 	popup_label.add_theme_font_size_override("font_size", 15); vbox.add_child(popup_label)
 	var hbox = HBoxContainer.new(); hbox.alignment = BoxContainer.ALIGNMENT_CENTER
 	hbox.add_theme_constant_override("separation", 16); vbox.add_child(hbox)
-	popup_confirm_btn = Button.new(); popup_confirm_btn.text = "✅  Confirm"
+	popup_confirm_btn = Button.new(); popup_confirm_btn.text = "Confirm"
 	popup_confirm_btn.focus_mode = Control.FOCUS_NONE; popup_confirm_btn.custom_minimum_size = Vector2(150, 44)
 	popup_confirm_btn.add_theme_font_size_override("font_size", 14)
 	popup_confirm_btn.pressed.connect(func(): _resolve_popup(true)); hbox.add_child(popup_confirm_btn)
-	popup_cancel_btn = Button.new(); popup_cancel_btn.text = "❌  Cancel"
+	popup_cancel_btn = Button.new(); popup_cancel_btn.text = "Cancel"
 	popup_cancel_btn.focus_mode = Control.FOCUS_NONE; popup_cancel_btn.custom_minimum_size = Vector2(150, 44)
 	popup_cancel_btn.add_theme_font_size_override("font_size", 14)
 	popup_cancel_btn.pressed.connect(func(): _resolve_popup(false)); hbox.add_child(popup_cancel_btn)
@@ -397,6 +398,100 @@ func _apply_status_tints() -> void:
 		else:          es.modulate = Color.WHITE
 
 # ─── MAIN UI REFRESH ──────────────────────────────────────────────────────────
+# ── Threat strip ────────────────────────────────────────────────────────────────
+# RELIC-difficulty threat traits are PERMANENT for the whole fight, unlike the
+# buff icons that flicker on and off each round — so they get their own panel
+# under the enemy card rather than being mixed into that line, where they'd read
+# as "just another temporary buff". Hidden entirely on Normal difficulty.
+var threat_panel: PanelContainer = null
+var threat_rows: VBoxContainer = null
+var _threat_shown: Array = []          # what's currently drawn, to avoid rebuilding every frame
+
+const THREAT_PANEL_W    := 430.0
+const THREAT_PANEL_GAP  := 10.0   # breathing room between the strip and the card
+const THREAT_COL_BG     := Color(0.16, 0.05, 0.06, 0.95)
+const THREAT_COL_BORDER := Color(0.72, 0.22, 0.24, 1.0)
+const THREAT_COL_TEXT   := Color(1.00, 0.80, 0.72, 1.0)
+
+# Widest the item arcs ever reach in from a screen edge: the margin, plus the
+# arc's inward bulge, plus a tile. The strip must stay inside that on both sides.
+const ARC_REACH := ARC_MARGIN + ARC_BULGE + TILE_SIZE.x
+
+func _build_threat_strip() -> void:
+	var card = find_child("TopRightCard") as Panel
+	if not is_instance_valid(card):
+		return
+	threat_panel = PanelContainer.new()
+	threat_panel.name = "ThreatStrip"
+	threat_panel.visible = false
+	threat_panel.mouse_filter = Control.MOUSE_FILTER_PASS
+	# Immediately LEFT of the enemy nameplate, top-aligned with it, so the traits
+	# read as belonging to that foe. It hangs off the card's left edge rather than
+	# below it — below is where the enemy's item arc lives, and 5-6 traits would
+	# have buried the column.
+	threat_panel.anchor_left = 1.0
+	threat_panel.anchor_right = 1.0
+	threat_panel.anchor_top = 0.0
+	threat_panel.anchor_bottom = 0.0
+	threat_panel.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	threat_panel.grow_vertical = Control.GROW_DIRECTION_END
+	threat_panel.offset_right = card.offset_left - THREAT_PANEL_GAP
+	threat_panel.offset_left = threat_panel.offset_right - THREAT_PANEL_W
+	threat_panel.offset_top = card.offset_top + 8.0
+	var st = StyleBoxFlat.new()
+	st.bg_color = THREAT_COL_BG
+	st.set_corner_radius_all(8)
+	st.set_border_width_all(2)
+	st.border_color = THREAT_COL_BORDER
+	st.content_margin_left = 12; st.content_margin_right = 12
+	st.content_margin_top = 8;   st.content_margin_bottom = 8
+	threat_panel.add_theme_stylebox_override("panel", st)
+	card.get_parent().add_child(threat_panel)
+
+	threat_rows = VBoxContainer.new()
+	threat_rows.add_theme_constant_override("separation", 2)
+	threat_panel.add_child(threat_rows)
+
+func _refresh_threat_strip() -> void:
+	if not is_instance_valid(threat_panel) or not is_instance_valid(threat_rows):
+		return
+	var metas: Array = []
+	if is_instance_valid(current_enemy) and current_enemy.has_method("threat_metas"):
+		metas = current_enemy.threat_metas()
+	if metas.is_empty():
+		threat_panel.visible = false
+		_threat_shown = []
+		return
+	var ids: Array = []
+	for m in metas:
+		ids.append(str(m["id"]))
+	threat_panel.visible = true
+	if ids == _threat_shown:
+		return                        # unchanged — don't churn the nodes
+	_threat_shown = ids
+	for c in threat_rows.get_children():
+		c.queue_free()
+
+	var head = RichTextLabel.new()
+	head.bbcode_enabled = true; head.fit_content = true; head.scroll_active = false
+	head.autowrap_mode = TextServer.AUTOWRAP_OFF
+	head.add_theme_font_size_override("normal_font_size", 11)
+	head.add_theme_color_override("default_color", THREAT_COL_BORDER)
+	head.text = "[b]THREATS  (%d)[/b]" % metas.size()
+	threat_rows.add_child(head)
+
+	for m in metas:
+		var row = RichTextLabel.new()
+		row.bbcode_enabled = true; row.fit_content = true; row.scroll_active = false
+		row.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		row.custom_minimum_size = Vector2(0, 0)
+		row.add_theme_font_size_override("normal_font_size", 12)
+		row.add_theme_color_override("default_color", THREAT_COL_TEXT)
+		row.text = IconDB.iconify("%s  [b]%s[/b] — %s" % [
+			m["emoji"], str(m["name"]).to_upper(), m["desc"]], 18)
+		row.tooltip_text = "%s — %s" % [m["name"], m["desc"]]
+		threat_rows.add_child(row)
+
 func _refresh_ui_states() -> void:
 	if not current_enemy: return
 	if is_waiting_on_action: _lock_all_player_inputs(); return
@@ -441,7 +536,10 @@ func _refresh_ui_states() -> void:
 		if "enemy_cursed"            in current_enemy and current_enemy.enemy_cursed:            s += "💀 "
 		if "enemy_items_locked"      in current_enemy and current_enemy.enemy_items_locked:      s += "⚡ "
 		if "enemy_stun_extra_turns"  in current_enemy and current_enemy.enemy_stun_extra_turns > 0: s += "⏳×%d " % current_enemy.enemy_stun_extra_turns
+		# Threat traits are NOT mixed in here — they're permanent for the fight and
+		# get their own strip below the card (see _refresh_threat_strip).
 		enemy_buffs_lbl.text = IconDB.iconify(s.strip_edges(), 20) if s.strip_edges() != "" else "● Normal"
+	_refresh_threat_strip()
 
 	if player_hp:
 		player_hp.text = IconDB.iconify("⚔️  YOU\n" + _parse_hp_line(QuestManager.player_health, QuestManager.MAX_HEALTH), 18)
@@ -476,7 +574,7 @@ func _refresh_ui_states() -> void:
 		# the slot key + count. `head` only carries the emoji when there's no icon.
 		var head = "" if icon_tex else meta["emoji"] + "\n"
 		btn.text         = "%s[%s] ×%d" % [head, slot_key, count]
-		btn.tooltip_text = "%s\n%s\n[%s]" % [meta["label"], meta["desc"], slot_key]
+		btn.tooltip_text = QuestManager.item_tooltip(meta, "[%s]" % slot_key)
 		var usable = count > 0 and not is_disarmed
 		if "player_items_locked" in current_enemy and current_enemy.player_items_locked: usable = false
 		# Heal items gray out at the gold-heart cap (can't heal above 300 red HP).
@@ -490,7 +588,7 @@ func _refresh_ui_states() -> void:
 		if item_id == "needle"       and current_enemy.player_piercing:       usable = false
 		if item_id == "bandage"      and current_enemy.player_regen_rounds  > 0: usable = false
 		if item_id == "poison_dart"  and current_enemy.enemy_poison_rounds  > 0: usable = false
-		if item_id == "battle_horn"  and "player_lifesteal_active" in current_enemy and current_enemy.player_lifesteal_active: usable = false
+		if item_id == "lifesteal_vial"  and "player_lifesteal_active" in current_enemy and current_enemy.player_lifesteal_active: usable = false
 		if item_id == "mirror_ward"  and current_enemy.player_reflect_active: usable = false
 		if item_id == "smoke_bomb"   and current_enemy.player_dodge_active:   usable = false
 		if item_id == "weaken_totem" and current_enemy.enemy_cursed:          usable = false
@@ -571,7 +669,7 @@ func show_blocking_popup(header_title: String, message: String, require_confirma
 		if child.name == "MagnetLayoutVBox": child.queue_free()
 	popup_panel.get_child(0).visible = true
 	if require_confirmation:
-		popup_confirm_btn.text = "✅  Confirm  (Enter)"; popup_cancel_btn.text = "❌  Cancel  (Esc)"; popup_cancel_btn.visible = true
+		popup_confirm_btn.text = "Confirm  (Enter)"; popup_cancel_btn.text = "Cancel  (Esc)"; popup_cancel_btn.visible = true
 	else:
 		popup_confirm_btn.text = "▶  Continue  (Enter)"; popup_cancel_btn.visible = false
 	var user_choice = await popup_resolved; popup_overlay.visible = false; return user_choice
@@ -583,7 +681,7 @@ func show_magnet_choice_popup(stealable_pool: Array) -> String:
 	mv.add_theme_constant_override("separation", 12)
 	mv.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT, Control.PRESET_MODE_MINSIZE, 20)
 	popup_panel.add_child(mv)
-	var tl = Label.new(); tl.text = "🧲  MAGNET — Choose item to steal"
+	var tl = Label.new(); tl.text = "MAGNET — Choose item to steal"
 	tl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	tl.add_theme_font_size_override("font_size", 18); tl.add_theme_color_override("font_color", Color(1.0, 0.85, 0.3))
 	mv.add_child(tl)
@@ -594,7 +692,7 @@ func show_magnet_choice_popup(stealable_pool: Array) -> String:
 	var unique_items: Array = []
 	for item in stealable_pool:
 		if not item in unique_items: unique_items.append(item)
-	var commit_btn := Button.new(); commit_btn.name = "CommitButton"; commit_btn.text = "✅  Commit  (Enter)"
+	var commit_btn := Button.new(); commit_btn.name = "CommitButton"; commit_btn.text = "Commit  (Enter)"
 	commit_btn.focus_mode = Control.FOCUS_NONE; commit_btn.custom_minimum_size = Vector2(0, 44)
 	commit_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL; commit_btn.disabled = true
 	var choice_btns: Array = []
@@ -616,7 +714,7 @@ func show_magnet_choice_popup(stealable_pool: Array) -> String:
 		var el = Label.new(); el.text = "Nothing stealable — your loadout\ndoesn't overlap this enemy's items."
 		el.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; dg.add_child(el)
 	var ah = HBoxContainer.new(); ah.add_theme_constant_override("separation", 12); mv.add_child(ah); ah.add_child(commit_btn)
-	var cancel_btn = Button.new(); cancel_btn.text = "❌  Cancel  (Esc)"; cancel_btn.focus_mode = Control.FOCUS_NONE
+	var cancel_btn = Button.new(); cancel_btn.text = "Cancel  (Esc)"; cancel_btn.focus_mode = Control.FOCUS_NONE
 	cancel_btn.custom_minimum_size = Vector2(0, 44); cancel_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	cancel_btn.pressed.connect(func(): magnet_choice_resolved.emit("")); ah.add_child(cancel_btn)
 	commit_btn.pressed.connect(func():

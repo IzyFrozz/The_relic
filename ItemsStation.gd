@@ -3,11 +3,14 @@ extends CharacterBody2D
 var player_nearby: bool = false
 var prompt_label: Label = null
 var equipment_menu: CanvasLayer = null
+var _marker: Sprite2D = null
 
 func _ready() -> void:
 	prompt_label = get_node_or_null("Label") as Label
 	if is_instance_valid(prompt_label):
 		prompt_label.visible = false
+	# Floating station icon instead of the old "[E] Configure Loadout" text chip.
+	_marker = IconDB.add_marker(self, "loadout_station")
 
 	equipment_menu = get_tree().root.find_child("EquipmentMenu", true, false) as CanvasLayer
 
@@ -36,9 +39,9 @@ func _open_equipment_menu() -> void:
 func _on_body_entered(body: Node2D) -> void:
 	if body.name == "mainplayer":
 		player_nearby = true
-		PromptHUD.request(self, "[E]  Configure Loadout")
+		IconDB.set_marker_visible(_marker, true)
 
 func _on_body_exited(body: Node2D) -> void:
 	if body.name == "mainplayer":
 		player_nearby = false
-		PromptHUD.release(self)
+		IconDB.set_marker_visible(_marker, false)

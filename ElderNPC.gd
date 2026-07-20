@@ -15,10 +15,15 @@ extends CharacterBody2D
 @export var respawn_offset: Vector2 = Vector2(0, 40)
 
 var player_nearby: bool = false
+var _marker: Sprite2D = null
 
 func _ready() -> void:
 	if is_instance_valid(prompt_label):
 		prompt_label.visible = false
+	# Every NPC — human or animal — wears the same chat bubble, so "there's a
+	# person here you can talk to" always reads the same way. What the
+	# conversation DOES (saving, here) is the dialogue's job, not the icon's.
+	_marker = IconDB.add_talk_marker(self)
 
 func _process(_delta: float) -> void:
 	if player_nearby and Input.is_action_just_pressed("interact") and not QuestManager.ui_arrow_nav_open:
@@ -40,9 +45,9 @@ func _open_save() -> void:
 func _on_interaction_area_body_entered(body: Node2D) -> void:
 	if body.name == "mainplayer":
 		player_nearby = true
-		PromptHUD.request(self, "[E]  Save Game")
+		IconDB.set_marker_visible(_marker, true)
 
 func _on_interaction_area_body_exited(body: Node2D) -> void:
 	if body.name == "mainplayer":
 		player_nearby = false
-		PromptHUD.release(self)
+		IconDB.set_marker_visible(_marker, false)

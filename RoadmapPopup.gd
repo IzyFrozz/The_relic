@@ -94,7 +94,7 @@ func refresh_display() -> void:
 		var slot_gain   = _slot_unlock_at(lvl)
 
 		# Always pull display data from ITEM_META so renamed/reworked items
-		# (e.g. battle_horn -> Lifesteal Vial) show correctly everywhere,
+		# (e.g. lifesteal_vial -> Lifesteal Vial) show correctly everywhere,
 		# instead of deriving a label from the raw item id string.
 		var meta  = QuestManager.ITEM_META.get(item, {"emoji": "❓", "label": item.capitalize(), "desc": ""})
 		var emoji = meta.get("emoji", "❓")

@@ -496,7 +496,10 @@ radius = 6.0
 height = 18.0
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_seu75"]
-radius = 11.045361
+radius = 30.0
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_chestbody"]
+radius = 6.0
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_5dllo"]
 radius = 9.0
@@ -995,6 +998,12 @@ texture = ExtResource("27_xuqvo")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="DeliveryPoint" unique_id=199430930]
 shape = SubResource("CircleShape2D_seu75")
+
+[node name="Body" type="StaticBody2D" parent="DeliveryPoint" unique_id=199430931]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="DeliveryPoint/Body" unique_id=199430932]
+position = Vector2(0, 1)
+shape = SubResource("CircleShape2D_chestbody")
 
 [node name="QuestUI" type="CanvasLayer" parent="DeliveryPoint" unique_id=1224162921]
 visible = false

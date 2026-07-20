@@ -30,12 +30,12 @@ func _ready() -> void:
 func _on_body_entered(body: Node2D) -> void:
 	if body.name == "mainplayer":
 		player_nearby = true
-		if is_instance_valid(_talk_marker): _talk_marker.visible = true
+		IconDB.set_marker_visible(_talk_marker, true)
 
 func _on_body_exited(body: Node2D) -> void:
 	if body.name == "mainplayer":
 		player_nearby = false
-		if is_instance_valid(_talk_marker): _talk_marker.visible = false
+		IconDB.set_marker_visible(_talk_marker, false)
 
 func _process(_delta: float) -> void:
 	if not (player_nearby and Input.is_action_just_pressed("interact")):

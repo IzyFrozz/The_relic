@@ -11,6 +11,7 @@ extends CharacterBody2D
 const NPC_NAME := "Signpost"
 
 var player_nearby: bool = false
+var _marker: Sprite2D = null
 
 # The starting notes shown when the sign is read.
 const LINES := [
@@ -30,16 +31,18 @@ func _ready() -> void:
 			area.body_entered.connect(_on_body_entered)
 		if not area.body_exited.is_connected(_on_body_exited):
 			area.body_exited.connect(_on_body_exited)
+	# Floating "?" icon instead of the old "[E] Read Sign" text chip.
+	_marker = IconDB.add_marker(self, "help")
 
 func _on_body_entered(body: Node2D) -> void:
 	if body.name == "mainplayer":
 		player_nearby = true
-		PromptHUD.request(self, "[E]  Read Sign")
+		IconDB.set_marker_visible(_marker, true)
 
 func _on_body_exited(body: Node2D) -> void:
 	if body.name == "mainplayer":
 		player_nearby = false
-		PromptHUD.release(self)
+		IconDB.set_marker_visible(_marker, false)
 
 func _process(_delta: float) -> void:
 	if not (player_nearby and Input.is_action_just_pressed("interact")):

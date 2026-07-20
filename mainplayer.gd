@@ -59,10 +59,17 @@ func _ready() -> void:
 	_skin_mat = PlayerSkin.make_material(QuestManager.hair_color, QuestManager.shirt_color, QuestManager.pants_color, QuestManager.shoes_color, QuestManager.skin_color)
 	sprite.material = _skin_mat
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	# Bar visibility/fill is updated here (not in _physics_process) so it still
 	# hides correctly while combat has the physics step returning early.
 	_update_stamina_bar()
+	_recharge_stamina(delta)
+	# Safety net: a status tint (poison green, curse purple, …) is only ever valid
+	# during a fight. If combat ended by ANY route — win, death, flee, scene reload
+	# — clear it here so the tint can't follow the player into the overworld.
+	if not QuestManager.is_in_combat and is_instance_valid(sprite) \
+			and not sprite.modulate.is_equal_approx(Color.WHITE):
+		sprite.modulate = Color.WHITE
 	# Disable the recolor while a combat FX tints the sprite (modulate ≠ white)
 	# so the FX plays on the base colours, then snap back to the customization.
 	if is_instance_valid(_skin_mat):
@@ -316,6 +323,38 @@ func _shake_node(node: Node2D, origin: Vector2, duration: float) -> void:
 	node.global_position = origin
 
 # ── Sprint helpers ─────────────────────────────────────────────────────────────
+# Stamina REFILLS from _process rather than _physics_process, because the physics
+# step returns early whenever a popup is up (wizard save, loadout, dialogue) — so
+# the bar used to sit frozen while you read a menu. A real pause sets
+# Engine.time_scale = 0, which makes delta 0, so a genuinely paused game still
+# doesn't refill. Combat and fishing block it explicitly.
+func _recharge_stamina(delta: float) -> void:
+	if QuestManager.is_in_combat or QuestManager.is_fishing:
+		return
+	# A popup opening mid-sprint would otherwise leave is_sprinting stuck true and
+	# stall the refill, since _physics_process (which clears it) never runs.
+	if _ui_blocks_movement():
+		is_sprinting = false
+	if is_sprinting:
+		return                       # draining, not refilling
+	stamina = minf(SPRINT_MAX, stamina + (SPRINT_MAX / SPRINT_RECHARGE_TIME) * delta)
+	if sprint_exhausted and stamina >= SPRINT_MAX:
+		sprint_exhausted = false
+
+# True while a menu/popup owns the screen and the player shouldn't be walking.
+func _ui_blocks_movement() -> bool:
+	if DialogueManager.is_active:
+		return true
+	for n in ["EquipmentMenu", "SavePopup"]:
+		var node = get_tree().root.find_child(n, true, false)
+		if is_instance_valid(node) and "visible" in node and node.visible:
+			return true
+	var pause_menu = get_tree().root.find_child("PauseMenu", true, false)
+	if is_instance_valid(pause_menu) and pause_menu.has_method("is_open") and pause_menu.is_open():
+		return true
+	return false
+
+
 func _update_sprint(input_dir: Vector2, delta: float) -> void:
 	var wants_sprint = Input.is_action_pressed("sprint") and input_dir != Vector2.ZERO and not sprint_exhausted and stamina > 0.0
 	if wants_sprint:
@@ -326,9 +365,8 @@ func _update_sprint(input_dir: Vector2, delta: float) -> void:
 			sprint_exhausted = true                    # locked out until fully refilled
 	else:
 		is_sprinting = false
-		stamina = minf(SPRINT_MAX, stamina + (SPRINT_MAX / SPRINT_RECHARGE_TIME) * delta)
-		if sprint_exhausted and stamina >= SPRINT_MAX:
-			sprint_exhausted = false
+	# NOTE: the refill itself lives in _recharge_stamina(), driven from _process —
+	# see there for why.
 
 func _build_stamina_bar() -> void:
 	_stamina_icon = Sprite2D.new()

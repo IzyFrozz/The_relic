@@ -106,7 +106,7 @@ func _ready() -> void:
 		load_back_button.pressed.connect(_show_main_view)
 
 	if is_instance_valid(exit_anyway_button):
-		exit_anyway_button.text = "⚠️  Leave Anyway"
+		exit_anyway_button.text = "Leave Anyway"
 		exit_anyway_button.pressed.connect(_go_to_main_menu)
 
 	if is_instance_valid(cancel_exit_button):
@@ -120,6 +120,7 @@ func _ready() -> void:
 
 	_build_keybinds_ui()
 	_build_audio_ui()
+	_build_difficulty_toggle()
 
 func _capture_overworld_menu_position() -> void:
 	if not is_instance_valid(menu_button) or _captured_overworld_position:
@@ -240,18 +241,18 @@ func _build_combat_overlay() -> void:
 	vbox.add_child(audio_hbox)
 
 	var mute_btn = Button.new()
-	mute_btn.text = "🔇  Toggle Mute"
+	mute_btn.text = "Toggle Mute"
 	mute_btn.focus_mode = Control.FOCUS_NONE
 	mute_btn.custom_minimum_size = Vector2(140, 38)
 	mute_btn.pressed.connect(func():
 		var muted = not SFX.is_master_muted()
 		SFX.set_master_mute(muted)
-		mute_btn.text = "🔊  Unmute" if muted else "🔇  Toggle Mute"
+		mute_btn.text = "Unmute" if muted else "Toggle Mute"
 	)
 	audio_hbox.add_child(mute_btn)
 
 	var fs_btn = Button.new()
-	fs_btn.text = "🖥️  Fullscreen"
+	fs_btn.text = "Fullscreen"
 	fs_btn.focus_mode = Control.FOCUS_NONE
 	fs_btn.custom_minimum_size = Vector2(140, 38)
 	fs_btn.pressed.connect(func():
@@ -497,7 +498,7 @@ func _on_load_slot_pressed(slot: int) -> void:
 		close_menu()
 		get_tree().reload_current_scene()
 	elif is_instance_valid(load_status_label):
-		load_status_label.text = "⚠️  Slot %d is empty!" % slot
+		load_status_label.text = "Slot %d is empty!" % slot
 		load_status_label.add_theme_color_override("font_color", Color(0.9, 0.5, 0.4))
 
 func _on_volume_changed(value: float) -> void:
@@ -537,7 +538,7 @@ func _build_audio_ui() -> void:
 	# Insert the "Audio" button just above "Keybinds".
 	if is_instance_valid(load_button) and is_instance_valid(load_button.get_parent()):
 		audio_button = Button.new()
-		audio_button.text = "🔊  Audio"
+		audio_button.text = "Audio"
 		audio_button.focus_mode = Control.FOCUS_NONE
 		audio_button.custom_minimum_size = Vector2(0, 42)
 		audio_button.pressed.connect(_show_audio_view)
@@ -557,7 +558,7 @@ func _build_audio_ui() -> void:
 	host.add_child(audio_view)
 
 	var title = Label.new()
-	title.text = "🔊  Audio"
+	title.text = "Audio"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 18)
 	title.add_theme_color_override("font_color", Color(1.0, 0.85, 0.3))
@@ -610,6 +611,44 @@ func _add_audio_row(parent: Node, caption: String, bus: String) -> void:
 		SFX.set_bus_linear(bus, v)
 		pct.text = "%d%%" % roundi(v * 100.0))
 	parent.add_child(row)
+
+# ── Difficulty toggle ───────────────────────────────────────────────────────────
+# A single cycling button rather than its own screen: there are only two modes and
+# the label always states the one you're on, so a whole sub-view would be noise.
+var difficulty_button: Button = null
+
+func _build_difficulty_toggle() -> void:
+	if not (is_instance_valid(audio_button) and is_instance_valid(audio_button.get_parent())):
+		return
+	difficulty_button = Button.new()
+	difficulty_button.focus_mode = Control.FOCUS_NONE
+	difficulty_button.custom_minimum_size = Vector2(0, 42)
+	difficulty_button.pressed.connect(_toggle_difficulty)
+	var p = audio_button.get_parent()
+	p.add_child(difficulty_button)
+	p.move_child(difficulty_button, audio_button.get_index() + 1)
+	_refresh_difficulty_button()
+
+func _toggle_difficulty() -> void:
+	QuestManager.difficulty = QuestManager.Difficulty.NORMAL \
+		if QuestManager.is_relic_difficulty() else QuestManager.Difficulty.RELIC
+	# Re-price the current level immediately, or the XP bar keeps showing the old
+	# requirement until the next level-up.
+	QuestManager.xp_required = QuestManager.xp_required_for(QuestManager.player_level)
+	QuestManager.has_unsaved_progress = true
+	_refresh_difficulty_button()
+	Toast.show_toast("⚙️  Difficulty — %s" % QuestManager.difficulty_name())
+
+func _refresh_difficulty_button() -> void:
+	if not is_instance_valid(difficulty_button):
+		return
+	var hard := QuestManager.is_relic_difficulty()
+	# Plain text: a Button can't render IconDB's [img] tags, and a raw emoji here
+	# would fall back to the OS colour-emoji font.
+	difficulty_button.text = ("Difficulty:  Chosen by the Relic" if hard
+		else "Difficulty:  Normal")
+	difficulty_button.add_theme_color_override("font_color",
+		Color(1.0, 0.85, 0.30) if hard else Color(0.88, 0.90, 1.0))
 
 func _show_audio_view() -> void:
 	if is_instance_valid(main_view):    main_view.visible    = false

@@ -21,7 +21,7 @@ const MAP := {
 	"magnet":          "magnet.png",
 	"bandage":         "bandage.png",
 	"poison_dart":     "poison dart.png",
-	"battle_horn":     "lifesteal_vial.png",     # "Lifesteal Vial"
+	"lifesteal_vial":     "lifesteal_vial.png",     # "Lifesteal Vial"
 	"mirror_ward":     "mirror ward.png",
 	"smoke_bomb":      "smoke bomb.png",
 	"weaken_totem":    "weaken totem.png",
@@ -88,21 +88,23 @@ const MAP := {
 	"fishing_rod":     "fishing_rod_basic.png",
 	# Catch tiers (tiny → legendary), shown in the catch toast. 15 rungs, each with
 	# its own fish, so the reward reads differently every step up.
-	"fish_tiny":       "fishes (6).png",
+	# These are the CENTRE of each tier's size window — see FISH_VARIANTS below;
+	# they're picked by measured on-screen bulk, not by filename number.
+	"fish_tiny":       "fishes (33).png",
 	"fish_minnow":     "fishes (42).png",
-	"fish_small":      "fishes (20).png",
-	"fish_modest":     "fishes (5).png",
-	"fish_medium":     "fishes (35).png",
-	"fish_good":       "fishes (7).png",
-	"fish_large":      "fishes (30).png",
-	"fish_big":        "fishes (24).png",
-	"fish_huge":       "fishes (22).png",
+	"fish_small":      "fishes (37).png",
+	"fish_modest":     "fishes (2).png",
+	"fish_medium":     "fishes (14).png",
+	"fish_good":       "fishes (30).png",
+	"fish_large":      "fishes (27).png",
+	"fish_big":        "fishes (10).png",
+	"fish_huge":       "fishes (23).png",
 	"fish_giant":      "fishes (26).png",
-	"fish_massive":    "fishes (37).png",
-	"fish_trophy":     "fishes (16).png",
-	"fish_exotic":     "fishes (31).png",
-	"fish_rare":       "fishes (21).png",
-	"fish_legendary":  "fishes (44).png",
+	"fish_massive":    "fishes (5).png",
+	"fish_trophy":     "fishes (39).png",
+	"fish_exotic":     "fishes (20).png",
+	"fish_rare":       "fishes (11).png",
+	"fish_legendary":  "fishes (19).png",
 	# The fish shown swimming in the minigame tank. Deliberately its OWN icon and
 	# not any tier's, so the art can never hint at what you've hooked.
 	"fish_hooked":     "fishes (43).png",
@@ -112,6 +114,65 @@ const MAP := {
 	"stamina_low":     "yellow stamina icon.png",
 	"stamina_empty":   "red stamina icon.png",
 }
+
+# ── Fish variety ─────────────────────────────────────────────────────────────
+# The folder holds 44 fish sprites but only 16 were ever wired (one per tier plus
+# the one in the tank), so a session showed the same handful of fish over and
+# over — and the common tiers dominate the weights, so in practice you saw ~7-8.
+# Each tier now owns a POOL and the catch toast picks from it at random: landing
+# the same tier twice still shows a different fish. Each tier's original
+# hand-picked sprite stays first in its pool.
+#
+# Sprites are ranked by their MEASURED on-screen bulk (opaque bounding-box area —
+# a 1.51x spread across the set) and dealt to the tiers in that order, NOT by
+# filename number. Filename order is what let a visually chunky fish come back
+# labelled "medium". Each tier draws from a tight ±2 window around its own rung,
+# so a pool holds 3-5 fish of genuinely similar size while all 43 stay reachable
+# over a run. Widen the window for more variety, narrow it for a tighter size
+# match — that's the single trade-off knob here.
+#
+# All 44 sprites are used: 43 across the tiers, plus "fishes (43)" which stays
+# the tank's fixed art — the tank must never hint at the tier, the reveal is
+# the payoff.
+# Each list runs SMALLEST -> LARGEST by measured bulk, and the tiers run in the
+# same order, so reading the table top-to-bottom walks the fish from tiddler to
+# monster. The centre entry of each row is the tier's canonical icon in MAP.
+const FISH_VARIANTS := {
+	#                   ── smallest ─────────────────────────────────── largest ──
+	"fish_tiny":       ["fishes (33).png", "fishes (34).png", "fishes (35).png"],
+	"fish_minnow":     ["fishes (34).png", "fishes (35).png", "fishes (42).png", "fishes (44).png", "fishes (36).png"],
+	"fish_small":      ["fishes (44).png", "fishes (36).png", "fishes (37).png", "fishes (38).png", "fishes (1).png"],
+	"fish_modest":     ["fishes (38).png", "fishes (1).png",  "fishes (2).png",  "fishes (3).png",  "fishes (4).png"],
+	"fish_medium":     ["fishes (3).png",  "fishes (4).png",  "fishes (14).png", "fishes (15).png", "fishes (16).png"],
+	"fish_good":       ["fishes (15).png", "fishes (16).png", "fishes (30).png", "fishes (31).png", "fishes (32).png"],
+	"fish_large":      ["fishes (31).png", "fishes (32).png", "fishes (27).png", "fishes (28).png", "fishes (29).png"],
+	"fish_big":        ["fishes (28).png", "fishes (29).png", "fishes (10).png", "fishes (8).png",  "fishes (9).png"],
+	"fish_huge":       ["fishes (8).png",  "fishes (9).png",  "fishes (23).png", "fishes (24).png", "fishes (25).png"],
+	"fish_giant":      ["fishes (24).png", "fishes (25).png", "fishes (26).png", "fishes (17).png", "fishes (18).png"],
+	"fish_massive":    ["fishes (17).png", "fishes (18).png", "fishes (5).png",  "fishes (6).png",  "fishes (7).png"],
+	"fish_trophy":     ["fishes (6).png",  "fishes (7).png",  "fishes (39).png", "fishes (40).png", "fishes (41).png"],
+	"fish_exotic":     ["fishes (40).png", "fishes (41).png", "fishes (20).png", "fishes (21).png", "fishes (22).png"],
+	"fish_rare":       ["fishes (21).png", "fishes (22).png", "fishes (11).png", "fishes (12).png", "fishes (13).png"],
+	"fish_legendary":  ["fishes (12).png", "fishes (13).png", "fishes (19).png"],
+}
+
+
+
+# A random sprite path from `tier_id`'s pool, or "" if the tier has no pool.
+func fish_variant_path(tier_id: String) -> String:
+	var pool: Array = FISH_VARIANTS.get(tier_id, [])
+	if pool.is_empty():
+		return ""
+	var p: String = DIR + str(pool[randi() % pool.size()])
+	return p if ResourceLoader.exists(p) else ""
+
+# [img] bbcode for a random sprite from the tier's pool (RichTextLabel), falling
+# back to the tier's canonical icon.
+func fish_bbcode(tier_id: String, size: int = 28) -> String:
+	var p: String = fish_variant_path(tier_id)
+	if p != "":
+		return "[img=%d]%s[/img]" % [size, p]
+	return bbcode_for_id(tier_id, size)
 
 var _cache: Dictionary = {}
 
@@ -130,31 +191,63 @@ func tex(id: String) -> Texture2D:
 func has(id: String) -> bool:
 	return tex(id) != null
 
-# Adds a floating chat-bubble marker above a talkable NPC (so every one reads the
-# same "you can talk here" way). Starts HIDDEN — the NPC shows it while the player
-# is in range, replacing the old "[E] …" text prompt. Hides any legacy "Emoji" label.
-# Returns the Sprite2D, or null if the chat icon is missing / already added.
-func add_talk_marker(npc: Node2D, offset: Vector2 = Vector2(0, -32), scale_f: float = 0.42) -> Sprite2D:
-	if not is_instance_valid(npc):
+# ── Floating interact markers ────────────────────────────────────────────────
+# Every interactable in the world announces itself the same way: a small icon
+# that floats above it while the player is in range. This replaced the old
+# "[E] …" text prompts — the icon says both "you can act here" AND what the
+# action is (chat bubble, save disk, chest, door, …).
+#
+#     _marker = IconDB.add_marker(self, "save")     # in _ready()
+#     IconDB.set_marker_visible(_marker, true)      # on body_entered
+#
+# `host` must be a Node2D — pass the node the icon should sit on (for objects
+# whose origin is off the sprite, e.g. a doorway trigger, pass the child that
+# IS on the door). Returns the Sprite2D, or null if the icon is missing.
+func add_marker(host: Node2D, icon_id: String, offset: Vector2 = Vector2(0, -32), scale_f: float = 0.42) -> Sprite2D:
+	if not is_instance_valid(host):
 		return null
-	if is_instance_valid(npc.get_node_or_null("TalkMarker")):
-		return npc.get_node("TalkMarker") as Sprite2D
-	var t := tex("talk")
+	var existing := host.get_node_or_null("InteractMarker")
+	if is_instance_valid(existing):
+		return existing as Sprite2D
+	var t := tex(icon_id)
 	if t == null:
 		return null
-	var legacy := npc.get_node_or_null("Emoji")
-	if is_instance_valid(legacy):
-		legacy.visible = false
+	# Hide any legacy in-scene affordance this marker supersedes.
+	for legacy_name in ["Emoji", "PromptLabel", "InteractPrompt"]:
+		var legacy := host.get_node_or_null(legacy_name)
+		if is_instance_valid(legacy) and legacy is CanvasItem:
+			(legacy as CanvasItem).visible = false
 	var s := Sprite2D.new()
-	s.name = "TalkMarker"
+	s.name = "InteractMarker"
 	s.texture = t
 	s.position = offset
 	s.scale = Vector2(scale_f, scale_f)
 	s.z_index = 60
 	s.visible = false
 	s.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	npc.add_child(s)
+	host.add_child(s)
 	return s
+
+# Shows/hides a marker, chirping the interact-prompt sound on the hidden→shown
+# edge only (PromptHUD used to own that chirp).
+func set_marker_visible(marker: Sprite2D, on: bool) -> void:
+	if not is_instance_valid(marker):
+		return
+	if on and not marker.visible:
+		SFX.play(SFX.interact_prompt, -4.0)
+	marker.visible = on
+
+# Swaps a live marker's icon (e.g. the chest flipping from locked to opened).
+func set_marker_icon(marker: Sprite2D, icon_id: String) -> void:
+	if not is_instance_valid(marker):
+		return
+	var t := tex(icon_id)
+	if t != null:
+		marker.texture = t
+
+# Back-compat shorthand for talkable NPCs — the chat bubble.
+func add_talk_marker(npc: Node2D, offset: Vector2 = Vector2(0, -32), scale_f: float = 0.42) -> Sprite2D:
+	return add_marker(npc, "talk", offset, scale_f)
 
 # Gives a Button a centred icon+label GROUP (icon immediately left of the text,
 # the pair centred together) — matching how the emoji-in-text buttons look, which
@@ -226,7 +319,7 @@ const EMOJI_TO_ID := {
 	"🧲": "magnet",
 	"⛓️": "chain_hook", "⛓": "chain_hook",
 	"🏺": "relic",
-	"🩸": "battle_horn",
+	"🩸": "lifesteal_vial",
 	"🧪": "potion",
 	"🛡️": "shield", "🛡": "shield",
 	"🪨": "grindstone",

@@ -48,23 +48,30 @@ const FISH_PX := 30.0            # constant on-screen size: never reveals the ti
 #   xp         — XP multiplier (revealed only after the catch)
 #   drain      — meter drain multiplier while off the fish (harder = leakier)
 #   weight     — relative spawn weight (chance = weight / sum of all weights)
+#
+# Weights STRICTLY DESCEND tiny -> legendary — a bigger fish is always rarer than
+# every fish below it. The curve is just a lot SHALLOWER than it used to be
+# (roughly x0.97 per rung instead of a steep decay), so the hard tiers actually
+# turn up: legendary went from 1 cast in 31 to 1 in 19, exotic-or-better from
+# 1 in 8.3 to 1 in 6.1. More XP is on the table, but only for players who can
+# actually land the difficult fish.
 # Tier keys must match the fish_<tier> ids in IconDB and _lead_for in FishingSpot.
 const SIZES := {
-	"tiny":      { "speed": 0.42, "rt_min": 0.90, "rt_max": 1.75, "xp": 0.5,  "drain": 0.75, "weight": 10 },
-	"minnow":    { "speed": 0.50, "rt_min": 0.85, "rt_max": 1.62, "xp": 0.8,  "drain": 0.80, "weight": 10 },
-	"small":     { "speed": 0.58, "rt_min": 0.78, "rt_max": 1.50, "xp": 1.0,  "drain": 0.85, "weight": 10 },
-	"modest":    { "speed": 0.68, "rt_min": 0.72, "rt_max": 1.38, "xp": 1.4,  "drain": 0.92, "weight": 10 },
-	"medium":    { "speed": 0.78, "rt_min": 0.66, "rt_max": 1.26, "xp": 1.8,  "drain": 1.00, "weight": 10 },
-	"good":      { "speed": 0.88, "rt_min": 0.60, "rt_max": 1.15, "xp": 2.3,  "drain": 1.06, "weight": 10 },
-	"large":     { "speed": 1.00, "rt_min": 0.55, "rt_max": 1.05, "xp": 2.8,  "drain": 1.12, "weight": 9  },
-	"big":       { "speed": 1.12, "rt_min": 0.50, "rt_max": 0.96, "xp": 3.4,  "drain": 1.20, "weight": 9  },
-	"huge":      { "speed": 1.25, "rt_min": 0.45, "rt_max": 0.88, "xp": 4.0,  "drain": 1.28, "weight": 9  },
-	"giant":     { "speed": 1.40, "rt_min": 0.41, "rt_max": 0.80, "xp": 5.5,  "drain": 1.36, "weight": 8  },
-	"massive":   { "speed": 1.55, "rt_min": 0.37, "rt_max": 0.73, "xp": 6.5,  "drain": 1.44, "weight": 8  },
-	"trophy":    { "speed": 1.70, "rt_min": 0.34, "rt_max": 0.67, "xp": 8.0,  "drain": 1.52, "weight": 6  },
-	"exotic":    { "speed": 1.85, "rt_min": 0.31, "rt_max": 0.62, "xp": 9.5,  "drain": 1.60, "weight": 6  },
-	"rare":      { "speed": 2.00, "rt_min": 0.28, "rt_max": 0.57, "xp": 11.0, "drain": 1.68, "weight": 5  },
-	"legendary": { "speed": 2.20, "rt_min": 0.25, "rt_max": 0.52, "xp": 14.0, "drain": 1.78, "weight": 4  },
+	"tiny":      { "speed": 0.42, "rt_min": 0.90, "rt_max": 1.75, "xp": 0.5,  "drain": 0.75, "weight": 100 },
+	"minnow":    { "speed": 0.50, "rt_min": 0.85, "rt_max": 1.62, "xp": 0.8,  "drain": 0.80, "weight": 97  },
+	"small":     { "speed": 0.58, "rt_min": 0.78, "rt_max": 1.50, "xp": 1.0,  "drain": 0.85, "weight": 94  },
+	"modest":    { "speed": 0.68, "rt_min": 0.72, "rt_max": 1.38, "xp": 1.4,  "drain": 0.90, "weight": 91  },
+	"medium":    { "speed": 0.78, "rt_min": 0.66, "rt_max": 1.26, "xp": 1.8,  "drain": 0.95, "weight": 89  },
+	"good":      { "speed": 0.88, "rt_min": 0.60, "rt_max": 1.15, "xp": 2.3,  "drain": 1.00, "weight": 86  },
+	"large":     { "speed": 1.00, "rt_min": 0.55, "rt_max": 1.05, "xp": 2.8,  "drain": 1.05, "weight": 83  },
+	"big":       { "speed": 1.12, "rt_min": 0.50, "rt_max": 0.96, "xp": 3.4,  "drain": 1.10, "weight": 81  },
+	"huge":      { "speed": 1.25, "rt_min": 0.45, "rt_max": 0.88, "xp": 4.0,  "drain": 1.15, "weight": 78  },
+	"giant":     { "speed": 1.40, "rt_min": 0.41, "rt_max": 0.80, "xp": 5.5,  "drain": 1.20, "weight": 76  },
+	"massive":   { "speed": 1.55, "rt_min": 0.37, "rt_max": 0.73, "xp": 6.5,  "drain": 1.24, "weight": 74  },
+	"trophy":    { "speed": 1.70, "rt_min": 0.34, "rt_max": 0.67, "xp": 8.0,  "drain": 1.28, "weight": 72  },
+	"exotic":    { "speed": 1.85, "rt_min": 0.31, "rt_max": 0.62, "xp": 9.5,  "drain": 1.32, "weight": 69  },
+	"rare":      { "speed": 2.00, "rt_min": 0.28, "rt_max": 0.57, "xp": 11.0, "drain": 1.36, "weight": 67  },
+	"legendary": { "speed": 2.20, "rt_min": 0.25, "rt_max": 0.52, "xp": 14.0, "drain": 1.40, "weight": 65  },
 }
 
 # The bar starts at the tank floor and the fish bolts immediately — otherwise you
@@ -114,7 +121,7 @@ func _ready() -> void:
 	center.add_child(col)
 
 	var title := Label.new()
-	title.text = "🎣  Reel it in!"
+	title.text = "Reel it in!"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 26)
 	title.add_theme_color_override("font_color", Color(0.95, 0.9, 0.55))
@@ -149,6 +156,7 @@ func _ready() -> void:
 	_tank.add_child(_bar)
 
 	# Always the same fish art at the same size — it must never hint at the tier.
+	# The variety lives in the CATCH TOAST, where the reveal is the payoff.
 	var ftex := IconDB.tex("fish_hooked")
 	if ftex:
 		var fr := TextureRect.new()
@@ -159,9 +167,10 @@ func _ready() -> void:
 		fr.size = Vector2(FISH_PX, FISH_PX)
 		_fish = fr
 	else:
+		# Text stand-in for the fish, only ever seen if the icon is missing.
 		var fl := Label.new()
-		fl.text = "🐟"
-		fl.add_theme_font_size_override("font_size", 30)
+		fl.text = "><>"
+		fl.add_theme_font_size_override("font_size", 24)
 		_fish = fl
 	_tank.add_child(_fish)
 
@@ -203,7 +212,16 @@ func _pick_size() -> void:
 			_size_name = k
 			break
 	var s: Dictionary = SIZES[_size_name]
-	_fish_speed = float(s["speed"]) * (1.0 + max(0.0, difficulty - 1.0))
+	# LEGENDARY IS THE DIFFICULTY CEILING. Its speed is the hardest catch that's
+	# still winnable — past that the fish simply outruns the bar and the cast is
+	# unloseable-by-design rather than hard. The fisherman's level scaling
+	# (`difficulty`, up to 1.30x) used to be applied on top of the tier speed with
+	# nothing stopping it, so at high level the four top tiers all blew through
+	# that ceiling: trophy 2.21, exotic 2.41, rare 2.60, legendary 2.86 vs a 2.20
+	# ceiling. Scaling now clamps there, so levelling can make the *lower* tiers
+	# livelier but can never make anything harder than legendary already is.
+	var speed_ceiling: float = float(SIZES["legendary"]["speed"])
+	_fish_speed = minf(float(s["speed"]) * (1.0 + max(0.0, difficulty - 1.0)), speed_ceiling)
 	_rt_min = float(s["rt_min"])
 	_rt_max = float(s["rt_max"])
 	_xp_mult = float(s["xp"])
@@ -279,7 +297,7 @@ func _finish(success: bool) -> void:
 	SFX.stop_loop("fish_reel")   # never leave the reel droning after the round
 	_result.visible = true
 	if success:
-		_result.text = "✅  Caught it!"
+		_result.text = "Caught it!"
 		_result.add_theme_color_override("font_color", Color(0.5, 1.0, 0.6))
 	else:
 		_result.text = "…it got away."

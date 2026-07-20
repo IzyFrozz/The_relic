@@ -12,11 +12,15 @@ const CHEST_OPENED := preload("res://Asset/Meta data assets files/Visuals/OBJECT
 
 var _scene_label: Label = null
 var player_nearby: bool = false
+var _marker: Sprite2D = null
 
 func _ready() -> void:
 	_scene_label = get_node_or_null("PromptLabel") as Label
 	if is_instance_valid(_scene_label):
 		_scene_label.visible = false
+	# Floating icon instead of the old "[E] Open Chest" text chip. It reads the
+	# quest state: a key once you're carrying one, a chest until then.
+	_marker = IconDB.add_marker(self, "chest")
 	# Guard so the scene-wired connection doesn't double-bind.
 	if not body_entered.is_connected(_on_body_entered):
 		body_entered.connect(_on_body_entered)
@@ -44,8 +48,7 @@ func _process(_delta: float) -> void:
 	QuestManager.grant_relic()   # sets has_relic AND unlocks it as an equippable item
 	QuestManager.has_key = false
 	_update_chest_sprite()
-	if player_nearby:
-		PromptHUD.request(self, _prompt_text())
+	_refresh_marker()
 	Toast.show_toast("🏺  Obtained the Ancient Relic — equip it in your Loadout, or return it to win!")
 	DialogueManager.start([
 		{ "name": QuestManager.player_name, "text": "The key turns... [i]click.[/i]" },
@@ -53,8 +56,14 @@ func _process(_delta: float) -> void:
 		{ "name": QuestManager.player_name, "text": "Equip it from my [b]Loadout[/b] to fight with it, or hand it to the Street Kid to end my quest. The choice is mine." },
 	])
 
-func _prompt_text() -> String:
-	return "Opened" if QuestManager.chest_unlocked else "[E]  Open Chest"
+# Once the chest is emptied there's nothing left to do here, so the marker goes
+# away entirely rather than inviting another interaction.
+func _refresh_marker() -> void:
+	if QuestManager.chest_unlocked:
+		IconDB.set_marker_visible(_marker, false)
+		return
+	IconDB.set_marker_icon(_marker, "key" if QuestManager.has_key else "chest")
+	IconDB.set_marker_visible(_marker, player_nearby)
 
 func _update_chest_sprite() -> void:
 	if is_instance_valid(chest_sprite):
@@ -63,9 +72,9 @@ func _update_chest_sprite() -> void:
 func _on_body_entered(body: Node2D) -> void:
 	if body.name == "mainplayer":
 		player_nearby = true
-		PromptHUD.request(self, _prompt_text())
+		_refresh_marker()
 
 func _on_body_exited(body: Node2D) -> void:
 	if body.name == "mainplayer":
 		player_nearby = false
-		PromptHUD.release(self)
+		IconDB.set_marker_visible(_marker, false)

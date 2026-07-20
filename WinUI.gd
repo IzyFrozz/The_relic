@@ -15,31 +15,38 @@ func _build() -> void:
 	bg.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(bg)
 
-	var centre_root = Control.new()
+	# A CenterContainer → PanelContainer → MarginContainer chain, so the card sizes
+	# itself to its CONTENT. The old version was a fixed 560x420 Panel with a
+	# full-rect VBox inside: the content needs ~480px of height, so the buttons
+	# overflowed and drew outside the card's own border.
+	var centre_root = CenterContainer.new()
 	centre_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	centre_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(centre_root)
 
-	var card = Panel.new()
-	card.custom_minimum_size = Vector2(560, 420)
+	var card = PanelContainer.new()
+	card.custom_minimum_size = Vector2(560, 0)   # width only — height follows content
 	_style_panel(card, Color(0.04, 0.08, 0.04, 0.97), Color(0.15, 0.55, 0.15))
 	centre_root.add_child(card)
-	card.set_anchors_preset(Control.PRESET_CENTER)
-	card.set_offsets_preset(Control.PRESET_CENTER)
-	card.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	card.grow_vertical   = Control.GROW_DIRECTION_BOTH
+
+	var margin = MarginContainer.new()
+	for side in ["left", "right", "top", "bottom"]:
+		margin.add_theme_constant_override("margin_" + side, 40)
+	card.add_child(margin)
 
 	var vbox = VBoxContainer.new()
-	vbox.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT, Control.PRESET_MODE_MINSIZE, 40)
 	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
-	vbox.add_theme_constant_override("separation", 20)
-	card.add_child(vbox)
+	vbox.add_theme_constant_override("separation", 18)
+	margin.add_child(vbox)
 
-	var icon_lbl = Label.new()
-	icon_lbl.text = "🏆"
-	icon_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	icon_lbl.add_theme_font_size_override("font_size", 52)
-	vbox.add_child(icon_lbl)
+	# Real pixel icon rather than an OS emoji glyph. Hidden if the art is missing,
+	# so a gap never shows as an empty box.
+	var icon_tr = TextureRect.new()
+	icon_tr.texture = IconDB.tex("trophy")
+	icon_tr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	icon_tr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	icon_tr.custom_minimum_size = Vector2(64, 64)
+	icon_tr.visible = icon_tr.texture != null
+	vbox.add_child(icon_tr)
 
 	var title = Label.new()
 	title.text = "VICTORY!"
@@ -68,7 +75,7 @@ func _build() -> void:
 	vbox.add_child(HSeparator.new())
 
 	var play_again_btn = Button.new()
-	play_again_btn.text = "🔄  Continue Playing"
+	play_again_btn.text = "Continue Playing"
 	play_again_btn.focus_mode = Control.FOCUS_NONE
 	play_again_btn.custom_minimum_size = Vector2(340, 58)
 	_style_btn(play_again_btn, Color(0.07, 0.18, 0.07), Color(0.20, 0.62, 0.20))
@@ -83,7 +90,9 @@ func _build() -> void:
 	exit_btn.pressed.connect(_on_exit_pressed)
 	vbox.add_child(exit_btn)
 
-func _style_panel(p: Panel, bg: Color, border: Color) -> void:
+# Control, not Panel: the card is a PanelContainer now, and PanelContainer is a
+# sibling of Panel rather than a subclass. Both take the "panel" stylebox.
+func _style_panel(p: Control, bg: Color, border: Color) -> void:
 	var s = StyleBoxFlat.new()
 	s.bg_color = bg; s.set_corner_radius_all(14); s.set_border_width_all(2)
 	s.border_color = border
@@ -103,11 +112,16 @@ func _style_btn(btn: Button, bg: Color, border: Color) -> void:
 
 # Call this after enemy dies so XP earned shows on screen
 func show_win_screen(xp_earned: int = 0) -> void:
+	# Clear the overworld out of the way FIRST. Callers set Engine.time_scale = 0
+	# right after this, which freezes any tween still in flight — the relic turn-in
+	# left its dialogue box frozen fully-opaque across the card.
+	DialogueManager.force_close()
+	PromptHUD.visible = false
 	visible = true
 	SFX.play_victory_music()
 	var xp_lbl = find_child("XPEarnedLabel", true, false) as Label
 	if is_instance_valid(xp_lbl) and xp_earned > 0:
-		xp_lbl.text = "✨  +%d XP earned" % xp_earned
+		xp_lbl.text = "+%d XP earned" % xp_earned
 
 func _on_continue_pressed() -> void:
 	Engine.time_scale = 1.0
