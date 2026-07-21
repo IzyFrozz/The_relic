@@ -51,7 +51,6 @@ var MAX_HEALTH: int = 100
 var player_shield: int = 3
 const MAX_SHIELD: int = 3
 
-var potions_collected: int = 0
 var player_overworld_position: Vector2 = Vector2.ZERO
 # Where the player respawns on any restart (flee/death/menu). Set when the
 # player saves at a Wizard checkpoint; persisted in the save file. ZERO means
