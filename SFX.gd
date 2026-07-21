@@ -60,6 +60,7 @@ var _music_bus := "Master"
 @export var ui_cancel: AudioStream        # back / decline
 @export var ui_error: AudioStream         # blocked / invalid action
 @export var ui_tab: AudioStream           # switch page / quest tab
+@export var ui_scroll: AudioStream        # scrolling a long list (wheel tick)
 @export var ui_toggle: AudioStream        # checkbox / mute flip
 @export var ui_slider: AudioStream        # volume slider tick
 @export var ui_save: AudioStream          # save to a slot
@@ -88,6 +89,11 @@ var _music_bus := "Master"
 @export var crate_drop: AudioStream       # Quartermaster's supply crate lands
 @export var relic_ready: AudioStream      # the relic finishes charging (glows)
 @export var relic_unleash: AudioStream    # the relic is unleashed
+# ── Relic beam (PLACEHOLDER SLOTS — drop files in via the Inspector) ──────────
+# Both fall back to relic_unleash while empty, so the beam is never silent.
+@export var relic_beam_charge: AudioStream # rising hum as the beam winds up (~0.6s)
+@export var relic_beam_fire: AudioStream   # the beam itself — ideally ~1.5s+, it is
+										   # looped for as long as the beam is held
 
 # ── Item use (one per item id — see QuestManager.ITEM_META) ─────────────────────
 @export_group("Item Use SFX")
@@ -99,7 +105,7 @@ var _music_bus := "Master"
 @export var item_magnet: AudioStream
 @export var item_bandage: AudioStream
 @export var item_poison_dart: AudioStream
-@export var item_battle_horn: AudioStream      # "Lifesteal Vial"
+@export var item_lifesteal_vial: AudioStream      # "Lifesteal Vial"
 @export var item_mirror_ward: AudioStream
 @export var item_smoke_bomb: AudioStream
 @export var item_weaken_totem: AudioStream
@@ -113,8 +119,9 @@ var _music_bus := "Master"
 
 # ── Enemy ─────────────────────────────────────────────────────────────────────────
 @export_group("Enemy")
-@export var enemy_hit: AudioStream        # enemy takes damage (generic)
+@export var enemy_hit: AudioStream        # enemy takes damage with no attack behind it (poison tick)
 @export var enemy_death: AudioStream      # enemy dies (generic)
+@export var enemy_heal: AudioStream       # enemy heals (falls back to player_heal if empty)
 # Per-LEVEL attack sound. Element 0 = Lv.1, element 1 = Lv.2, … up to Lv.20.
 # Add 20 elements in the Inspector and drop a file into each level's slot; a level
 # left empty falls back to `enemy_attack_default`.
@@ -196,7 +203,7 @@ func _ready() -> void:
 	_item_map = {
 		"potion": item_potion, "shield": item_shield, "grindstone": item_grindstone,
 		"whip": item_whip, "needle": item_needle, "magnet": item_magnet,
-		"bandage": item_bandage, "poison_dart": item_poison_dart, "battle_horn": item_battle_horn,
+		"bandage": item_bandage, "poison_dart": item_poison_dart, "lifesteal_vial": item_lifesteal_vial,
 		"mirror_ward": item_mirror_ward, "smoke_bomb": item_smoke_bomb, "weaken_totem": item_weaken_totem,
 		"chain_hook": item_chain_hook, "static_field": item_static_field, "time_warp": item_time_warp,
 		"overcharge": item_overcharge, "phoenix_feather": item_phoenix_feather,
@@ -221,6 +228,39 @@ func _on_node_added(n: Node) -> void:
 	elif n is Slider:
 		if not n.drag_ended.is_connected(_slider_done):
 			n.drag_ended.connect(_slider_done)
+	elif n is ScrollContainer:
+		# Same idea as the button hook: every scrollable list in the game gets a
+		# wheel tick with no per-list wiring.
+		if not n.gui_input.is_connected(_scroll_gui_input):
+			n.gui_input.connect(_scroll_gui_input.bind(n))
+
+# ── Scroll ticks ─────────────────────────────────────────────────────────────────
+# Driven off gui_input rather than the scrollbar's value_changed, deliberately: a
+# menu rebuilding its contents re-clamps the scroll value and would fire
+# value_changed, ticking when the player never touched the wheel. This only
+# reacts to a real wheel event, and stays silent when there's nothing to scroll
+# or we're already pinned at that end of the list.
+const SCROLL_MIN_GAP := 0.05   # seconds — a fast wheel spin shouldn't machine-gun
+var _last_scroll_t: float = -99.0
+
+func _scroll_gui_input(event: InputEvent, sc: ScrollContainer) -> void:
+	if not (event is InputEventMouseButton and (event as InputEventMouseButton).pressed):
+		return
+	var b := (event as InputEventMouseButton).button_index
+	if b != MOUSE_BUTTON_WHEEL_UP and b != MOUSE_BUTTON_WHEEL_DOWN:
+		return
+	var vb := sc.get_v_scroll_bar()
+	if not is_instance_valid(vb) or vb.max_value <= vb.page:
+		return   # content fits — nothing to scroll
+	if b == MOUSE_BUTTON_WHEEL_UP and vb.value <= vb.min_value:
+		return   # already at the top
+	if b == MOUSE_BUTTON_WHEEL_DOWN and vb.value >= vb.max_value - vb.page:
+		return   # already at the bottom
+	var t := float(Time.get_ticks_msec()) / 1000.0
+	if t - _last_scroll_t < SCROLL_MIN_GAP:
+		return
+	_last_scroll_t = t
+	play(ui_scroll if ui_scroll else ui_tab, -9.0, 0.08)
 
 func _btn_click() -> void:
 	play(ui_click)
@@ -338,6 +378,7 @@ func _apply_placeholders() -> void:
 	if ui_cancel == null:   ui_cancel   = _ph(FX + "break.wav")
 	if ui_error == null:    ui_error    = _ph(FX + "universfield-error-08-206492.mp3")
 	if ui_tab == null:      ui_tab      = _ph(FX + "select.wav")
+	if ui_scroll == null:   ui_scroll   = _ph(FX + "select.wav")
 	if ui_open == null:     ui_open     = _ph(FX + "enter.wav")
 	if ui_save == null:     ui_save     = _ph(FX + "complete.ogg")
 	# ── Combat ──
@@ -468,6 +509,43 @@ func stop_loop(key: String) -> void:
 	var p: AudioStreamPlayer = _loops.get(key)
 	if is_instance_valid(p) and p.playing:
 		p.stop()
+
+# ── Dialogue typewriter blip ─────────────────────────────────────────────────────
+# IMPORTANT: `dialogue_blip` is not one blip — the file is an 8.8-second track of
+# ~81 evenly spaced blips (one per ~109ms), i.e. a ready-made typewriter LOOP.
+# Treat it as such: start it once when a line begins revealing and stop it when
+# the reveal ends. It gets its own voice so we have that stop handle.
+#
+# Do NOT retrigger this per character. Firing it as a pooled one-shot plays all
+# 8.8s over the top of everything; restarting it every few characters only ever
+# replays the file's 47ms of leading silence, which is inaudible.
+var _blip: AudioStreamPlayer = null
+
+# The blip file is MUCH quieter than the rest of the library — measured peaks:
+#   blip -18.3 dB · click ui -4.0 dB · game coin -1.7 dB
+# so it needs a BOOST, not the usual trim. Without this it lands ~22 dB under a
+# button click and is simply inaudible under music. +8 puts its peak near -14 dB:
+# clearly present, still sitting below the one-shot SFX (it's a continuous sound,
+# so it shouldn't match them). Retune here if the sample is ever replaced.
+const BLIP_GAIN_DB := 8.0
+
+func start_blip(volume_db: float = BLIP_GAIN_DB) -> void:
+	if dialogue_blip == null:
+		return
+	if not is_instance_valid(_blip):
+		_blip = AudioStreamPlayer.new()
+		_blip.bus = _sfx_bus
+		_blip.process_mode = Node.PROCESS_MODE_ALWAYS
+		add_child(_blip)
+	_blip.volume_db = sfx_volume_db + volume_db
+	if _blip.playing:
+		return                                    # already ticking for this line
+	_blip.stream = _looping_copy(dialogue_blip)   # loops if a line outruns the file
+	_blip.play()
+
+func stop_blip() -> void:
+	if is_instance_valid(_blip) and _blip.playing:
+		_blip.stop()
 
 func stop_all_loops() -> void:
 	for k in _loops.keys():

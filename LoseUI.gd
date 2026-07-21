@@ -41,11 +41,15 @@ func _build() -> void:
 	card.add_child(vbox)
 
 	# Icon
-	var icon_lbl = Label.new()
-	icon_lbl.text = "💀"
-	icon_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	icon_lbl.add_theme_font_size_override("font_size", 52)
-	vbox.add_child(icon_lbl)
+	# Real pixel icon rather than an OS emoji glyph. Hidden if the art is missing,
+	# so a gap never shows as an empty box.
+	var icon_tr = TextureRect.new()
+	icon_tr.texture = IconDB.tex("skull")
+	icon_tr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	icon_tr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	icon_tr.custom_minimum_size = Vector2(64, 64)
+	icon_tr.visible = icon_tr.texture != null
+	vbox.add_child(icon_tr)
 
 	# Title
 	var title = Label.new()
@@ -68,7 +72,7 @@ func _build() -> void:
 
 	# Restart button
 	var restart_btn = Button.new()
-	restart_btn.text = "🔄  Restart From Last Save"
+	restart_btn.text = "Restart From Last Save"
 	restart_btn.focus_mode = Control.FOCUS_NONE
 	restart_btn.custom_minimum_size = Vector2(340, 58)
 	_style_btn(restart_btn, Color(0.08, 0.20, 0.08), Color(0.22, 0.62, 0.22))

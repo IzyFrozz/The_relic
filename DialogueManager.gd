@@ -21,7 +21,8 @@ var _index: int = 0
 var _typing: bool = false
 var _char_progress: float = 0.0
 var _total_chars: int = 0
-var _last_blip_char: int = 0   # throttles the typewriter blip
+
+var _close_tween: Tween = null   # the fade-out in flight, so a new dialogue can cancel it
 
 var _root: Control
 var _panel: Panel
@@ -34,13 +35,14 @@ const COL_BORDER := Color(0.35, 0.40, 0.60, 1.0)
 const COL_GOLD   := Color(1.00, 0.85, 0.30, 1.0)
 const COL_TEXT   := Color(0.92, 0.93, 1.00, 1.0)
 const TYPE_CPS   := 48.0   # characters revealed per second
-const BLIP_EVERY := 3      # play the typewriter blip once per N revealed chars
 
 func _ready() -> void:
 	layer = 120                       # above HUD, below hard end-screens
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_build()
-	_hide_box()
+	# NOT _hide_box(): that touches SFX, which autoloads AFTER this one and so
+	# doesn't exist yet during _ready.
+	_root.visible = false
 
 # ── Public API ──────────────────────────────────────────────────────────────
 func say(speaker: String, text: String) -> void:
@@ -49,24 +51,55 @@ func say(speaker: String, text: String) -> void:
 func start(lines: Array) -> void:
 	if lines.is_empty():
 		return
+	_cancel_pending_close()
 	_lines = lines
 	_index = 0
 	is_active = true
 	_root.visible = true
 	_root.modulate.a = 0.0
-	create_tween().tween_property(_root, "modulate:a", 1.0, 0.12)
+	create_tween().set_ignore_time_scale(true).tween_property(_root, "modulate:a", 1.0, 0.12)
 	_show_line()
+
+# `dialogue_finished` / `choice_selected` are emitted the instant the box starts
+# fading, NOT when the fade lands — so a listener that immediately opens another
+# dialogue (the relic NPC does exactly this: last line → ask(), then the choice →
+# more lines) used to collide with the previous close: two tweens fought over the
+# box's alpha and the old tween's _hide_box callback then hid the NEW dialogue
+# ~0.1s in. The box vanished while `_awaiting_choice` stayed true, which swallowed
+# every key and froze the game. Killing the pending close fixes it at the source.
+func _cancel_pending_close() -> void:
+	if _close_tween != null and _close_tween.is_valid():
+		_close_tween.kill()
+	_close_tween = null
+
+# Rip the box off screen NOW, with no fade. For end screens (victory/defeat),
+# which set Engine.time_scale = 0.0: at zero time scale a normal fade tween never
+# advances, so the dialogue froze fully-opaque on top of the win card.
+func force_close() -> void:
+	_cancel_pending_close()
+	_typing = false
+	SFX.stop_blip()
+	# Never strand a coroutine that's awaiting a pick.
+	if _awaiting_choice:
+		_awaiting_choice = false
+		_choice_row.visible = false
+		choice_selected.emit(-1)
+	is_active = false
+	_root.modulate.a = 0.0
+	_root.visible = false
 
 # Present a prompt with clickable options and await the player's pick. Returns
 # the chosen option index. Click a button, or press the number keys 1..N.
 #     var choice = await DialogueManager.ask("Kid", "Turn it in?", ["Yes", "No"])
 func ask(speaker: String, prompt: String, options: Array) -> int:
+	_cancel_pending_close()
 	is_active = true
 	_awaiting_choice = true
 	_typing = false
+	SFX.stop_blip()   # a choice prompt appears whole — nothing to voice
 	_root.visible = true
 	_root.modulate.a = 0.0
-	create_tween().tween_property(_root, "modulate:a", 1.0, 0.12)
+	create_tween().set_ignore_time_scale(true).tween_property(_root, "modulate:a", 1.0, 0.12)
 	_name_label.text = speaker
 	_name_label.visible = speaker != ""
 	_body_label.text = IconDB.iconify(prompt, 22)
@@ -100,12 +133,13 @@ func _pick_choice(idx: int) -> void:
 	if not _awaiting_choice:
 		return
 	_awaiting_choice = false
+	SFX.stop_blip()
 	_choice_row.visible = false
 	_hint_label.visible = true
 	is_active = false
-	var tw = create_tween()
-	tw.tween_property(_root, "modulate:a", 0.0, 0.10)
-	tw.tween_callback(_hide_box)
+	_close_tween = create_tween().set_ignore_time_scale(true)
+	_close_tween.tween_property(_root, "modulate:a", 0.0, 0.10)
+	_close_tween.tween_callback(_hide_box)
 	choice_selected.emit(idx)
 
 # ── Build UI (code-driven, resolution-independent) ──────────────────────────
@@ -177,6 +211,8 @@ func _build() -> void:
 
 # ── Line flow ────────────────────────────────────────────────────────────────
 func _show_line() -> void:
+	# Cut the previous line's blip before the new reveal starts its own.
+	SFX.stop_blip()
 	var line = _lines[_index]
 	_name_label.text = str(line.get("name", ""))
 	_name_label.visible = _name_label.text != ""
@@ -185,8 +221,11 @@ func _show_line() -> void:
 	_total_chars = _body_label.get_total_character_count()
 	_body_label.visible_characters = 0
 	_char_progress = 0.0
-	_last_blip_char = 0
 	_typing = _total_chars > 0
+	# The blip is a continuous typewriter loop that runs for exactly as long as
+	# the text is revealing — see SFX.start_blip().
+	if _typing:
+		SFX.start_blip()
 	_hint_label.text = "▸  Space" if not _typing else "…"
 
 func _process(delta: float) -> void:
@@ -197,14 +236,13 @@ func _process(delta: float) -> void:
 	if shown >= _total_chars:
 		_finish_typing()
 	else:
-		# Blip every few revealed characters — one per char would be a machine-gun.
-		if shown > _last_blip_char and (shown - _last_blip_char) >= BLIP_EVERY:
-			_last_blip_char = shown
-			SFX.play(SFX.dialogue_blip, -8.0, 0.12)
 		_body_label.visible_characters = shown
 
+# Ends the reveal — whether it ran out naturally or the player skipped it. Either
+# way the blip is cut here, so it can never outlive the text it's voicing.
 func _finish_typing() -> void:
 	_typing = false
+	SFX.stop_blip()
 	_body_label.visible_characters = -1
 	_hint_label.text = "▸  Space" if _index < _lines.size() - 1 else "✓  Space"
 
@@ -220,13 +258,22 @@ func _advance() -> void:
 
 func _close() -> void:
 	is_active = false
-	var tw = create_tween()
-	tw.tween_property(_root, "modulate:a", 0.0, 0.10)
-	tw.tween_callback(_hide_box)
+	SFX.stop_blip()
+	_close_tween = create_tween().set_ignore_time_scale(true)
+	_close_tween.tween_property(_root, "modulate:a", 0.0, 0.10)
+	_close_tween.tween_callback(_hide_box)
 	dialogue_finished.emit()
 
 func _hide_box() -> void:
+	# Second line of defence behind _cancel_pending_close(): never hide the box
+	# while a conversation or a choice is live, no matter which stale tween or
+	# callback got us here. Hiding it mid-choice is what froze the game.
+	if is_active or _awaiting_choice:
+		_root.modulate.a = 1.0
+		return
+	_close_tween = null
 	_root.visible = false
+	SFX.stop_blip()   # last line of defence: box gone, blip gone
 
 func _input(event: InputEvent) -> void:
 	if not is_active:

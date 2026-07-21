@@ -57,9 +57,9 @@ const QUESTS := {
 		"rumour_hint": "Speak with a Wizard at a checkpoint to learn more.",
 		"reveal": { "event": "npc_talked", "npc": "wizard" },
 		"desc": "Beating a stronger foe takes brains, not stats. (You strike first — use it.)",
-		"how": "Defeat an enemy at least 2 levels above you.",
+		"how": "Defeat an enemy at least 3 levels above you.",
 		"type": "underdog_kill", "goal": 1,
-		"params": { "level_diff": 2 },
+		"params": { "level_diff": 3 },
 		"reward": { "xp": 300, "item": "phoenix_feather" },
 	},
 	"mob_slayer": {

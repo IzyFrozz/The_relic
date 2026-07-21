@@ -205,9 +205,9 @@ func _process(delta: float) -> void:
 
 func _refresh() -> void:
 	if is_instance_valid(level_label):
-		level_label.text = "⭐  LV. %d" % QuestManager.player_level
+		level_label.text = "LV. %d" % QuestManager.player_level
 	if is_instance_valid(max_hp_label):
-		max_hp_label.text = "❤️  %d HP" % QuestManager.MAX_HEALTH
+		max_hp_label.text = "%d HP" % QuestManager.MAX_HEALTH
 	if is_instance_valid(xp_bar):
 		xp_bar.max_value = QuestManager.xp_required
 		xp_bar.value     = QuestManager.current_xp
@@ -350,7 +350,7 @@ func _build_quest_log() -> void:
 	panel.add_child(vb)
 
 	var title = Label.new()
-	title.text = "🗒️  Quest Log"
+	title.text = "Quest Log"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 22)
 	title.add_theme_color_override("font_color", COL_GOLD)

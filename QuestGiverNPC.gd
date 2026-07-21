@@ -103,8 +103,7 @@ func _say_and_wait(lines: Array) -> void:
 # The floating chat icon replaces the old "[E] …" text prompt: it just shows while
 # the player is in range.
 func _update_prompt() -> void:
-	if is_instance_valid(_talk_marker):
-		_talk_marker.visible = player_nearby
+	IconDB.set_marker_visible(_talk_marker, player_nearby)
 
 # Targets the SCRIPTED WinUI (with show_win_screen) so it isn't fooled by any
 # other node that happens to be named "WinUI".

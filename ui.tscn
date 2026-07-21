@@ -326,10 +326,10 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -380.0
-offset_top = -290.0
-offset_right = 380.0
-offset_bottom = 290.0
+offset_left = -430.0
+offset_top = -320.0
+offset_right = 430.0
+offset_bottom = 320.0
 grow_horizontal = 2
 grow_vertical = 2
 
@@ -360,13 +360,20 @@ theme_override_constants/separation = 14
 [node name="UnlockedSection" type="PanelContainer" parent="EquipmentMenu/Panel/MainVBox/ColumnsHBox" unique_id=-2084928293]
 layout_mode = 2
 size_flags_horizontal = 3
+size_flags_stretch_ratio = 1.35
 size_flags_vertical = 3
 
 [node name="UnlockedVBox" type="VBoxContainer" parent="EquipmentMenu/Panel/MainVBox/ColumnsHBox/UnlockedSection" unique_id=-2084928292]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="UnlockedGrid" type="GridContainer" parent="EquipmentMenu/Panel/MainVBox/ColumnsHBox/UnlockedSection/UnlockedVBox" unique_id=719893414]
+[node name="UnlockedScroll" type="ScrollContainer" parent="EquipmentMenu/Panel/MainVBox/ColumnsHBox/UnlockedSection/UnlockedVBox" unique_id=719893415]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="UnlockedGrid" type="GridContainer" parent="EquipmentMenu/Panel/MainVBox/ColumnsHBox/UnlockedSection/UnlockedVBox/UnlockedScroll" unique_id=719893414]
 layout_mode = 2
 size_flags_horizontal = 3
 columns = 2
@@ -380,10 +387,16 @@ size_flags_vertical = 3
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="EquippedGrid" type="GridContainer" parent="EquipmentMenu/Panel/MainVBox/ColumnsHBox/EquippedSection/EquippedVBox" unique_id=285528932]
+[node name="EquippedScroll" type="ScrollContainer" parent="EquipmentMenu/Panel/MainVBox/ColumnsHBox/EquippedSection/EquippedVBox" unique_id=285528933]
 layout_mode = 2
 size_flags_horizontal = 3
-columns = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="EquippedGrid" type="GridContainer" parent="EquipmentMenu/Panel/MainVBox/ColumnsHBox/EquippedSection/EquippedVBox/EquippedScroll" unique_id=285528932]
+layout_mode = 2
+size_flags_horizontal = 3
+columns = 1
 
 [node name="CloseButton" type="Button" parent="EquipmentMenu/Panel/MainVBox" unique_id=166129530]
 custom_minimum_size = Vector2(0, 46)

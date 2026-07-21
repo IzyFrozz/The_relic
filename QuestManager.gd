@@ -1,6 +1,29 @@
 extends Node
 
+# ── Difficulty ───────────────────────────────────────────────────────────────
+# Picked when a run is created and changeable from Settings at any time.
+#   NORMAL — the game exactly as it has always played.
+#   RELIC  — "Chosen by the Relic": every enemy carries a threat trait, the late
+#            tiers field deeper loadouts, levels cost 25% more XP and fishing
+#            pays 12% less. A deliberately longer, meaner run.
+enum Difficulty { NORMAL, RELIC }
+var difficulty: int = Difficulty.NORMAL
+
+const DIFF_XP_REQUIRED_MULT := 1.25   # RELIC: every level costs 25% more
+const DIFF_FISHING_XP_MULT  := 0.88   # RELIC: fishing pays 12% less
+
+func is_relic_difficulty() -> bool:
+	return difficulty == Difficulty.RELIC
+
+func difficulty_name() -> String:
+	return "Chosen by the Relic" if is_relic_difficulty() else "Normal"
+
 var coins_collected: int = 0
+# Node names of the coins already picked up (see collect_coin). Persisted, so a
+# scene reload can't respawn them.
+var collected_coins: Array = []
+# Only non-zero right after loading a pre-per-coin save — see claim_legacy_coin.
+var legacy_coins_to_absorb: int = 0
 const COINS_NEEDED: int = 10
 var chest_unlocked: bool = false
 var has_relic: bool = false
@@ -67,7 +90,7 @@ var item_unlocks := {
 	5:  "magnet",
 	6:  "bandage",
 	7:  "poison_dart",
-	8:  "battle_horn",
+	8:  "lifesteal_vial",
 	9:  "smoke_bomb",
 	10: "mirror_ward",
 	11: "weaken_totem",
@@ -76,6 +99,14 @@ var item_unlocks := {
 	14: "time_warp",
 	15: "overcharge",
 }
+
+# The level at which `item_id` becomes available, or 0 for items that aren't on
+# the level ladder at all (relic, phoenix feather, clone — quest rewards).
+func unlock_level_of(item_id: String) -> int:
+	for lvl in item_unlocks:
+		if str(item_unlocks[lvl]) == item_id:
+			return int(lvl)
+	return 0
 
 const ITEM_META := {
 	"potion":       { "emoji": "🧪", "label": "Potion",          "desc": "Restores 20 HP instantly." },
@@ -86,7 +117,7 @@ const ITEM_META := {
 	"magnet":       { "emoji": "🧲", "label": "Magnet",          "desc": "Steal one chosen item from the enemy (only from your loadout)." },
 	"bandage":      { "emoji": "🩹", "label": "Bandage",         "desc": "Heal 10 HP now, then +10 HP for 2 more rounds." },
 	"poison_dart":  { "emoji": "☠️", "label": "Poison Dart",     "desc": "Target takes 10 damage per round for 3 rounds. Ignores armor." },
-	"battle_horn":  { "emoji": "🩸", "label": "Lifesteal Vial",  "desc": "Your next attack heals you for 50%% of damage dealt (stacks with damage buffs)." },
+	"lifesteal_vial":  { "emoji": "🩸", "label": "Lifesteal Vial",  "desc": "Your next attack heals you for 50% of damage dealt (stacks with damage buffs)." },
 	"mirror_ward":  { "emoji": "🪞", "label": "Mirror Ward",     "desc": "Reflects the full incoming hit back at the attacker — including all multipliers." },
 	"smoke_bomb":   { "emoji": "💨", "label": "Smoke Bomb",      "desc": "The next attack against you misses completely." },
 	"weaken_totem": { "emoji": "🗿", "label": "Weaken Totem",    "desc": "Curses the target — their next attack heals you 20 HP instead of dealing damage." },
@@ -98,8 +129,41 @@ const ITEM_META := {
 	"phoenix_feather": { "emoji": "🪶", "label": "Phoenix Feather", "desc": "Passive safety net (can't be used by hand). The moment you'd die it auto-revives you to 40 HP, then goes dormant for 5+ turns — the wait grows each time it triggers. Only one at a time." },
 	"clone":           { "emoji": "👥", "label": "Mirror Clone",    "desc": "Summons a ghostly double in front of you. On your attack the clone strikes first for 20, then you strike (buffs apply to you) — two hits in one turn. The clone also soaks the enemy's next hit, then fades." },
 	# ── The Ancient Relic (quest item that doubles as the ultimate loadout item) ──
-	"relic":           { "emoji": "🏺", "label": "Ancient Relic",   "desc": "The strongest item alive. Once it's in your bag it charges from damage traded in a fight; when it GLOWS, unleash 40 unblockable damage and heal 20, cleansing your afflictions. Consumed on use (back to the crate pool), and each use it demands more charge. Only one at a time. Turn it in to win." },
+	"relic":           { "emoji": "🏺", "label": "Ancient Relic",   "desc": "The strongest item alive. Once it's in your bag it charges from damage traded in a fight; when it GLOWS, unleash 40 unblockable damage and heal 20, lifting every affliction on you AND stripping every buff off the enemy. Consumed on use (back to the crate pool), and each further use in the SAME fight demands more charge — every new fight resets it. Only one at a time. Turn it in to win." },
 }
+
+# ── Tooltip text ─────────────────────────────────────────────────────────────
+# Godot's built-in tooltip does NOT wrap: it lays the whole string out on one
+# line and the panel grows until it runs off the screen. The long descriptions
+# (relic, phoenix, clone) did exactly that, so every tooltip is hard-wrapped
+# here before it's handed to `tooltip_text`.
+const TOOLTIP_WRAP := 54   # characters per line
+
+static func wrap_text(text: String, width: int = TOOLTIP_WRAP) -> String:
+	var out := PackedStringArray()
+	for para in text.split("\n"):
+		var line := ""
+		for word in para.split(" "):
+			if line == "":
+				line = word
+			elif line.length() + 1 + word.length() <= width:
+				line += " " + word
+			else:
+				out.append(line)
+				line = word
+		out.append(line)
+	return "\n".join(out)
+
+# Standard item tooltip: bold-ish title line, wrapped description, optional
+# trailing line (slot key, "click to equip", …).
+static func item_tooltip(meta: Dictionary, footer: String = "") -> String:
+	var t: String = str(meta.get("label", ""))
+	var d: String = str(meta.get("desc", ""))
+	if d != "":
+		t += "\n" + wrap_text(d)
+	if footer != "":
+		t += "\n" + footer
+	return t
 
 # ── Side quest state (see SideQuestDB.gd for definitions) ────────────────────
 # Everything here saves/loads. States: rumour / available / active / done.
@@ -124,7 +188,7 @@ var talked_npcs: Array = []               # distinct npc ids the player has talk
 # ── Map & compass (see WorldMap.gd / NavigatorNPC.gd) ──
 var has_compass: bool = false             # granted by the Navigator; unlocks the compass + map markers
 var explored_cells: Dictionary = {}       # "cx,cy" -> true, fog-of-war reveal (persisted)
-var relic_uses: int = 0                   # lifetime relic activations — raises the charge requirement each time
+var relic_uses: int = 0                   # lifetime relic activations (stat only — the charge requirement is per-fight, see relic_uses_fight)
 signal side_quests_changed               # HUD listens to refresh the quest log
 
 # Called once at character creation and defensively on load: seed any quest
@@ -320,13 +384,38 @@ func turn_in_relic() -> void:
 	equipped_items.erase("relic")
 	has_unsaved_progress = true
 
-func collect_coin() -> void:
+func collect_coin(coin_id: String = "") -> void:
 	# Coins are strictly the 10 win-gating pickups scattered in the world — no
 	# lifetime tally, no farmable quest. (coins_lifetime is retained only so old
 	# saves still load; it is no longer used for anything.)
+	#
+	# WHICH coins are gone is tracked by node name, not just how many: every
+	# reload_current_scene() (flee, death-restart, load-slot) re-instantiates
+	# quest.tscn, so a bare counter let the whole set respawn and be farmed again.
+	if coin_id != "":
+		if collected_coins.has(coin_id):
+			return                      # already banked — never double-count
+		collected_coins.append(coin_id)
 	coins_collected += 1
 	has_unsaved_progress = true
 	SFX.play(SFX.coin)
+
+# True if this specific coin has already been picked up, so it can delete itself
+# on spawn instead of reappearing in the world.
+func coin_is_collected(coin_id: String) -> bool:
+	return collected_coins.has(coin_id)
+
+# Legacy saves recorded only the count. The first time such a save is loaded the
+# coins claim themselves back in scene order until the count is accounted for,
+# which self-heals `collected_coins` for every save after that.
+func claim_legacy_coin(coin_id: String) -> bool:
+	if legacy_coins_to_absorb <= 0:
+		return false
+	if not collected_coins.has(coin_id):
+		collected_coins.append(coin_id)
+	legacy_coins_to_absorb -= 1
+	has_unsaved_progress = true
+	return true
 
 const HP_PER_HEART := 20
 const HEARTS_PER_LAP := 15
@@ -375,6 +464,7 @@ func _save_path(session: int, slot: int) -> String:
 # ── Serialize / deserialize the full run state (shared by every slot) ──
 func _serialize() -> Dictionary:
 	return {
+		"difficulty":        difficulty,
 		"player_level":      player_level,
 		"current_xp":        current_xp,
 		"xp_required":       xp_required,
@@ -382,6 +472,7 @@ func _serialize() -> Dictionary:
 		"unlocked_items":    unlocked_items,
 		"equipped_items":    equipped_items,
 		"coins_collected":   coins_collected,
+		"collected_coins":   collected_coins,
 		"chest_unlocked":    chest_unlocked,
 		"has_relic":         has_relic,
 		"game_won":          game_won,
@@ -509,14 +600,25 @@ func delete_session(session: int) -> void:
 		session_saved_once = false
 
 func _deserialize(parsed: Dictionary) -> void:
+	# Read BEFORE xp_required is recomputed below — the curve depends on it.
+	difficulty        = int(parsed.get("difficulty", Difficulty.NORMAL))
 	player_level      = parsed.get("player_level",      1)
 	current_xp        = parsed.get("current_xp",        0)
-	xp_required       = parsed.get("xp_required",       100)
+	# Recomputed from the level, NOT read back from the save: the curve in
+	# xp_required_for() is the single source of truth, so a save written under an
+	# older curve is re-priced on load instead of keeping a stale requirement.
+	xp_required       = xp_required_for(player_level)
 	MAX_HEALTH        = parsed.get("MAX_HEALTH",         100)
 	unlocked_items    = parsed.get("unlocked_items",     ["potion", "shield"])
 	equipped_items    = parsed.get("equipped_items",     ["potion", "shield"])
 	_migrate_item_ids()   # war_banner → clone, drop any items no longer in ITEM_META
 	coins_collected   = parsed.get("coins_collected",    0)
+	collected_coins   = parsed.get("collected_coins",   [])
+	# Pre-per-coin save: it knows the count but not which ones. Let the coins
+	# claim themselves back as they spawn (claim_legacy_coin).
+	legacy_coins_to_absorb = 0
+	if not parsed.has("collected_coins"):
+		legacy_coins_to_absorb = coins_collected
 	chest_unlocked    = parsed.get("chest_unlocked",     false)
 	has_relic         = parsed.get("has_relic",          false)
 	game_won          = parsed.get("game_won",           false)
@@ -569,7 +671,7 @@ func _deserialize(parsed: Dictionary) -> void:
 # Clone, and any id that's no longer a real item is dropped so it can't show up
 # as a "❓" ghost in the loadout/combat.
 func _migrate_item_ids() -> void:
-	const RENAMES := {"war_banner": "clone"}
+	const RENAMES := {"war_banner": "clone", "battle_horn": "lifesteal_vial"}
 	for arr_name in ["unlocked_items", "equipped_items"]:
 		var arr: Array = get(arr_name)
 		var out: Array = []
@@ -580,9 +682,11 @@ func _migrate_item_ids() -> void:
 		set(arr_name, out)
 
 func reset_to_defaults() -> void:
-	player_level = 1; current_xp = 0; xp_required = 100; MAX_HEALTH = 100
+	# xp_required via the curve, so a RELIC run starts on its harder rung.
+	player_level = 1; current_xp = 0; xp_required = xp_required_for(1); MAX_HEALTH = 100
 	unlocked_items = ["potion", "shield"]; equipped_items = ["potion", "shield"]
-	coins_collected = 0; chest_unlocked = false; has_relic = false; game_won = false
+	coins_collected = 0; collected_coins.clear(); legacy_coins_to_absorb = 0
+	chest_unlocked = false; has_relic = false; game_won = false
 	quest_accepted = false; has_key = false; player_spawn_position = Vector2.ZERO
 	player_health = MAX_HEALTH; player_shield = MAX_SHIELD
 	defeated_enemies.clear()
@@ -605,9 +709,11 @@ func reset_to_defaults() -> void:
 # previous session, the player respawns at the authored start with starting
 # gear — "like new, but still their character."
 func restart_fresh_run() -> void:
-	player_level = 1; current_xp = 0; xp_required = 100; MAX_HEALTH = 100
+	# xp_required via the curve, so a RELIC run starts on its harder rung.
+	player_level = 1; current_xp = 0; xp_required = xp_required_for(1); MAX_HEALTH = 100
 	unlocked_items = ["potion", "shield"]; equipped_items = ["potion", "shield"]
-	coins_collected = 0; chest_unlocked = false; has_relic = false; game_won = false
+	coins_collected = 0; collected_coins.clear(); legacy_coins_to_absorb = 0
+	chest_unlocked = false; has_relic = false; game_won = false
 	quest_accepted = false; has_key = false
 	player_spawn_position = Vector2.ZERO   # main.gd falls back to the authored spawn
 	player_health = MAX_HEALTH; player_shield = MAX_SHIELD
@@ -656,11 +762,61 @@ func heal_player(amount: int) -> void:
 	if player_health > before:
 		SFX.play(SFX.player_heal)
 
-# ── Relic charge requirement (climbs with every use, persisted) ───────────────
-const RELIC_CHARGE_BASE := 100
+# ── Relic charge requirement ─────────────────────────────────────────────────
+# The requirement climbs PER FIGHT, not across the save: every combat starts the
+# relic back at RELIC_CHARGE_BASE, and each use *within that same fight* costs
+# another RELIC_CHARGE_STEP. (`relic_uses` is still tallied and saved, but only
+# as a lifetime stat — it no longer gates anything, so a long save file can't
+# price the relic out of reach forever.)
+const RELIC_CHARGE_BASE := 150
 const RELIC_CHARGE_STEP := 40
+var relic_uses_fight: int = 0   # reset at the start of every combat — NOT saved
+
 func relic_charge_needed() -> int:
-	return RELIC_CHARGE_BASE + relic_uses * RELIC_CHARGE_STEP
+	return RELIC_CHARGE_BASE + relic_uses_fight * RELIC_CHARGE_STEP
+
+# ── XP curve ─────────────────────────────────────────────────────────────────
+# Four bands, each a per-level multiplier on the previous level's requirement:
+#   1-7    ×1.35  steep early, so the first item unlocks feel earned
+#   8      ×1.18  a breather
+#   9      ×2.45  ENTRY STEP into the item band — a deliberate one-off jump.
+#                 Level 8 costs ~2.6 fights; without this step level 9 would too,
+#                 and the whole item stretch would be over before it registered.
+#   10+    ×1.13  Mob XP itself grows ~8-9% per level here, so a 13% requirement
+#                 keeps fights-per-level almost flat while still creeping up.
+#
+# The item band (9-16) is the stretch every new combat item unlocks in, so it is
+# tuned in FIGHTS, not raw XP: ~5.5 fights per level at 9-10, easing up to ~7 by
+# 16. Steep enough that a new item feels earned, flat enough that it never turns
+# into a wall people quit on.
+#
+# Derived from the level rather than accumulated step-by-step, so the curve is
+# authoritative: a save made under the old numbers picks up the new curve on
+# load instead of carrying a stale `xp_required` forever.
+const XP_BASE         := 100
+const XP_GROWTH_EARLY := 1.35
+const XP_GROWTH_MID   := 1.18
+const XP_ITEMS_ENTRY  := 2.45   # one-time step at level 9
+const XP_GROWTH_ITEMS := 1.13   # per level from 10 on
+const XP_MID_FROM     := 8
+const XP_ITEMS_FROM   := 9      # first level of the item-unlock band
+
+func _xp_growth_at(level: int) -> float:
+	if level < XP_MID_FROM:      return XP_GROWTH_EARLY
+	if level < XP_ITEMS_FROM:    return XP_GROWTH_MID
+	if level == XP_ITEMS_FROM:   return XP_ITEMS_ENTRY
+	return XP_GROWTH_ITEMS
+
+# XP needed to get FROM `level` to the next one.
+# On RELIC difficulty every rung costs DIFF_XP_REQUIRED_MULT more — applied to
+# the whole curve, not just the late band, so the grind is longer end to end.
+func xp_required_for(level: int) -> int:
+	var need := float(XP_BASE)
+	for l in range(2, level + 1):
+		need *= _xp_growth_at(l)
+	if is_relic_difficulty():
+		need *= DIFF_XP_REQUIRED_MULT
+	return int(need)
 
 func gain_xp(amount: int) -> void:
 	current_xp += amount
@@ -677,7 +833,4 @@ func gain_xp(amount: int) -> void:
 				unlocked_items.append(new_item)
 		# Announce any level-gated mechanic that just opened up (LevelGate.gd).
 		preload("res://LevelGate.gd").announce_unlocks_at(player_level)
-		# Two-stage XP curve: steep early (1.35x) so the first unlocks feel
-		# earned, then gentler (1.18x) from level 8 so 20+ stays reachable —
-		# with the old flat 1.35x, level 19→20 needed ~30 same-level kills.
-		xp_required = int(xp_required * (1.35 if player_level < 8 else 1.18))
+		xp_required = xp_required_for(player_level)

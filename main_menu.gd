@@ -7,10 +7,12 @@ extends CanvasLayer
 # only look right at one resolution.
 
 const MASTER_BUS := 0
+const CARD_MARGIN_Y := 40.0   # gap between the card and the top/bottom of the window
 const COL_BG      := Color(0.05, 0.06, 0.10, 1.0)
 const COL_CARD_BG := Color(0.07, 0.08, 0.12, 0.98)
 const COL_BORDER  := Color(0.35, 0.40, 0.60, 1.0)
 const COL_GOLD    := Color(1.00, 0.85, 0.30, 1.0)
+const COL_DANGER  := Color(0.95, 0.34, 0.32, 1.0)
 
 var main_view:     VBoxContainer
 var load_view:      VBoxContainer
@@ -38,7 +40,7 @@ const PlayerSkin = preload("res://PlayerSkin.gd")
 
 var load_slot_buttons: Array = []
 var load_status_label: Label
-var _delete_armed_slot: int = 0   # which session's 🗑 is armed for confirm (0 = none)
+var _delete_armed_slot: int = 0   # which session's Delete is armed for confirm (0 = none)
 # The "load_view" doubles as the SESSION picker. Mode is "new" (pick an empty
 # session for a freshly-created character) or "load" (pick an occupied session
 # to browse its saves).
@@ -86,19 +88,26 @@ func _build() -> void:
 	centre_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(centre_root)
 
+	# The card is ANCHORED to the viewport with a fixed margin rather than sized to
+	# its content. The tall screens (Create Your Hero, Controls) need far more room
+	# than a 1080p window has, and growing the card to fit simply pushed the bottom
+	# of the content off the screen — the content scrolls inside the card instead.
 	var card = Panel.new()
-	card.custom_minimum_size = Vector2(600, 700)
+	card.custom_minimum_size = Vector2(600, 0)
 	card_panel = card
 	_style_panel(card, COL_CARD_BG, COL_BORDER)
 	centre_root.add_child(card)
-	card.set_anchors_preset(Control.PRESET_CENTER)
-	card.set_offsets_preset(Control.PRESET_CENTER)
+	# Horizontally centred at a fixed 600 wide; vertically it spans the window
+	# minus a margin, so the card is always exactly as tall as there is room for.
+	card.anchor_left = 0.5;  card.anchor_right  = 0.5
+	card.anchor_top  = 0.0;  card.anchor_bottom = 1.0
+	card.offset_left = -300; card.offset_right  = 300
+	card.offset_top  = CARD_MARGIN_Y
+	card.offset_bottom = -CARD_MARGIN_Y
 	card.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	card.grow_vertical   = Control.GROW_DIRECTION_BOTH
 
 	var vbox = VBoxContainer.new()
 	vbox.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT, Control.PRESET_MODE_MINSIZE, 34)
-	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
 	vbox.add_theme_constant_override("separation", 16)
 	card.add_child(vbox)
 
@@ -113,7 +122,7 @@ func _build() -> void:
 	art_panel.add_theme_stylebox_override("panel", art_style)
 	vbox.add_child(art_panel)
 	var art_label = Label.new()
-	art_label.text = "🖼️\nArtwork Placeholder"
+	art_label.text = "Artwork Placeholder"
 	art_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	art_label.vertical_alignment   = VERTICAL_ALIGNMENT_CENTER
 	art_label.add_theme_font_size_override("font_size", 16)
@@ -122,11 +131,13 @@ func _build() -> void:
 	art_panel.add_child(art_label)
 
 	# ── Title ────────────────────────────────────────────────────────────────
-	var title = Label.new()
-	title.text = "⚔️  THE RELIC"
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 40)
-	title.add_theme_color_override("font_color", COL_GOLD)
+	var title = RichTextLabel.new()
+	title.bbcode_enabled = true; title.fit_content = true; title.scroll_active = false
+	title.autowrap_mode = TextServer.AUTOWRAP_OFF
+	title.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	title.add_theme_font_size_override("normal_font_size", 40)
+	title.add_theme_color_override("default_color", COL_GOLD)
+	title.text = IconDB.iconify("⚔️  THE RELIC", 42)
 	vbox.add_child(title)
 
 	var sub = Label.new()
@@ -138,25 +149,36 @@ func _build() -> void:
 
 	vbox.add_child(HSeparator.new())
 
+	# Every view lives inside this scroll, so a screen taller than the window
+	# scrolls instead of spilling past the card's bottom edge.
+	var views_scroll = ScrollContainer.new()
+	views_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	views_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	views_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	vbox.add_child(views_scroll)
+	var views_holder = VBoxContainer.new()
+	views_holder.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	views_scroll.add_child(views_holder)
+
 	# ── Views container — only one of these three is visible at a time ─────
 	main_view = VBoxContainer.new()
 	main_view.add_theme_constant_override("separation", 12)
 	main_view.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	vbox.add_child(main_view)
+	views_holder.add_child(main_view)
 	_build_main_view()
 
 	load_view = VBoxContainer.new()
 	load_view.visible = false
 	load_view.add_theme_constant_override("separation", 12)
 	load_view.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	vbox.add_child(load_view)
+	views_holder.add_child(load_view)
 	_build_load_view()
 
 	settings_view = VBoxContainer.new()
 	settings_view.visible = false
 	settings_view.add_theme_constant_override("separation", 14)
 	settings_view.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	vbox.add_child(settings_view)
+	views_holder.add_child(settings_view)
 	_build_settings_view()
 
 	# Each settings section is its own screen with its own Back button, so nothing
@@ -165,35 +187,35 @@ func _build() -> void:
 	audio_view.visible = false
 	audio_view.add_theme_constant_override("separation", 14)
 	audio_view.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	vbox.add_child(audio_view)
+	views_holder.add_child(audio_view)
 	_build_audio_view()
 
 	display_view = VBoxContainer.new()
 	display_view.visible = false
 	display_view.add_theme_constant_override("separation", 14)
 	display_view.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	vbox.add_child(display_view)
+	views_holder.add_child(display_view)
 	_build_display_view()
 
 	controls_view = VBoxContainer.new()
 	controls_view.visible = false
 	controls_view.add_theme_constant_override("separation", 10)
 	controls_view.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	vbox.add_child(controls_view)
+	views_holder.add_child(controls_view)
 	_build_controls_view()
 
 	customize_view = VBoxContainer.new()
 	customize_view.visible = false
 	customize_view.add_theme_constant_override("separation", 12)
 	customize_view.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	vbox.add_child(customize_view)
+	views_holder.add_child(customize_view)
 	_build_customize_view()
 
 	saveselect_view = VBoxContainer.new()
 	saveselect_view.visible = false
 	saveselect_view.add_theme_constant_override("separation", 12)
 	saveselect_view.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	vbox.add_child(saveselect_view)
+	views_holder.add_child(saveselect_view)
 	_build_saveselect_view()
 
 # ── Main view ────────────────────────────────────────────────────────────────
@@ -244,7 +266,7 @@ func _build_load_view() -> void:
 		load_slot_buttons.append(btn)
 		# Per-session "delete" button (two-click confirm via the status line).
 		var del = Button.new()
-		del.text = "🗑"
+		del.text = "Delete"
 		del.focus_mode = Control.FOCUS_NONE
 		del.custom_minimum_size = Vector2(58, 0)
 		_style_btn(del, Color(0.22, 0.09, 0.09), Color(0.70, 0.25, 0.25))
@@ -295,13 +317,13 @@ func _on_delete_session_pressed(session: int) -> void:
 		return
 	if _delete_armed_slot != session:
 		_delete_armed_slot = session
-		load_status_label.text = "⚠  Delete ALL of Session %d's saves? Press 🗑 again to confirm." % session
+		load_status_label.text = "Delete ALL of Session %d's saves? Press Delete again to confirm." % session
 		load_status_label.add_theme_color_override("font_color", Color(0.95, 0.6, 0.4))
 		return
 	QuestManager.delete_session(session)
 	_delete_armed_slot = 0
 	_refresh_session_slots()
-	load_status_label.text = "🗑  Session %d deleted." % session
+	load_status_label.text = "Session %d deleted." % session
 	load_status_label.add_theme_color_override("font_color", Color(0.8, 0.85, 0.95))
 
 # ── Save-slot picker (a chosen session's 3 checkpoints) ───────────────────────
@@ -379,12 +401,19 @@ func _add_audio_slider(parent: Node, caption: String, bus: String) -> void:
 	parent.add_child(row)
 
 # A section heading inside one of the settings sub-views.
+# RichTextLabel, not Label: only RichTextLabel can render the [img] tags that
+# IconDB.iconify() produces. A plain Label falls back to the OS colour-emoji font,
+# which is exactly the mismatched glyph this project is trying to be rid of.
 func _section_title(parent: Node, text: String) -> void:
-	var l = Label.new()
-	l.text = text
-	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	l.add_theme_font_size_override("font_size", 22)
-	l.add_theme_color_override("font_color", COL_GOLD)
+	var l = RichTextLabel.new()
+	l.bbcode_enabled = true
+	l.fit_content = true
+	l.scroll_active = false
+	l.autowrap_mode = TextServer.AUTOWRAP_OFF
+	l.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	l.add_theme_font_size_override("normal_font_size", 22)
+	l.add_theme_color_override("default_color", COL_GOLD)
+	l.text = IconDB.iconify(text, 24)
 	parent.add_child(l)
 
 # "↩ Back" that returns to the settings hub (cancels any in-progress rebind).
@@ -403,13 +432,13 @@ func _build_settings_view() -> void:
 	_section_title(settings_view, "⚙️  Settings")
 
 	var audio_btn = Button.new()
-	audio_btn.text = "🔊  Audio"
 	_style_btn(audio_btn, Color(0.09, 0.12, 0.20), Color(0.30, 0.42, 0.75))
+	IconDB.decorate_button(audio_btn, "🔊", "Audio")
 	audio_btn.pressed.connect(func(): _show_view("audio"))
 	settings_view.add_child(audio_btn)
 
 	var display_btn = Button.new()
-	display_btn.text = "🖥️  Display"
+	display_btn.text = "Display"
 	_style_btn(display_btn, Color(0.09, 0.12, 0.20), Color(0.30, 0.42, 0.75))
 	display_btn.pressed.connect(func(): _show_view("display"))
 	settings_view.add_child(display_btn)
@@ -419,6 +448,8 @@ func _build_settings_view() -> void:
 	_style_btn(controls_btn, Color(0.09, 0.12, 0.20), Color(0.30, 0.42, 0.75))
 	controls_btn.pressed.connect(func(): _show_view("controls"))
 	settings_view.add_child(controls_btn)
+
+	settings_view.add_child(HSeparator.new())
 
 	var back_btn = Button.new()
 	back_btn.text = "↩  Back"
@@ -452,7 +483,7 @@ func _build_audio_view() -> void:
 
 # ── Display section ─────────────────────────────────────────────────────────────
 func _build_display_view() -> void:
-	_section_title(display_view, "🖥️  Display")
+	_section_title(display_view, "Display")
 
 	fullscreen_check = CheckButton.new()
 	fullscreen_check.text = "Fullscreen"
@@ -611,9 +642,11 @@ func _build_customize_view() -> void:
 		sv.add_child(spr)
 		preview_sprites.append(spr)
 
+	_customize_section(customize_view, "Identity")
 	var name_cap = Label.new()
 	name_cap.text = "Name  (permanent for this run)"
-	name_cap.add_theme_color_override("font_color", Color(0.8, 0.82, 0.92))
+	name_cap.add_theme_font_size_override("font_size", 12)
+	name_cap.add_theme_color_override("font_color", Color(0.72, 0.75, 0.86))
 	customize_view.add_child(name_cap)
 
 	name_input = LineEdit.new()
@@ -623,18 +656,12 @@ func _build_customize_view() -> void:
 	name_input.custom_minimum_size = Vector2(0, 44)
 	customize_view.add_child(name_input)
 
-	var build_cap = Label.new()
-	build_cap.text = "Build"
-	build_cap.add_theme_color_override("font_color", Color(0.8, 0.82, 0.92))
-	customize_view.add_child(build_cap)
+	_customize_section(customize_view, "Build")
 
 	width_slider  = _build_stat_slider("Width", customize_view)
 	height_slider = _build_stat_slider("Height", customize_view)
 
-	var colors_cap = Label.new()
-	colors_cap.text = "Colours"
-	colors_cap.add_theme_color_override("font_color", Color(0.8, 0.82, 0.92))
-	customize_view.add_child(colors_cap)
+	_customize_section(customize_view, "Colours")
 
 	# All five groups on a single row.
 	var colors_row = HBoxContainer.new()
@@ -646,6 +673,10 @@ func _build_customize_view() -> void:
 	shoes_picker = _add_color_picker(colors_row, "Shoes", PlayerSkin.DEF_SHOES)
 	skin_picker  = _add_color_picker(colors_row, "Skin",  PlayerSkin.DEF_SKIN)
 	customize_view.add_child(colors_row)
+
+	_customize_section(customize_view, "Difficulty")
+	_add_difficulty_picker(customize_view)
+	customize_view.add_child(HSeparator.new())
 
 	var confirm = Button.new()
 	confirm.text = "▶  Begin Adventure"
@@ -661,6 +692,98 @@ func _build_customize_view() -> void:
 
 	_update_preview()
 	_update_colors()
+
+# ── Difficulty picker ────────────────────────────────────────────────────────
+# Character creation only — difficulty is chosen per run, not as a global
+# setting, so it does not belong in the Settings hub.
+# NOT cleared per call: the arrays outlive a single build so every live copy
+# repaints when the mode changes.
+var _difficulty_buttons: Array = []
+var _difficulty_blurbs: Array = []
+
+func _add_difficulty_picker(parent: Node) -> void:
+	var cap = Label.new()
+	cap.text = "Difficulty"
+	cap.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	cap.add_theme_font_size_override("font_size", 13)
+	cap.add_theme_color_override("font_color", Color(0.72, 0.76, 0.88))
+	parent.add_child(cap)
+
+	var row = HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 10)
+	parent.add_child(row)
+
+	for spec in [
+		{ "mode": QuestManager.Difficulty.NORMAL, "text": "Normal" },
+		{ "mode": QuestManager.Difficulty.RELIC,  "text": "Chosen by the Relic" },
+	]:
+		var b = Button.new()
+		b.text = str(spec["text"])
+		b.focus_mode = Control.FOCUS_NONE
+		b.custom_minimum_size = Vector2(200, 44)
+		var mode: int = int(spec["mode"])
+		b.pressed.connect(func(): _set_difficulty(mode))
+		row.add_child(b)
+		_difficulty_buttons.append({ "btn": b, "mode": mode })
+
+	var blurb = Label.new()
+	blurb.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	blurb.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	blurb.custom_minimum_size = Vector2(420, 0)
+	blurb.add_theme_font_size_override("font_size", 11)
+	parent.add_child(blurb)
+	_difficulty_blurbs.append(blurb)
+
+	_refresh_difficulty_picker()
+
+func _set_difficulty(mode: int) -> void:
+	QuestManager.difficulty = mode
+	# The XP bar must re-price immediately, or the HUD keeps showing the old
+	# requirement until the next level-up.
+	QuestManager.xp_required = QuestManager.xp_required_for(QuestManager.player_level)
+	QuestManager.has_unsaved_progress = true
+	_refresh_difficulty_picker()
+
+func _refresh_difficulty_picker() -> void:
+	for entry in _difficulty_buttons:
+		var b: Button = entry["btn"]
+		if not is_instance_valid(b):
+			continue
+		var on: bool = QuestManager.difficulty == int(entry["mode"])
+		if on:
+			# Relic mode reads as a warning, not just "the other option" — red,
+			# so the harder run is never picked by accident.
+			if int(entry["mode"]) == QuestManager.Difficulty.RELIC:
+				_style_btn(b, Color(0.20, 0.06, 0.06), COL_DANGER)
+				b.add_theme_color_override("font_color", COL_DANGER)
+			else:
+				_style_btn(b, Color(0.16, 0.11, 0.04), COL_GOLD)
+				b.add_theme_color_override("font_color", COL_GOLD)
+		else:
+			_style_btn(b, Color(0.10, 0.11, 0.16), Color(0.32, 0.34, 0.46))
+			b.add_theme_color_override("font_color", Color(0.72, 0.75, 0.86))
+	var hard := QuestManager.is_relic_difficulty()
+	for bl in _difficulty_blurbs:
+		if not is_instance_valid(bl):
+			continue
+		if hard:
+			bl.text = "Every foe carries a threat trait, the late tiers field deeper loadouts, levels cost 25% more XP and fishing pays 12% less."
+			bl.add_theme_color_override("font_color", COL_DANGER)
+		else:
+			bl.text = "The adventure as it was written. A fair fight."
+			bl.add_theme_color_override("font_color", Color(0.68, 0.72, 0.82))
+
+# One consistent section heading for the creation screen, with a rule above it so
+# the groups read as distinct blocks instead of one long column of controls.
+func _customize_section(parent: Node, text: String, first: bool = false) -> void:
+	if not first:
+		parent.add_child(HSeparator.new())
+	var lbl = Label.new()
+	lbl.text = text
+	lbl.add_theme_font_size_override("font_size", 15)
+	lbl.add_theme_color_override("font_color", COL_GOLD)
+	parent.add_child(lbl)
 
 func _build_stat_slider(caption: String, parent: Node) -> HSlider:
 	var row = HBoxContainer.new()
@@ -744,23 +867,19 @@ func _show_view(which: String) -> void:
 	_rebinding_action = ""
 	if which == "controls":
 		_refresh_keybind_labels()
-	# Views with more content grow the card so nothing spills out.
-	if is_instance_valid(card_panel):
-		if which == "customize":
-			card_panel.custom_minimum_size.y = 1010
-		elif which == "controls":
-			card_panel.custom_minimum_size.y = 900   # 8 keybind rows + reset + back
-		else:
-			card_panel.custom_minimum_size.y = 700
+	if which == "customize":
+		_refresh_difficulty_picker()
+	# NOTE: the card no longer resizes per view — it fills the window height and
+	# the views scroll inside it, so nothing can spill past its edge.
 	if which == "customize":
 		_update_preview()
 	if which == "session":
 		_delete_armed_slot = 0
 		_refresh_session_slots()
 		if _session_mode == "new":
-			load_status_label.text = "Pick a session for your new character.\n(🗑 deletes a full session to make room.)"
+			load_status_label.text = "Pick a session for your new character.\n(Delete removes a full session to make room.)"
 		else:
-			load_status_label.text = "Choose a session to load.\n(🗑 deletes a session.)"
+			load_status_label.text = "Choose a session to load.\n(Delete removes a session.)"
 		load_status_label.add_theme_color_override("font_color", Color(0.85, 0.85, 0.92))
 	if which == "saveselect":
 		_refresh_saveselect()

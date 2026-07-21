@@ -101,6 +101,10 @@ var is_in_combat: bool = false
 var enemy_overworld_position: Vector2 = Vector2.ZERO
 
 const ACTION_PAUSE := 0.90
+# The enemy's turn is a spectator moment — the player can only read it, not act
+# in it — so its beats are deliberately slower than the player's. At ACTION_PAUSE
+# a three-item turn flashed past in under two seconds and read as one blur.
+const ENEMY_ACTION_PAUSE := 1.5
 const FX_TINT_DUR  := 0.42
 
 var _player_ground_fx: ColorRect = null
@@ -131,8 +135,23 @@ func _get_sprite(target: String) -> AnimatedSprite2D:
 		return get_node_or_null("AnimatedSprite2D") as AnimatedSprite2D
 	return null
 
+# Push the current combat state into the HUD right now.
+#
+# Every fx function calls this on entry. Combat state (HP, buffs, inventories) is
+# mutated the instant an action resolves, but the HUD used to be repainted only
+# at a few checkpoints — so a whole turn's worth of actions played out visually
+# while the bars still showed the values from the START of the round, and the
+# numbers all snapped at once at the end. Refreshing as each effect BEGINS means
+# the bar moves in lockstep with the thing that caused it: heal sparkle and the
+# HP going up are the same beat, and the player can follow the turn action by
+# action. Cheap and idempotent, so calling it often is fine.
+func _sync_ui() -> void:
+	if combat_ui and is_instance_valid(combat_ui):
+		combat_ui._refresh_ui_states()
+
 func _fx_heal(target: String) -> void:
 	if not is_in_combat: return
+	_sync_ui()
 	var s = _get_sprite(target)
 	if not is_instance_valid(s): return
 	var orig = s.modulate
@@ -148,6 +167,7 @@ func _fx_heal(target: String) -> void:
 
 func _fx_damage(target: String) -> void:
 	if not is_in_combat: return
+	_sync_ui()
 	var s = _get_sprite(target)
 	if not is_instance_valid(s): return
 	var orig = s.modulate
@@ -158,6 +178,7 @@ func _fx_damage(target: String) -> void:
 
 func _fx_status(target: String, color: Color, icon: String = "") -> void:
 	if not is_in_combat: return
+	_sync_ui()
 	var s = _get_sprite(target)
 	if not is_instance_valid(s): return
 	var orig = s.modulate
@@ -169,10 +190,13 @@ func _fx_status(target: String, color: Color, icon: String = "") -> void:
 
 func _fx_poison_tick(target: String) -> void:
 	if not is_in_combat: return
+	_sync_ui()
 	var s = _get_sprite(target)
 	if not is_instance_valid(s): return
 	var orig = s.modulate
 	s.modulate = Color(0.28, 0.82, 0.28, 1.0)
+	# Poison damage has no attack behind it, so this is where the hit sound belongs.
+	SFX.play(SFX.player_hit if target == "player" else SFX.enemy_hit)
 	_float_icon(target, "☠", Color(0.3, 0.85, 0.3))
 	await get_tree().create_timer(0.38).timeout
 	if not is_in_combat: return
@@ -180,6 +204,7 @@ func _fx_poison_tick(target: String) -> void:
 
 func _fx_steal(from_target: String) -> void:
 	if not is_in_combat: return
+	_sync_ui()
 	var s = _get_sprite(from_target)
 	if not is_instance_valid(s): return
 	var orig = s.modulate
@@ -188,6 +213,224 @@ func _fx_steal(from_target: String) -> void:
 	await get_tree().create_timer(FX_TINT_DUR).timeout
 	if not is_in_combat: return
 	if is_instance_valid(s): s.modulate = orig
+
+# ── Ancient Relic beam ───────────────────────────────────────────────────────
+# The relic's signature moment: light gathers in the sky ABOVE the enemy, then a
+# sustained column slams straight down onto it — the player channels it but the
+# beam never comes out of the player. Built from Line2D layers (wide teal glow +
+# hot white core) in WORLD space, aimed at the enemy's captured position.
+const RELIC_BEAM_CHARGE := 0.60   # wind-up before the beam exists
+const RELIC_BEAM_HOLD   := 1.30   # beam sustained on the enemy
+const RELIC_BEAM_FADE   := 0.45   # collapse
+const RELIC_BEAM_SKY    := 150.0  # world px above the enemy the column falls from
+# → ~2.35s total.
+
+# Builds a filled circle polygon of `radius` (Line2D can't draw discs).
+func _disc(radius: float, color: Color, segments: int = 24) -> Polygon2D:
+	var pts := PackedVector2Array()
+	for i in segments:
+		var a := TAU * float(i) / float(segments)
+		pts.append(Vector2(cos(a), sin(a)) * radius)
+	var poly := Polygon2D.new()
+	poly.polygon = pts
+	poly.color = color
+	return poly
+
+# ── Relic double cleanse ─────────────────────────────────────────────────────
+# The relic doesn't just hit: it wipes the board. Every buff the enemy has built
+# up is stripped, and every affliction on the player is lifted. Deliberately
+# lopsided — this is the strongest item in the game and it should feel like it.
+#
+# Note what is NOT touched on the enemy: poison, curse, weaken, disarm, item-lock
+# and stun are debuffs the PLAYER inflicted, so clearing them would punish you
+# for using your own ultimate.
+func _relic_strip_enemy_buffs() -> void:
+	enemy_active_armor     = false   # shield
+	enemy_reflect_active   = false   # mirror ward
+	enemy_dodge_active     = false   # smoke bomb
+	enemy_sharpened        = false   # grindstone
+	enemy_overcharged      = false   # overcharge
+	enemy_piercing         = false   # needle
+	enemy_lifesteal_active = false   # lifesteal vial
+	enemy_god_pierce       = false
+	enemy_banner_rounds    = 0       # rally aura
+	enemy_regen_rounds     = 0       # bandage regen
+	enemy_damage_bonus     = 0       # accumulated damage buffs
+
+# Lifts every affliction on the player, including the action-denial ones — a
+# relic turn can't be wasted by a stun or an item lock.
+func _relic_cleanse_player() -> void:
+	player_poison_rounds    = 0
+	player_cursed           = false
+	player_weakened         = false
+	player_is_disarmed      = false
+	player_items_locked     = false
+	player_stun_extra_turns = 0
+
+# `target` is who gets hit ("enemy" for the player's relic, "player" for the
+# enemy's Relicbound threat). `beam_col` tints the outer glow, `width_mult`
+# scales the whole column so a lesser beam reads as visibly slimmer.
+func _fx_beam(target: String, beam_col: Color, width_mult: float = 1.0) -> void:
+	if not is_in_combat: return
+	var ps = _get_sprite("player" if target == "enemy" else "enemy")   # the channeller
+	var es = _get_sprite(target)                                          # the victim
+	if not (is_instance_valid(ps) and is_instance_valid(es)): return
+	if not is_instance_valid(player_ref): return
+	var host = player_ref.get_parent()
+	if not is_instance_valid(host): return
+
+	var TEAL := beam_col
+	const CORE := Color(1.00, 1.00, 1.00)   # pure white hot centre either way
+
+	# The strike point is captured ONCE, before the enemy starts shaking, so the
+	# beam hangs dead straight while the enemy rattles around underneath it.
+	var strike: Vector2 = es.global_position
+	var sky: Vector2    = strike + Vector2(0, -RELIC_BEAM_SKY)
+
+	# Remember what to put back: the shake moves the sprite and the zap recolours
+	# it, and _fx_damage runs straight after this and would otherwise capture the
+	# strobed white as the colour to "restore" to.
+	var es_home_pos: Vector2 = es.position
+	var es_home_mod: Color   = es.modulate
+
+	# Everything lives under one node so a single queue_free cleans the whole FX
+	# up — including if combat ends mid-beam.
+	var rig := Node2D.new()
+	rig.z_index = 80
+	host.add_child(rig)
+
+	# ── 1. Wind-up: light gathers in the sky, the ground below is telegraphed ──
+	SFX.play(SFX.relic_beam_charge if SFX.relic_beam_charge else SFX.relic_unleash)
+	var orb := _disc(4.0 * width_mult, TEAL)
+	orb.global_position = sky
+	rig.add_child(orb)
+	var halo := _disc(9.0 * width_mult, Color(TEAL.r, TEAL.g, TEAL.b, 0.35))
+	halo.global_position = sky
+	rig.add_child(halo)
+	# A pool of light on the enemy so the player can SEE where it is going to land
+	# (the gathering orb itself is above the top of the screen).
+	var mark := _disc(14.0 * width_mult, Color(TEAL.r, TEAL.g, TEAL.b, 0.0))
+	mark.global_position = strike
+	mark.scale = Vector2(1.0, 0.42)          # flattened — reads as light on the ground
+	rig.add_child(mark)
+	var ct := create_tween().set_parallel(true)
+	ct.tween_property(orb,  "scale", Vector2(2.4, 2.4), RELIC_BEAM_CHARGE).set_trans(Tween.TRANS_CUBIC)
+	ct.tween_property(halo, "scale", Vector2(3.2, 3.2), RELIC_BEAM_CHARGE).set_trans(Tween.TRANS_CUBIC)
+	ct.tween_property(halo, "rotation", TAU, RELIC_BEAM_CHARGE)
+	ct.tween_property(mark, "color:a", 0.55, RELIC_BEAM_CHARGE)
+	ct.tween_property(mark, "scale", Vector2(1.7, 0.7), RELIC_BEAM_CHARGE)
+	if is_instance_valid(ps):
+		ct.tween_property(ps, "modulate", Color(0.6, 0.6, 0.6) + beam_col, RELIC_BEAM_CHARGE * 0.8)
+	# The enemy already trembles a little as the light builds over it.
+	var warn := 0.0
+	while warn < RELIC_BEAM_CHARGE and is_in_combat and is_instance_valid(es):
+		es.position = es_home_pos + Vector2(randf_range(-0.8, 0.8), 0)
+		warn += get_process_delta_time()
+		await get_tree().process_frame
+	if is_instance_valid(es): es.position = es_home_pos
+	if not is_in_combat or not is_instance_valid(rig):
+		_relic_beam_restore(es, es_home_pos, es_home_mod, ps)
+		if is_instance_valid(rig): rig.queue_free()
+		return
+
+	# ── 2. Fire: the column slams DOWN out of the sky onto the enemy ───────────
+	SFX.start_loop("relic_beam", SFX.relic_beam_fire if SFX.relic_beam_fire else SFX.relic_unleash)
+	var glow := Line2D.new()
+	glow.default_color = Color(TEAL.r, TEAL.g, TEAL.b, 0.45)
+	glow.begin_cap_mode = Line2D.LINE_CAP_ROUND
+	glow.end_cap_mode   = Line2D.LINE_CAP_ROUND
+	glow.width = 2.0
+	glow.points = PackedVector2Array([rig.to_local(sky), rig.to_local(sky)])
+	rig.add_child(glow)
+	var core := Line2D.new()
+	core.default_color = CORE
+	core.begin_cap_mode = Line2D.LINE_CAP_ROUND
+	core.end_cap_mode   = Line2D.LINE_CAP_ROUND
+	core.width = 1.0
+	core.points = PackedVector2Array([rig.to_local(sky), rig.to_local(sky)])
+	rig.add_child(core)
+
+	# Drops fast — a strike, not a creeping line — widening as it falls.
+	var ft := create_tween().set_parallel(true)
+	ft.tween_method(func(p: float):
+		if is_instance_valid(glow): glow.set_point_position(1, rig.to_local(sky.lerp(strike, p)))
+		if is_instance_valid(core): core.set_point_position(1, rig.to_local(sky.lerp(strike, p))),
+		0.0, 1.0, 0.12).set_trans(Tween.TRANS_EXPO)
+	ft.tween_property(glow, "width", 26.0 * width_mult, 0.12)
+	ft.tween_property(core, "width", 9.0 * width_mult, 0.12)
+	await ft.finished
+	if not is_in_combat or not is_instance_valid(rig):
+		SFX.stop_loop("relic_beam")
+		_relic_beam_restore(es, es_home_pos, es_home_mod, ps)
+		if is_instance_valid(rig): rig.queue_free()
+		return
+
+	# Impact burst where it lands.
+	var burst := _disc(10.0 * width_mult, Color(1.0, 0.98, 1.0, 0.9))
+	burst.global_position = strike
+	rig.add_child(burst)
+	var bt := create_tween().set_parallel(true)
+	bt.tween_property(burst, "scale", Vector2(3.8, 3.8), 0.45).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	bt.tween_property(burst, "modulate:a", 0.0, 0.45)
+
+	# ── 3. Hold: the enemy is pinned under the column — shaken and zapped ──────
+	# The shake and the white strobe are what sell it as damage: the beam alone
+	# just looks like scenery falling on them.
+	var held := 0.0
+	var strobe := 0.0
+	while held < RELIC_BEAM_HOLD and is_in_combat and is_instance_valid(rig):
+		var flicker := randf_range(0.86, 1.16)
+		if is_instance_valid(glow): glow.width = 26.0 * width_mult * flicker
+		if is_instance_valid(core): core.width = 9.0 * width_mult * randf_range(0.85, 1.2)
+		if is_instance_valid(orb):  orb.scale = Vector2.ONE * 2.4 * flicker
+		if is_instance_valid(mark): mark.scale = Vector2(1.7, 0.7) * flicker
+		if is_instance_valid(es):
+			# Getting-hit shake — hard and jittery, around the ORIGINAL position so
+			# it can never drift the sprite off its mark.
+			es.position = es_home_pos + Vector2(randf_range(-3.5, 3.5), randf_range(-2.5, 2.5))
+			# Zapped: strobe between overbright white and a hot teal-white.
+			strobe += get_process_delta_time()
+			es.modulate = Color(3.0, 3.0, 3.0) if fmod(strobe, 0.10) < 0.05 \
+				else Color(1.6, 2.4, 2.4)
+		held += get_process_delta_time()
+		await get_tree().process_frame
+
+	# ── 4. Collapse ───────────────────────────────────────────────────────────
+	SFX.stop_loop("relic_beam")
+	if is_instance_valid(es):
+		es.position = es_home_pos
+	if is_instance_valid(rig):
+		var et := create_tween().set_parallel(true)
+		if is_instance_valid(glow): et.tween_property(glow, "width", 0.0, RELIC_BEAM_FADE)
+		if is_instance_valid(core): et.tween_property(core, "width", 0.0, RELIC_BEAM_FADE)
+		if is_instance_valid(mark): et.tween_property(mark, "color:a", 0.0, RELIC_BEAM_FADE)
+		et.tween_property(rig, "modulate:a", 0.0, RELIC_BEAM_FADE)
+		if is_instance_valid(ps):
+			et.tween_property(ps, "modulate", Color.WHITE, RELIC_BEAM_FADE)
+		if is_instance_valid(es):
+			et.tween_property(es, "modulate", es_home_mod, RELIC_BEAM_FADE)
+		await et.finished
+	if is_instance_valid(rig): rig.queue_free()
+	_relic_beam_restore(es, es_home_pos, es_home_mod, ps)
+
+# Puts the enemy sprite back exactly as we found it (position AND colour) and
+# clears the player tint. Called on every exit path — a fight that ends mid-beam
+# must not leave the enemy stuck white or nudged off its mark.
+const BEAM_TEAL := Color(0.20, 0.95, 0.88)   # player relic: cold ancient light
+const BEAM_RED  := Color(1.00, 0.42, 0.12)   # enemy Relicbound: hot red-orange
+
+# The player's Ancient Relic — full-width teal column onto the enemy.
+func _fx_relic_beam() -> void:
+	await _fx_beam("enemy", BEAM_TEAL, 1.0)
+
+func _relic_beam_restore(es, home_pos: Vector2, home_mod: Color, ps) -> void:
+	if is_instance_valid(es):
+		es.position = home_pos
+		es.modulate = home_mod
+	# The player tint is watched by the recolor shader in mainplayer, so leave the
+	# sprite exactly as we found it.
+	if is_instance_valid(ps):
+		ps.modulate = Color.WHITE
 
 func _float_icon(target: String, icon: String, color: Color) -> void:
 	if not is_instance_valid(combat_ui): return
@@ -452,15 +695,230 @@ func _refresh_level_label_visibility() -> void:
 const TIER_POOLS_LV6_PLUS := {
 	6:  ["potion", "shield", "grindstone", "needle", "magnet", "poison_dart"],
 	7:  ["shield", "whip",   "poison_dart", "bandage", "needle", "magnet"],
-	8:  ["grindstone", "battle_horn", "needle", "magnet", "potion", "shield"],
+	8:  ["grindstone", "lifesteal_vial", "needle", "magnet", "potion", "shield"],
 	9:  ["shield", "smoke_bomb", "poison_dart", "whip", "bandage", "needle"],
-	10: ["mirror_ward", "grindstone", "battle_horn", "needle", "potion", "magnet"],
+	10: ["mirror_ward", "grindstone", "lifesteal_vial", "needle", "potion", "magnet"],
 	11: ["weaken_totem", "shield", "poison_dart", "bandage", "smoke_bomb", "needle"],
-	12: ["chain_hook", "magnet", "needle", "smoke_bomb", "battle_horn", "potion"],
-	13: ["static_field", "mirror_ward", "weaken_totem", "battle_horn", "bandage", "needle"],
+	12: ["chain_hook", "magnet", "needle", "smoke_bomb", "lifesteal_vial", "potion"],
+	13: ["static_field", "mirror_ward", "weaken_totem", "lifesteal_vial", "bandage", "needle"],
 	14: ["time_warp", "chain_hook", "poison_dart", "needle", "shield", "potion"],
 	15: ["overcharge", "time_warp", "static_field", "mirror_ward", "chain_hook", "bandage"],
+	# 16-20: the late tiers used to reuse level 15's kit verbatim (a placeholder),
+	# so a level 20 fight played exactly like a level 15 one. Each rung now fields
+	# its own mix of the heaviest items so the battlefield keeps changing.
+	16: ["overcharge", "static_field", "lifesteal_vial", "weaken_totem", "needle", "potion"],
+	17: ["time_warp", "chain_hook", "mirror_ward", "grindstone", "poison_dart", "bandage"],
+	18: ["overcharge", "weaken_totem", "smoke_bomb", "static_field", "magnet", "shield"],
+	19: ["time_warp", "overcharge", "mirror_ward", "chain_hook", "lifesteal_vial", "needle"],
+	20: ["overcharge", "time_warp", "static_field", "weaken_totem", "chain_hook", "mirror_ward"],
 }
+
+# ── Late-tier loadout upgrades ───────────────────────────────────────────────
+# A high-level foe has no business throwing a Potion when it has known Bandage
+# for ten levels. Once a mob's level has reached an item's UPGRADE, the starter
+# version is dropped from its pool entirely — it never brings the weak tool again.
+# Gated on QuestManager.unlock_level_of(), so a mob can only ever field something
+# its own tier has actually unlocked.
+const ITEM_UPGRADES := {
+	"potion":      "bandage",       # 20 now  ->  10 now + 20 over two rounds
+	"shield":      "mirror_ward",   # block   ->  reflect the whole hit back
+	"grindstone":  "overcharge",    # +20     ->  +20 AND pierces armour
+	"needle":      "overcharge",    # pierce  ->  pierce AND +20
+	"whip":        "time_warp",     # skip 1  ->  skip 2
+	"magnet":      "chain_hook",    # steal   ->  steal AND -20 off their next hit
+	"poison_dart": "static_field",  # dot     ->  locks the target's items
+	"smoke_bomb":  "weaken_totem",  # dodge   ->  curse their next attack
+}
+
+# Upgrades can collapse two entries into one (needle and grindstone both become
+# overcharge), so the pool is topped back up from the heavy end afterwards — a
+# late mob must never end up fielding a THINNER kit than a mid-tier one.
+const STRONG_FILL := [
+	"overcharge", "time_warp", "static_field", "chain_hook", "mirror_ward",
+	"weaken_totem", "lifesteal_vial", "bandage", "smoke_bomb", "poison_dart",
+]
+
+func _apply_item_upgrades(pool: Array) -> Array:
+	var want: int = pool.size()
+	var out: Array = []
+	for it in pool:
+		var id: String = str(it)
+		var up: String = str(ITEM_UPGRADES.get(id, ""))
+		if up != "" and enemy_level >= QuestManager.unlock_level_of(up):
+			id = up
+		if not out.has(id):
+			out.append(id)
+	for fill in STRONG_FILL:
+		if out.size() >= want:
+			break
+		if not out.has(fill) and enemy_level >= QuestManager.unlock_level_of(fill):
+			out.append(fill)
+	return out
+
+# ── Enemy threat traits (RELIC difficulty only) ──────────────────────────────
+# On "Chosen by the Relic" every mob carries ONE permanent trait, rolled at spawn
+# from those its level has reached. The gates mirror the player's own unlock
+# ladder — a level 7 mob can be Venomous because poison exists by then — so the
+# threat always reads as "this foe fights with what this tier knows".
+# All damage numbers stay in multiples of 10: the HP hearts have no half-step art.
+# NOTHING here fires automatically — every trait rolls its `proc` chance each time
+# it gets an opportunity, so a fight never becomes a guaranteed grind of the same
+# effect every single swing.
+#
+# `proc` follows a deliberate DOWNWARD curve against min_level: ~50% for what a
+# low mob can roll, easing to ~18% at the top. The late-tier traits are the
+# nastiest, so they land as occasional spikes rather than a constant tax — and a
+# level 20 foe carrying four of them still gets a readable number of procs a round.
+const ENEMY_THREATS := [
+	{ "id": "brutal",     "min_level": 3,  "proc": 0.50, "emoji": "💥", "name": "Brutal",     "desc": "Half its swings hit 10 harder." },
+	{ "id": "ironhide",   "min_level": 4,  "proc": 0.48, "emoji": "🛡️", "name": "Ironhide",   "desc": "Often shrugs 10 off a hit." },
+	{ "id": "cornered",   "min_level": 6,  "proc": 0.43, "emoji": "🔥", "name": "Cornered",   "desc": "Below half health, its swings can hit 10 harder." },
+	{ "id": "venomous",   "min_level": 7,  "proc": 0.41, "emoji": "☠️", "name": "Venomous",   "desc": "Its hits can leave you poisoned." },
+	{ "id": "leeching",   "min_level": 8,  "proc": 0.39, "emoji": "🩸", "name": "Leeching",   "desc": "Its hits can drain 10 HP back." },
+	{ "id": "evasive",    "min_level": 9,  "proc": 0.36, "emoji": "💨", "name": "Evasive",    "desc": "Your attacks sometimes slip past it." },
+	{ "id": "warded",     "min_level": 10, "proc": 0.34, "emoji": "🪞", "name": "Warded",     "desc": "May raise a reflecting ward each round." },
+	{ "id": "thorned",    "min_level": 11, "proc": 0.32, "emoji": "📌", "name": "Thorned",    "desc": "Landing a hit can cost you 10 HP." },
+	{ "id": "hexer",      "min_level": 12, "proc": 0.29, "emoji": "🗿", "name": "Hexer",      "desc": "Its hits can weaken your next attack." },
+	# JAMMER + DISARMING are the two LOCKOUT traits — between them they can take
+	# away your items and your swing. Individually the anti-lockout rules already
+	# stop them landing on the same round, but at their old rates (0.27 / 0.25) a
+	# mob carrying both could alternate them almost every round and leave you with
+	# nothing to do for most of the fight. Rated well below the other traits so
+	# losing a turn stays an occasional setback rather than the default state.
+	{ "id": "jammer",     "min_level": 13, "proc": 0.16, "emoji": "⚡", "name": "Jammer",     "desc": "May jam your items for a round." },
+	{ "id": "disarming",  "min_level": 14, "proc": 0.14, "emoji": "❌", "name": "Disarming",  "desc": "Its hits can knock your next swing away." },
+	{ "id": "relentless", "min_level": 15, "proc": 0.23, "emoji": "⏳", "name": "Relentless", "desc": "Sometimes strikes twice in a round." },
+	# UNDYING is GUARANTEED, not rolled: `proc` is 1.0 and the call site uses
+	# has_threat. What limits it is the once-per-fight latch (_undying_spent), the
+	# same way the player's Phoenix Feather it mirrors is guaranteed but single-use.
+	# As a coin flip it was pure noise — you could never plan around whether the
+	# killing blow would stick. Always firing makes it a fact you fight around.
+	{ "id": "undying",    "min_level": 17, "proc": 1.00, "emoji": "🪶", "name": "Undying",    "desc": "Cheats a killing blow once, rising again with %d HP." % PHOENIX_REVIVE_HP },
+	# ── Threshold traits ──────────────────────────────────────────────────────
+	# proc = 0 on purpose: these two are NOT rolled. They fire off hard counters,
+	# so they're predictable and can be played around, which is what stops a foe
+	# carrying both from feeling arbitrary.
+	{ "id": "splitter",   "min_level": 12, "proc": 0.0,  "emoji": "👥", "name": "Splitter",   "desc": "Spawns a double for every %d damage it takes." % SPLIT_DAMAGE },
+	{ "id": "relicbound", "min_level": 16, "proc": 0.0,  "emoji": "🏺", "name": "Relicbound", "desc": "Calls a searing beam each time its HP falls past a 100 mark." },
+]
+
+# Splitter: one clone per this much cumulative damage taken.
+const SPLIT_DAMAGE := 80
+# Relicbound: fires when current HP drops below each multiple of this.
+const BEAM_HP_MARK := 100
+const ENEMY_BEAM_DAMAGE := 40   # unblockable, multiple of ten
+
+var _dmg_since_split: int = 0
+var _last_beam_mark: int = 0
+
+# A mob carries MULTIPLE traits: one to start with, and another every 5 levels
+# from 5 onward — so a level 10 foe fields 2, a level 15 foe 3, a level 20 foe 4.
+# All are still level-gated individually, so the extra slots can only draw from
+# what that tier has actually unlocked.
+const THREAT_SLOT_EVERY := 5
+
+var enemy_threats: Array = []        # empty on NORMAL difficulty
+var _relentless_extra: bool = false  # re-entry guard for the double-action threat
+var _undying_spent: bool = false     # the one-time death save has been used
+
+func has_threat(id: String) -> bool:
+	return enemy_threats.has(id)
+
+# ── Threshold threats ────────────────────────────────────────────────────────
+# Called from every site that reduces enemy_health. Only tallies; the effects
+# themselves fire at the START of the enemy's turn (_run_threshold_threats), so
+# a clone can never appear mid-swing and the beam never interrupts your attack.
+func _note_enemy_damage(amount: int) -> void:
+	if amount > 0:
+		_dmg_since_split += amount
+
+func _run_threshold_threats() -> void:
+	# SPLITTER — a double for every SPLIT_DAMAGE taken. `while` not `if`, so a
+	# single huge hit that crosses two thresholds owes two clones.
+	if has_threat("splitter"):
+		while _dmg_since_split >= SPLIT_DAMAGE and is_in_combat:
+			_dmg_since_split -= SPLIT_DAMAGE
+			if enemy_clone_active:
+				break                      # only one double at a time
+			await _summon_enemy_clone()
+
+	# RELICBOUND — fires ONCE as the enemy's HP first falls past each 100 mark
+	# (400, 300, 200, 100 …), and never again for that same mark.
+	#
+	# `_last_beam_mark` is a RATCHET: it only ever goes down. It used to re-arm
+	# when the enemy healed back over a boundary, which meant a mob that heals —
+	# potions, lifesteal, LEECHING — could be walked across the same mark over and
+	# over and fire a beam every time. That is what made beams look like they were
+	# riding along with the Splitter's 80-damage proc instead of tracking HP: both
+	# fire in the same pre-turn pass, and a healing mob re-crossing 200 produced a
+	# beam at ~140 HP with no new boundary actually reached. Crossing a mark is a
+	# one-time event for the whole fight, so healing must NOT re-arm it.
+	#
+	# Deliberately one beam per turn even when a single hit skips several marks:
+	# the ratchet still latches to the new low, so the skipped marks are consumed
+	# rather than queued up to fire later.
+	if has_threat("relicbound") and is_in_combat:
+		var mark := int(floor(float(enemy_health) / float(BEAM_HP_MARK)))
+		if mark < _last_beam_mark:
+			_last_beam_mark = mark
+			await _enemy_relic_beam()
+
+# The enemy's answer to the Ancient Relic: a slimmer red-orange column onto the
+# player, using the exact same FX path.
+func _enemy_relic_beam() -> void:
+	SFX.play(SFX.relic_unleash)
+	if combat_ui: combat_ui.display_round_history(
+		"🏺 RELICBOUND — a searing beam tears down at you!", false)
+	_float_icon("player", "🏺", BEAM_RED)
+	await _fx_beam("player", BEAM_RED, 0.55)
+	if not is_in_combat: return
+	QuestManager.player_health = clampi(
+		QuestManager.player_health - ENEMY_BEAM_DAMAGE, 0, QuestManager.MAX_HEALTH)
+	await _fx_damage("player")
+	if combat_ui:
+		combat_ui.display_round_history(
+			"🏺 The beam burns you for %d — nothing blocks it." % ENEMY_BEAM_DAMAGE, false)
+		combat_ui._refresh_ui_states()
+
+# True when the mob carries `id` AND this opportunity's roll lands. Use this for
+# anything that fires during the fight; `has_threat` is only for the display.
+func threat_procs(id: String) -> bool:
+	if not has_threat(id):
+		return false
+	for t in ENEMY_THREATS:
+		if str(t["id"]) == id:
+			return randf() < float(t["proc"])
+	return false
+
+func threat_slots() -> int:
+	return maxi(1, 1 + int(floor(float(enemy_level - THREAT_SLOT_EVERY) / float(THREAT_SLOT_EVERY))))
+
+# Rolls this mob's traits. NORMAL difficulty always yields none, so that mode is
+# genuinely the game as it was.
+func _roll_enemy_threats() -> void:
+	enemy_threats.clear()
+	_undying_spent = false
+	if not QuestManager.is_relic_difficulty():
+		return
+	var eligible: Array = []
+	for t in ENEMY_THREATS:
+		if enemy_level >= int(t["min_level"]):
+			eligible.append(str(t["id"]))
+	if eligible.is_empty():
+		return
+	eligible.shuffle()
+	var want: int = mini(threat_slots(), eligible.size())
+	for i in want:
+		enemy_threats.append(eligible[i])
+
+# Metadata rows for every trait this mob carries, in the table's own order so the
+# display is stable rather than following the shuffle.
+func threat_metas() -> Array:
+	var out: Array = []
+	for t in ENEMY_THREATS:
+		if enemy_threats.has(str(t["id"])):
+			out.append(t)
+	return out
 
 func _initialize_mob_stats_by_character_tier() -> void:
 	enemy_max_health = 80 + (enemy_level * 20)
@@ -477,13 +935,15 @@ func _initialize_mob_stats_by_character_tier() -> void:
 		if enemy_level >= 4: enemy_item_pool.append("whip")
 		if enemy_level >= 5: enemy_item_pool.append("magnet")
 	else:
-		# Levels above 15 have no dedicated item tier yet — they reuse level 15's
-		# loadout as a placeholder. HP still scales up via enemy_max_health above.
-		var pool_key = mini(enemy_level, 15)
+		# Tiers are authored up to 20; anything past that reuses the level 20 kit.
+		var pool_key = mini(enemy_level, 20)
 		enemy_item_pool = TIER_POOLS_LV6_PLUS.get(
 			pool_key, ["potion", "shield", "grindstone", "needle"]).duplicate()
+		# Swap every starter tool this tier has outgrown for its upgrade.
+		enemy_item_pool = _apply_item_upgrades(enemy_item_pool)
 	enemy_health = enemy_max_health
 	current_items_per_deal = 1
+	_roll_enemy_threats()
 
 func _on_deadzone_body_entered(body: Node2D) -> void:
 	if body.name == "mainplayer" and not is_in_combat and not _is_defeated_waiting_respawn:
@@ -524,6 +984,16 @@ func start_combat() -> void:
 	drop_round_index = 0; cycles_until_drop = 1
 	QuestManager.player_health = QuestManager.MAX_HEALTH
 	_apply_supply_drop_rewards()
+	# Per-fight threat bookkeeping. Set after the modifier reset above, or the
+	# reset would wipe it. Nothing is switched ON here — every trait now rolls its
+	# own chance when the moment comes (see threat_procs).
+	_relentless_extra = false
+	_undying_spent = false
+	# Threshold-trait counters. The beam mark starts at the enemy's OPENING HP, so
+	# the first beam fires when it first falls past a 100 boundary, not instantly.
+	_dmg_since_split = 0
+	_last_beam_mark = int(floor(float(enemy_health) / float(BEAM_HP_MARK)))
+	_dismiss_enemy_clone()
 	# Baseline for the Relic's per-round charge accrual (dealt + taken damage).
 	_relic_prev_enemy_hp  = enemy_health
 	_relic_prev_player_hp = QuestManager.player_health
@@ -578,6 +1048,16 @@ func use_player_item(item_type: String) -> void:
 		if combat_ui:
 			var lbl: String = QuestManager.ITEM_META.get(item_type, {}).get("label", item_type.capitalize())
 			combat_ui.display_round_history("%s is already active this turn — it can't stack with itself." % lbl, true)
+			combat_ui._refresh_ui_states()
+		return
+
+	# A second Mirror Clone can't stack on the one already at your side. Refused
+	# HERE, before anything is spent — the refusal used to live down in the effect
+	# match, by which point a copy had already been erased from the inventory, so
+	# a rejected summon silently ate a clone.
+	if item_type == "clone" and player_clone_active:
+		if combat_ui:
+			combat_ui.display_round_history("👥 A clone is already at your side!", true)
 			combat_ui._refresh_ui_states()
 		return
 
@@ -640,20 +1120,21 @@ func use_player_item(item_type: String) -> void:
 			# player must hope it drops again). Fixed, unblockable, multiples of
 			# ten — never stacks with buffs, never full-heals.
 			player_inventory.erase("relic")
-			enemy_reflect_active = false
-			enemy_dodge_active   = false
-			enemy_active_armor   = false
+			# Double cleanse: strip EVERY enemy buff and EVERY player debuff.
+			_relic_strip_enemy_buffs()
 			enemy_health = clampi(enemy_health - RELIC_STRIKE_DAMAGE, 0, enemy_max_health)
+			_note_enemy_damage(RELIC_STRIKE_DAMAGE)
 			QuestManager.heal_player(RELIC_HEAL)   # respects the gold-heart heal cap
-			# Cleanse the player's active afflictions — a moment of ancient grace.
-			player_poison_rounds = 0
-			player_cursed = false
-			player_weakened = false
+			_relic_cleanse_player()
 			# Each use raises the future charge requirement (persisted).
-			QuestManager.relic_uses += 1
+			QuestManager.relic_uses += 1          # lifetime stat
+			QuestManager.relic_uses_fight += 1    # what actually raises the next charge bar
 			QuestManager.has_unsaved_progress = true
 			SFX.play(SFX.relic_unleash)
-			await _fx_status("enemy", Color(1.0, 0.55, 1.0, 1.0), "🏺")
+			# The beam IS the relic moment now — a ~2.3s sustained lance in place
+			# of the old quarter-second tint flash.
+			_float_icon("enemy", "🏺", Color(0.35, 1.0, 0.95))
+			await _fx_relic_beam()
 			await _fx_damage("enemy")
 			await _fx_heal("player")
 			# Charge is spent; with the relic gone it won't rebuild until it drops
@@ -664,7 +1145,7 @@ func use_player_item(item_type: String) -> void:
 			_relic_prev_player_hp = QuestManager.player_health
 			if combat_ui:
 				combat_ui.display_round_history(
-					"🏺 ANCIENT RELIC unleashed — %d unblockable damage, +%d HP, afflictions cleansed! (spent)" % [RELIC_STRIKE_DAMAGE, RELIC_HEAL], true)
+					"🏺 ANCIENT RELIC unleashed — %d unblockable damage, +%d HP, your afflictions lifted AND every enemy buff stripped! (spent)" % [RELIC_STRIKE_DAMAGE, RELIC_HEAL], true)
 				combat_ui._refresh_ui_states()
 			_sync_ground_fx()
 			# If that killed the enemy, end the fight right now — no need to also
@@ -707,7 +1188,7 @@ func use_player_item(item_type: String) -> void:
 			enemy_poison_rounds = 3
 			await _fx_status("enemy", Color(0.22, 0.72, 0.22, 1.0), "☠️")
 			if combat_ui: combat_ui.display_round_history("☠️ Poison Dart — enemy 10/round ×3", true)
-		"battle_horn":
+		"lifesteal_vial":
 			player_lifesteal_active = true
 			await _fx_status("player", Color(0.90, 0.20, 0.40, 1.0), "🩸")
 			if combat_ui: combat_ui.display_round_history(
@@ -747,13 +1228,13 @@ func use_player_item(item_type: String) -> void:
 			# Mirror Clone: a ghostly double that strikes alongside you next
 			# attack (flat 20 first, then your hit) and soaks the enemy's next
 			# blow before fading.
-			if player_clone_active:
-				if combat_ui: combat_ui.display_round_history("👥 A clone is already at your side!", true)
-			else:
-				player_inventory.erase("clone")
-				await _summon_clone()
-				if combat_ui: combat_ui.display_round_history(
-					"👥 Mirror Clone summoned — it strikes with you AND shields the next hit!", true)
+			#
+			# Do NOT erase "clone" here. The default `_:` arm of the match above
+			# already spent one copy — erasing again took a SECOND clone, so
+			# using one while holding two dropped you straight to zero.
+			await _summon_clone()
+			if combat_ui: combat_ui.display_round_history(
+				"👥 Mirror Clone summoned — it strikes with you AND shields the next hit!", true)
 
 	_sync_ground_fx()
 	if combat_ui: combat_ui._refresh_ui_states()
@@ -761,6 +1242,77 @@ func use_player_item(item_type: String) -> void:
 # =============================================================================
 #  MIRROR CLONE
 # =============================================================================
+# ── Enemy clone (Splitter threat) ───────────────────────────────────────────
+# The mirror of the player's Mirror Clone: a spectral double that strikes with
+# the enemy and soaks the player's next hit before shattering.
+var enemy_clone_active: bool = false
+var _enemy_clone_node: Node2D = null
+
+func _summon_enemy_clone() -> void:
+	var es := _get_sprite("enemy")
+	if not is_instance_valid(es) or not is_instance_valid(get_parent()):
+		return
+	enemy_clone_active = true
+	var c := AnimatedSprite2D.new()
+	c.sprite_frames = es.sprite_frames
+	c.scale = es.scale
+	c.animation = es.animation
+	c.frame = es.frame
+	# Copy the FACING too. The enemy is flipped to face left at combat start; a
+	# double built without this looked the wrong way and appeared to attack away
+	# from the player.
+	c.flip_h = es.flip_h
+	c.flip_v = es.flip_v
+	c.modulate = Color(1.0, 0.42, 0.42, 0.7)     # spectral RED, to read as "theirs"
+	c.z_index = 4
+	get_parent().add_child(c)
+	_enemy_clone_node = c
+	c.global_position = global_position
+	SFX.play(SFX.item_clone)
+	if combat_ui: combat_ui.display_round_history(
+		"👥 SPLITTER — it tears a double out of itself!", false)
+	# Steps out toward the player, mirroring how the player's clone advances.
+	var tw := create_tween().set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	tw.tween_property(c, "global_position", global_position - Vector2(52, 0), 0.22)
+	await tw.finished
+
+func _enemy_clone_strike() -> void:
+	if not is_instance_valid(_enemy_clone_node):
+		return
+	var start: Vector2 = _enemy_clone_node.global_position
+	var target := start - Vector2(34, 0)
+	SFX.mob_attack_snd(enemy_level)
+	var tw := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
+	tw.tween_property(_enemy_clone_node, "global_position", target, 0.14)
+	await tw.finished
+	QuestManager.player_health = clampi(
+		QuestManager.player_health - CLONE_STRIKE_DAMAGE, 0, QuestManager.MAX_HEALTH)
+	await _fx_damage("player")
+	if combat_ui: combat_ui.display_round_history(
+		"👥 Its double strikes for %d!" % CLONE_STRIKE_DAMAGE, false)
+	if is_instance_valid(_enemy_clone_node):
+		var tw2 := create_tween().set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+		tw2.tween_property(_enemy_clone_node, "global_position", start, 0.12)
+		await tw2.finished
+
+func _shatter_enemy_clone() -> void:
+	if is_instance_valid(_enemy_clone_node):
+		SFX.play(SFX.item_clone)
+		var c := _enemy_clone_node
+		var tw := create_tween().set_parallel(true)
+		tw.tween_property(c, "scale", c.scale * 1.5, 0.22)
+		tw.tween_property(c, "modulate:a", 0.0, 0.22)
+		await tw.finished
+		if is_instance_valid(c): c.queue_free()
+	_enemy_clone_node = null
+	enemy_clone_active = false
+
+func _dismiss_enemy_clone() -> void:
+	if is_instance_valid(_enemy_clone_node):
+		_enemy_clone_node.queue_free()
+	_enemy_clone_node = null
+	enemy_clone_active = false
+
 func _summon_clone() -> void:
 	if not is_instance_valid(player_ref):
 		return
@@ -800,10 +1352,13 @@ func _clone_strike() -> void:
 		spr.flip_h = false
 		spr.speed_scale = 1.0
 		spr.play("AttackSide")
+	# The clone swings with your attack sound — that impact IS the enemy's hit cue.
+	SFX.play(SFX.player_attack, -3.0)
 	var tw := create_tween().set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 	tw.tween_property(_clone_node, "global_position", target, 0.14)
 	await tw.finished
 	enemy_health = clampi(enemy_health - CLONE_STRIKE_DAMAGE, 0, enemy_max_health)
+	_note_enemy_damage(CLONE_STRIKE_DAMAGE)
 	await _fx_damage("enemy")
 	if combat_ui: combat_ui.display_round_history("👥 Clone strikes for %d!" % CLONE_STRIKE_DAMAGE, true)
 	if is_instance_valid(_clone_node):
@@ -816,6 +1371,7 @@ func _clone_strike() -> void:
 # The clone soaks a hit and shatters (teal flash + expand + fade).
 func _shatter_clone() -> void:
 	if is_instance_valid(_clone_node):
+		SFX.play(SFX.item_clone)
 		var c := _clone_node
 		var tw := create_tween()
 		tw.tween_property(c, "modulate", Color(0.6, 1.0, 1.0, 0.0), 0.24)
@@ -870,27 +1426,78 @@ func _enemy_lunge_at_clone() -> void:
 func process_player_attack_phase() -> void:
 	if player_items_locked: player_items_locked = false
 
-	# Mirror Clone strikes FIRST on your turn — a flat, unbuffed 20 — then your
-	# own (buffed) attack lands right after, for two hits in one turn.
-	if player_clone_active:
-		await _clone_strike()
-		if await _check_combat_end_conditions(): return
-
+	# ── Your side acts, one readable beat at a time ──────────────────────────
+	# YOU swing first, then your Mirror Clone follows up. Each combatant travels
+	# to its own target and its result lands before the next one moves, so all
+	# four board states read clearly:
+	#
+	#   1. you            v enemy           — you hit the enemy.
+	#   2. you + clone    v enemy           — you hit it, then your clone does.
+	#   3. you            v enemy + double  — you cut down the double; the mob is
+	#                                         untouched behind it.
+	#   4. you + clone    v enemy + double  — you cut down the double, THEN your
+	#                                         clone goes on to hit the mob.
+	#
+	# Previously the lunge was fired from CombatUI before any of this ran, so the
+	# player always charged the mob itself and the double just evaporated where it
+	# stood — and the clone struck at the same time with nothing separating them.
 	if player_is_disarmed:
 		player_is_disarmed = false
 		if player_stun_extra_turns > 0:
 			player_stun_extra_turns -= 1; player_is_disarmed = true
 		player_damage_bonus = 0; player_sharpened = false; player_overcharged = false
 		player_lifesteal_active = false; player_god_pierce = false
+		await _player_lunge(null, true)
 		await _fx_status("player", Color(1.0, 0.68, 0.10, 1.0), "❌")
 		if combat_ui:
 			combat_ui.display_round_history("💥 DISARMED — your attack was skipped!", true)
-			combat_ui._refresh_ui_states()
-		await get_tree().create_timer(ACTION_PAUSE).timeout
+		_sync_ui()
+	else:
+		await _resolve_player_swing()
+		if not is_in_combat: return
 		if await _check_combat_end_conditions(): return
-		if combat_ui: combat_ui.start_enemy_turn_visuals()
-		await get_tree().create_timer(1.0).timeout
-		_execute_enemy_turn_ai()
+
+	# The clone is a SECOND combatant taking its own turn — never simultaneous
+	# with yours. A disarm silences your swing, not the double you summoned.
+	if player_clone_active:
+		await get_tree().create_timer(ACTION_PAUSE).timeout
+		if not is_in_combat: return
+		await _clone_strike()
+		if await _check_combat_end_conditions(): return
+
+	_sync_ground_fx()
+	_sync_ui()
+	await get_tree().create_timer(ACTION_PAUSE).timeout
+	if await _check_combat_end_conditions(): return
+	if combat_ui: combat_ui.start_enemy_turn_visuals()
+	await get_tree().create_timer(1.0).timeout
+	_execute_enemy_turn_ai()
+
+# Runs the player to `target` and back. `target` null (or a disarmed swing) just
+# shakes them in place. Targeting lives here rather than in CombatUI because only
+# the combat state knows whether a double is standing in the way.
+func _player_lunge(target: Node2D, disarmed: bool = false) -> void:
+	if not is_instance_valid(player_ref) or not player_ref.has_method("do_attack_lunge"):
+		return
+	var pos: Vector2 = target.global_position if is_instance_valid(target) else player_ref.global_position
+	await player_ref.do_attack_lunge(pos, target, disarmed)
+
+# The player's own swing: picks its target, travels to it, and resolves.
+func _resolve_player_swing() -> void:
+	# The enemy's double throws itself in the way, exactly as your Mirror Clone
+	# does — so it is what you RUN AT, and it eats the whole hit whatever its
+	# size, even a pierce, then shatters. The mob behind it is untouched.
+	if enemy_clone_active and is_instance_valid(_enemy_clone_node):
+		await _player_lunge(_enemy_clone_node)
+		# Spent on the double, buffs and all — the mirror of how your clone eats
+		# the enemy's one-shots.
+		player_damage_bonus = 0; player_sharpened = false; player_overcharged = false
+		player_god_pierce = false; player_piercing = false
+		player_cursed = false; player_lifesteal_active = false
+		await _shatter_enemy_clone()
+		if combat_ui: combat_ui.display_round_history(
+			"👥 Its double threw itself in the way and shattered — the mob is untouched!", true)
+		_sync_ui()
 		return
 
 	var dmg = 20 + player_damage_bonus
@@ -898,8 +1505,17 @@ func process_player_attack_phase() -> void:
 	if player_weakened:
 		dmg = maxi(0, dmg - 20)
 		player_weakened = false
+	# IRONHIDE: soaks a flat 10 off everything you swing.
+	if threat_procs("ironhide"):
+		dmg = maxi(0, dmg - 10)
+	# EVASIVE: rolls its own dodge, then falls through to the normal dodge branch
+	# below so the miss reads exactly like a smoke bomb.
+	if not enemy_dodge_active and threat_procs("evasive"):
+		enemy_dodge_active = true
 
 	var actual_dmg_dealt := 0
+
+	await _player_lunge(self)
 
 	if player_god_pierce:
 		# Overcharge: the hit is guaranteed to land no matter what the enemy has
@@ -913,6 +1529,7 @@ func process_player_attack_phase() -> void:
 		enemy_dodge_active = false
 		enemy_reflect_active = false
 		enemy_health = clampi(enemy_health - dmg, 0, enemy_max_health)
+		_note_enemy_damage(dmg)
 		actual_dmg_dealt = dmg
 		await _fx_status("enemy", Color(1.0, 0.45, 0.05, 1.0), "🔥")
 		await _fx_damage("enemy")
@@ -921,10 +1538,13 @@ func process_player_attack_phase() -> void:
 	elif player_cursed:
 		player_cursed = false
 		player_lifesteal_active = false
-		_enemy_heal(20)
+		var cursed_heal := _enemy_heal(20)
 		await _fx_status("player", Color(0.70, 0.20, 1.0, 1.0), "🗿")
-		await _fx_heal("enemy")
-		if combat_ui: combat_ui.display_round_history("🗿 CURSED — 0 dmg, healed enemy 20 HP!", true)
+		if cursed_heal > 0:
+			await _fx_heal("enemy")
+		if combat_ui: combat_ui.display_round_history(
+			"🗿 CURSED — 0 dmg, healed enemy %d HP!" % cursed_heal if cursed_heal > 0
+			else "🗿 CURSED — your attack was wasted!", true)
 	elif enemy_dodge_active:
 		enemy_dodge_active = false
 		player_lifesteal_active = false
@@ -935,7 +1555,6 @@ func process_player_attack_phase() -> void:
 		enemy_reflect_active = false
 		player_lifesteal_active = false
 		QuestManager.player_health = clampi(QuestManager.player_health - dmg, 0, QuestManager.MAX_HEALTH)
-		SFX.play(SFX.player_hit)
 		await _fx_status("enemy", Color(1.0, 0.90, 0.22, 1.0), "🪞")
 		await _fx_damage("player")
 		if combat_ui: combat_ui.display_round_history("🪞 REFLECTED — %d dmg bounced back at you!" % dmg, true)
@@ -948,8 +1567,8 @@ func process_player_attack_phase() -> void:
 	else:
 		if player_piercing: player_piercing = false
 		enemy_health = clampi(enemy_health - dmg, 0, enemy_max_health)
+		_note_enemy_damage(dmg)
 		actual_dmg_dealt = dmg
-		SFX.play(SFX.enemy_hit)
 		await _fx_damage("enemy")
 		if combat_ui: combat_ui.display_round_history("⚔️ You attacked for %d damage!" % dmg, true)
 
@@ -957,18 +1576,20 @@ func process_player_attack_phase() -> void:
 		player_lifesteal_active = false
 		if actual_dmg_dealt > 0:
 			var steal_heal = actual_dmg_dealt / 2
-			QuestManager.player_health = clampi(
-				QuestManager.player_health + steal_heal, 0, QuestManager.MAX_HEALTH)
+			# Must go through heal_player() — writing player_health directly skipped
+			# the red-heart cap and let lifesteal top you up inside the gold zone.
+			QuestManager.heal_player(steal_heal)
 			await _fx_heal("player")
 			if combat_ui: combat_ui.display_round_history("🩸 Lifesteal — healed %d HP!" % steal_heal, true)
 
-	_sync_ground_fx()
-	if combat_ui: combat_ui._refresh_ui_states()
-	await get_tree().create_timer(ACTION_PAUSE).timeout
-	if await _check_combat_end_conditions(): return
-	if combat_ui: combat_ui.start_enemy_turn_visuals()
-	await get_tree().create_timer(1.0).timeout
-	_execute_enemy_turn_ai()
+	# THORNED: landing a hit costs you 10 — the price of touching it.
+	if actual_dmg_dealt > 0 and threat_procs("thorned"):
+		QuestManager.player_health = clampi(QuestManager.player_health - 10, 0, QuestManager.MAX_HEALTH)
+		await _fx_damage("player")
+		if combat_ui: combat_ui.display_round_history(
+			"📌 THORNED — its hide tears you for 10 as you strike!", true)
+
+	_sync_ui()
 
 # =============================================================================
 #  ENEMY AI TURN
@@ -988,6 +1609,38 @@ func _execute_enemy_turn_ai() -> void:
 		await _conclude_round_cycle_ticks()
 		return
 
+	# Threshold traits resolve first: a Splitter double appears and a Relicbound
+	# beam falls before the enemy acts, never mid-swing.
+	await _run_threshold_threats()
+	if not is_in_combat: return
+	if enemy_clone_active:
+		await _enemy_clone_strike()
+		if await _check_combat_end_conditions(): return
+		# The double's hit is its own beat — let it land before the enemy's own
+		# turn starts, or the two attacks read as a single event.
+		await get_tree().create_timer(ENEMY_ACTION_PAUSE).timeout
+		if not is_in_combat: return
+
+	# ── Start-of-round threat rolls ──────────────────────────────────────────
+	# WARDED re-raises its mirror on a roll rather than being permanently up.
+	if not enemy_reflect_active and threat_procs("warded"):
+		enemy_reflect_active = true
+		await _fx_status("enemy", Color(1.0, 0.90, 0.22, 1.0), "🪞")
+		if combat_ui: combat_ui.display_round_history(
+			"🪞 WARDED — a reflecting ward shimmers into place!", false)
+		await get_tree().create_timer(ENEMY_ACTION_PAUSE).timeout
+		if not is_in_combat: return
+	# JAMMER shorts out your kit. Same anti-lockout rule as Static Field: never
+	# applied on a round you're already disarmed, so you keep one legal move.
+	if not player_is_disarmed and player_stun_extra_turns <= 0 and not player_items_locked \
+			and threat_procs("jammer"):
+		player_items_locked = true
+		await _fx_status("player", Color(0.70, 0.90, 1.0, 1.0), "⚡")
+		if combat_ui: combat_ui.display_round_history(
+			"⚡ JAMMER — your items are shorted out this round!", false)
+		await get_tree().create_timer(ENEMY_ACTION_PAUSE).timeout
+		if not is_in_combat: return
+
 	var tracking: Dictionary = {}
 	var sg_eval := false
 
@@ -995,18 +1648,25 @@ func _execute_enemy_turn_ai() -> void:
 		enemy_items_locked = false
 		await _fx_status("enemy", Color(0.70, 0.90, 1.0, 1.0), "⚡")
 		if combat_ui: combat_ui.display_round_history("⚡ Enemy items LOCKED — basic attack only!", false)
-		await get_tree().create_timer(ACTION_PAUSE).timeout
+		await get_tree().create_timer(ENEMY_ACTION_PAUSE).timeout
 	else:
 		var going := true
 		while going:
 			var pick := ""
-			if enemy_health <= enemy_max_health - 20 and enemy_inventory.has("potion") and tracking.get("potion", 0) < 1:
+			# Gate heal items on the HEAL CAP, not on max health: a mob spawned above
+			# the red-heart ceiling (e.g. 340/380) is "wounded" by max but can't be
+			# healed at all, and picking a potion there burnt the item and the turn
+			# for nothing while the log claimed a heal.
+			if enemy_health <= enemy_heal_cap() - 20 and enemy_inventory.has("potion") and tracking.get("potion", 0) < 1:
 				pick = "potion"
-			elif enemy_health <= enemy_max_health - 20 and enemy_inventory.has("bandage") and tracking.get("bandage", 0) < 1:
+			elif enemy_health <= enemy_heal_cap() - 20 and enemy_inventory.has("bandage") and tracking.get("bandage", 0) < 1:
 				pick = "bandage"
-			elif not player_is_disarmed and enemy_health <= enemy_max_health * 0.4 and enemy_inventory.has("time_warp") and tracking.get("time_warp", 0) < 1:
+			# `not player_items_locked` here is the mirror of the Static Field gate
+			# below: whichever lock lands first, the other is held back, so the
+			# player is never left unable to both attack AND use an item.
+			elif not player_is_disarmed and not player_items_locked and enemy_health <= enemy_max_health * 0.4 and enemy_inventory.has("time_warp") and tracking.get("time_warp", 0) < 1:
 				pick = "time_warp"
-			elif not player_is_disarmed and enemy_inventory.has("whip") and tracking.get("whip", 0) < 1:
+			elif not player_is_disarmed and not player_items_locked and enemy_inventory.has("whip") and tracking.get("whip", 0) < 1:
 				pick = "whip"
 			elif not enemy_dodge_active and enemy_inventory.has("smoke_bomb") and tracking.get("smoke_bomb", 0) < 1 and randf() < 0.35:
 				pick = "smoke_bomb"
@@ -1024,13 +1684,18 @@ func _execute_enemy_turn_ai() -> void:
 				pick = "shield"
 			elif not enemy_sharpened and enemy_inventory.has("grindstone") and tracking.get("grindstone", 0) < 1:
 				pick = "grindstone"
-			elif not enemy_lifesteal_active and enemy_inventory.has("battle_horn") and tracking.get("battle_horn", 0) < 1:
-				pick = "battle_horn"
+			elif not enemy_lifesteal_active and enemy_inventory.has("lifesteal_vial") and tracking.get("lifesteal_vial", 0) < 1:
+				pick = "lifesteal_vial"
 			elif enemy_poison_rounds <= 0 and enemy_inventory.has("poison_dart") and tracking.get("poison_dart", 0) < 1:
 				pick = "poison_dart"
 			elif not player_cursed and enemy_inventory.has("weaken_totem") and tracking.get("weaken_totem", 0) < 1 and randf() < 0.6:
 				pick = "weaken_totem"
-			elif not player_items_locked and enemy_inventory.has("static_field") and tracking.get("static_field", 0) < 1 and randf() < 0.45:
+			# Static Field locks ITEMS; whip / time warp disarm the ATTACK. They are
+			# separate locks, so stacking them leaves the player with no legal
+			# action at all — a dead turn they just watch. Hold the field back
+			# until the player can actually act (also skipped while a time-warp
+			# stun is still queued for a following turn).
+			elif not player_items_locked and not player_is_disarmed and player_stun_extra_turns <= 0 and enemy_inventory.has("static_field") and tracking.get("static_field", 0) < 1 and randf() < 0.45:
 				pick = "static_field"
 			elif player_inventory.size() >= 2 and enemy_inventory.has("chain_hook") and tracking.get("chain_hook", 0) < 1:
 				pick = "chain_hook"
@@ -1042,7 +1707,7 @@ func _execute_enemy_turn_ai() -> void:
 			if pick != "":
 				await _enemy_execute_item(pick, tracking)
 				if not is_in_combat: return
-				await get_tree().create_timer(ACTION_PAUSE).timeout
+				await get_tree().create_timer(ENEMY_ACTION_PAUSE).timeout
 			else:
 				going = false
 
@@ -1053,6 +1718,12 @@ func _execute_enemy_turn_ai() -> void:
 	SFX.mob_attack_snd(enemy_level)
 
 	var raw = 20 + enemy_damage_bonus
+	# BRUTAL / CORNERED: flat +10s, kept multiples of ten so the heart display
+	# stays exact (there is no half-heart art).
+	if threat_procs("brutal"):
+		raw += 10
+	if enemy_health * 2 <= enemy_max_health and threat_procs("cornered"):
+		raw += 10
 	enemy_damage_bonus = 0; enemy_sharpened = false; enemy_overcharged = false
 	if enemy_weakened:
 		raw = maxi(0, raw - 20)
@@ -1081,14 +1752,13 @@ func _execute_enemy_turn_ai() -> void:
 		actual_dmg_to_player = raw
 		if is_instance_valid(player_ref) and player_ref.has_method("do_enemy_lunge"):
 			await player_ref.do_enemy_lunge(self, player_ref.global_position, false)
-		SFX.play(SFX.player_hit)
 		await _fx_status("enemy", Color(1.0, 0.45, 0.05, 1.0), "🔥")
 		await _fx_damage("player")
 		if combat_ui: combat_ui.display_round_history("🔥 Enemy OVERCHARGED HIT — %d damage, every defense pierced!" % raw, false)
 	elif enemy_cursed:
 		enemy_cursed = false
 		enemy_lifesteal_active = false
-		QuestManager.player_health = clampi(QuestManager.player_health + 20, 0, QuestManager.MAX_HEALTH)
+		QuestManager.heal_player(20)   # capped: the curse heal can't push you into gold
 		if is_instance_valid(player_ref) and player_ref.has_method("do_enemy_lunge"):
 			await player_ref.do_enemy_lunge(self, player_ref.global_position, false)
 		await _fx_status("enemy", Color(0.70, 0.20, 1.0, 1.0))
@@ -1106,10 +1776,10 @@ func _execute_enemy_turn_ai() -> void:
 		player_reflect_active = false
 		enemy_lifesteal_active = false
 		enemy_health = clampi(enemy_health - raw, 0, enemy_max_health)
+		_note_enemy_damage(raw)
 		if is_instance_valid(player_ref) and player_ref.has_method("do_enemy_lunge"):
 			await player_ref.do_enemy_lunge(self, player_ref.global_position, false)
 		SFX.play(SFX.player_reflect)
-		SFX.play(SFX.enemy_hit)
 		await _fx_status("player", Color(1.0, 0.90, 0.22, 1.0), "🪞")
 		await _fx_damage("enemy")
 		if combat_ui: combat_ui.display_round_history(
@@ -1128,7 +1798,6 @@ func _execute_enemy_turn_ai() -> void:
 		actual_dmg_to_player = raw
 		if is_instance_valid(player_ref) and player_ref.has_method("do_enemy_lunge"):
 			await player_ref.do_enemy_lunge(self, player_ref.global_position, false)
-		SFX.play(SFX.player_hit)
 		await _fx_damage("player")
 		if combat_ui: combat_ui.display_round_history("📌 Enemy needle pierced for %d dmg!" % raw, false)
 	else:
@@ -1136,7 +1805,6 @@ func _execute_enemy_turn_ai() -> void:
 		actual_dmg_to_player = raw
 		if is_instance_valid(player_ref) and player_ref.has_method("do_enemy_lunge"):
 			await player_ref.do_enemy_lunge(self, player_ref.global_position, false)
-		SFX.play(SFX.player_hit)
 		await _fx_damage("player")
 		if combat_ui: combat_ui.display_round_history("⚔️ Enemy dealt %d damage!" % raw, false)
 
@@ -1144,14 +1812,56 @@ func _execute_enemy_turn_ai() -> void:
 		enemy_lifesteal_active = false
 		if actual_dmg_to_player > 0:
 			var steal_heal = actual_dmg_to_player / 2
-			_enemy_heal(steal_heal)
-			await _fx_heal("enemy")
-			if combat_ui: combat_ui.display_round_history("🩸 Enemy lifesteal — healed %d HP!" % steal_heal, false)
+			# Silent when it drew nothing (enemy already past healing) — no log spam.
+			var stolen := _enemy_heal(steal_heal)
+			if stolen > 0:
+				await _fx_heal("enemy")
+				if combat_ui: combat_ui.display_round_history("🩸 Enemy lifesteal — healed %d HP!" % stolen, false)
+
+	# ── Threat traits that fire off a landed hit ─────────────────────────────
+	# Separate ifs, not a match: a mob can carry several of these at once.
+	if actual_dmg_to_player > 0:
+		if threat_procs("venomous"):
+			# Refreshes rather than stacks, so it can't spiral out of control.
+			player_poison_rounds = maxi(player_poison_rounds, 2)
+			await _fx_status("player", Color(0.28, 0.82, 0.28, 1.0), "☠")
+			if combat_ui: combat_ui.display_round_history(
+				"☠️ VENOMOUS — its strike leaves you poisoned!", false)
+		if threat_procs("leeching"):
+			var drained := _enemy_heal(10)
+			if drained > 0:
+				await _fx_heal("enemy")
+				if combat_ui: combat_ui.display_round_history(
+					"🩸 LEECHING — it drank %d HP from the wound." % drained, false)
+		if not player_weakened and threat_procs("hexer"):
+			player_weakened = true
+			await _fx_status("player", Color(0.70, 0.20, 1.0, 1.0), "🗿")
+			if combat_ui: combat_ui.display_round_history(
+				"🗿 HEXER — your next swing is weakened!", false)
+		# Disarm obeys the same anti-lockout rule as whip/static field: never
+		# applied on top of an item lock, so you always keep one legal move.
+		if not player_is_disarmed and not player_items_locked and threat_procs("disarming"):
+			player_is_disarmed = true
+			await _fx_status("player", Color(1.0, 0.68, 0.10, 1.0), "❌")
+			if combat_ui: combat_ui.display_round_history(
+				"❌ DISARMING — it knocks your next swing aside!", false)
 
 	_sync_ground_fx()
 	if combat_ui: combat_ui._refresh_ui_states()
-	await get_tree().create_timer(ACTION_PAUSE).timeout
+	await get_tree().create_timer(ENEMY_ACTION_PAUSE).timeout
 	if await _check_combat_end_conditions(): return
+
+	# ── RELENTLESS: one extra full action ────────────────────────────────────
+	# Re-enters this same turn once. The guard stops it chaining, and the nested
+	# call is the one that runs the end-of-round ticks — otherwise poison and
+	# regen would tick twice for a single round.
+	if not _relentless_extra and threat_procs("relentless"):
+		_relentless_extra = true
+		if combat_ui: combat_ui.display_round_history("⏳ RELENTLESS — it moves again!", false)
+		await _execute_enemy_turn_ai()
+		_relentless_extra = false
+		return
+
 	await _conclude_round_cycle_ticks()
 
 # =============================================================================
@@ -1160,14 +1870,20 @@ func _execute_enemy_turn_ai() -> void:
 
 func _enemy_execute_item(item_type: String, tracking: Dictionary) -> void:
 	if not enemy_inventory.has(item_type): return
+	# HARD BLOCK: a healing item cannot be used at all while the enemy sits in
+	# gold health (above the red-heart ceiling) — that overheal is unhealable, so
+	# using one would burn the item and the turn for zero effect. Refused here as
+	# well as in the AI's pick gate, so no future code path can sneak one through.
+	if item_type in HEAL_ITEMS and enemy_health >= enemy_heal_cap():
+		return
 	enemy_inventory.erase(item_type)
 	tracking[item_type] = tracking.get(item_type, 0) + 1
 
 	match item_type:
 		"potion":
-			_enemy_heal(20)
+			var healed := _enemy_heal(20)
 			await _fx_heal("enemy")
-			if combat_ui: combat_ui.display_round_history("🧪 Enemy Potion (+20 HP)", false)
+			if combat_ui: combat_ui.display_round_history("🧪 Enemy Potion (+%d HP)" % healed, false)
 		"shield":
 			enemy_active_armor = true
 			await _fx_status("enemy", Color(0.50, 0.76, 1.0, 1.0), "🛡️")
@@ -1187,15 +1903,16 @@ func _enemy_execute_item(item_type: String, tracking: Dictionary) -> void:
 			await _fx_status("enemy", Color(0.80, 0.55, 1.0, 1.0), "📌")
 			if combat_ui: combat_ui.display_round_history("📌 Enemy Needle — next hit pierces armor", false)
 		"bandage":
-			_enemy_heal(10)
+			var healed := _enemy_heal(10)
 			enemy_regen_rounds = 2
 			await _fx_heal("enemy")
-			if combat_ui: combat_ui.display_round_history("🩹 Enemy Bandage (+10 HP + regen ×2)", false)
+			if combat_ui: combat_ui.display_round_history(
+				"🩹 Enemy Bandage (+%d HP + regen ×2)" % healed, false)
 		"poison_dart":
 			player_poison_rounds = 3
 			await _fx_status("player", Color(0.22, 0.72, 0.22, 1.0), "☠️")
 			if combat_ui: combat_ui.display_round_history("☠️ Enemy poisoned you! (10/round ×3)", false)
-		"battle_horn":
+		"lifesteal_vial":
 			enemy_lifesteal_active = true
 			await _fx_status("enemy", Color(0.90, 0.20, 0.40, 1.0), "🩸")
 			if combat_ui: combat_ui.display_round_history(
@@ -1311,6 +2028,7 @@ func _process_dot_hot_ticks() -> void:
 	if enemy_poison_rounds > 0:
 		enemy_poison_rounds -= 1
 		enemy_health = clampi(enemy_health - 10, 0, enemy_max_health)
+		_note_enemy_damage(10)
 		await _fx_poison_tick("enemy")
 		if combat_ui: combat_ui.display_round_history(
 			"☠️ Enemy poison ticked — 10 dmg (%d left)" % enemy_poison_rounds, true)
@@ -1322,10 +2040,12 @@ func _process_dot_hot_ticks() -> void:
 			"🩹 Regen healed 10 HP (%d left)" % player_regen_rounds, true)
 	if enemy_regen_rounds > 0:
 		enemy_regen_rounds -= 1
-		_enemy_heal(10)
-		await _fx_heal("enemy")
-		if combat_ui: combat_ui.display_round_history(
-			"🩹 Enemy regen +10 HP (%d left)" % enemy_regen_rounds, true)
+		# Silent when it heals nothing (enemy in gold) — no log spam.
+		var regened := _enemy_heal(10)
+		if regened > 0:
+			await _fx_heal("enemy")
+			if combat_ui: combat_ui.display_round_history(
+				"🩹 Enemy regen +%d HP (%d left)" % [regened, enemy_regen_rounds], true)
 	# The Phoenix cooldown counts down on the same round cadence.
 	if player_phoenix_cd > 0:
 		player_phoenix_cd -= 1
@@ -1340,16 +2060,34 @@ func _trigger_phoenix_cooldown() -> void:
 
 # Enemy healing obeys the same gold-heart rule as the player: it can only ever
 # restore up to the red-heart cap (300), never its bonus gold HP.
-func _enemy_heal(amount: int) -> void:
-	var cap := maxi(mini(enemy_max_health, QuestManager.HP_PER_LAP), enemy_health)
+# Heals the enemy and RETURNS THE HP ACTUALLY GAINED — which is 0 while it sits
+# in gold health (above the red-heart ceiling), since that overheal is a
+# per-fight bonus and can't be topped up. Callers must report this return value
+# rather than the amount they asked for: the combat log used to print
+# "Enemy Bandage (+10 HP)" during gold health when nothing had healed, which
+# read exactly like the enemy cheating.
+func _enemy_heal(amount: int) -> int:
+	var cap := maxi(enemy_heal_cap(), enemy_health)
+	var before := enemy_health
 	enemy_health = clampi(enemy_health + amount, 0, cap)
+	var gained := enemy_health - before
+	if gained > 0:
+		# Same heal cue the player gets (falls back to it when no enemy-specific
+		# clip is assigned), so healing reads the same for both sides.
+		SFX.play(SFX.enemy_heal if SFX.enemy_heal else SFX.player_heal)
+	return gained
+
+# The highest HP a heal can carry the enemy to: the red-heart ceiling, or its max
+# if that's lower. Anything above this is unhealable gold.
+func enemy_heal_cap() -> int:
+	return mini(enemy_max_health, QuestManager.HP_PER_LAP)
 
 # Phoenix death→rebirth flourish: the player goes limp for a beat (a faked death
 # cycle, since there's no death animation), then flashes golden and rises.
-func _play_phoenix_revive() -> void:
-	var spr: AnimatedSprite2D = null
-	if is_instance_valid(player_ref):
-		spr = player_ref.get_node_or_null("AnimatedSprite2D") as AnimatedSprite2D
+# `target` is "player" for the Phoenix Feather or "enemy" for the Undying threat
+# — the death beat and golden rebirth are identical, only the sprite differs.
+func _play_phoenix_revive(target: String = "player") -> void:
+	var spr := _get_sprite(target)
 	if not is_instance_valid(spr):
 		await get_tree().create_timer(0.8).timeout
 		return
@@ -1394,6 +2132,56 @@ func _apply_supply_drop_rewards() -> void:
 		if enemy_item_pool.size() > 0:
 			enemy_inventory.append(enemy_item_pool.pick_random())
 
+# Wipes every status effect on the PLAYER only (buffs and debuffs alike), leaving
+# the enemy's state intact. Used by the Phoenix revive so you return to the fight
+# with a clean slate — no lingering stun, poison, curse, regen or damage bonus.
+func _clear_player_status() -> void:
+	player_active_armor = false
+	player_sharpened = false
+	player_overcharged = false
+	player_piercing = false
+	player_is_disarmed = false
+	player_weakened = false
+	player_cursed = false
+	player_reflect_active = false
+	player_dodge_active = false
+	player_items_locked = false
+	player_lifesteal_active = false
+	player_god_pierce = false
+	player_damage_bonus = 0
+	player_regen_rounds = 0
+	player_poison_rounds = 0
+	player_stun_extra_turns = 0
+	_sync_ground_fx()
+	if is_instance_valid(combat_ui):
+		combat_ui._apply_status_tints()
+
+# The enemy's mirror of the above, for an UNDYING revive. Same principle: a mob
+# that just came back from the dead comes back CLEAN, so it isn't still carrying
+# the stun/poison/curse from the blow that killed it. This does clear the
+# debuffs the player spent items applying — which is exactly what the player's
+# own Phoenix does to the enemy's, so both revives cost the other side the same.
+func _clear_enemy_status() -> void:
+	enemy_active_armor = false
+	enemy_sharpened = false
+	enemy_overcharged = false
+	enemy_piercing = false
+	enemy_is_disarmed = false
+	enemy_weakened = false
+	enemy_cursed = false
+	enemy_reflect_active = false
+	enemy_dodge_active = false
+	enemy_items_locked = false
+	enemy_lifesteal_active = false
+	enemy_god_pierce = false
+	enemy_damage_bonus = 0
+	enemy_regen_rounds = 0
+	enemy_poison_rounds = 0
+	enemy_stun_extra_turns = 0
+	_sync_ground_fx()
+	if is_instance_valid(combat_ui):
+		combat_ui._apply_status_tints()
+
 func _reset_all_combat_modifiers() -> void:
 	player_active_armor   = false;  enemy_active_armor   = false
 	player_sharpened      = false;  enemy_sharpened      = false
@@ -1410,8 +2198,16 @@ func _reset_all_combat_modifiers() -> void:
 	player_banner_rounds   = 0;     enemy_banner_rounds   = 0
 	player_phoenix_cd      = 0;     player_phoenix_uses   = 0
 	player_relic_charge    = 0;     _relic_announced_charged = false
+	# The relic's charge requirement escalates within a fight only — every combat
+	# starts it back at RELIC_CHARGE_BASE.
+	QuestManager.relic_uses_fight = 0
 	if is_instance_valid(_clone_node): _clone_node.queue_free()
 	_clone_node = null; player_clone_active = false; _clone_player_home = Vector2.ZERO
+	_dismiss_enemy_clone()
+	_dmg_since_split = 0
+	# The relic beam loops a sustained SFX — make sure a fight that ends mid-beam
+	# (flee, death, relic kill) can never leave it droning.
+	SFX.stop_loop("relic_beam")
 	player_damage_bonus   = 0;      enemy_damage_bonus   = 0
 	player_regen_rounds   = 0;      enemy_regen_rounds   = 0
 	player_poison_rounds  = 0;      enemy_poison_rounds  = 0
@@ -1446,6 +2242,9 @@ func _check_combat_end_conditions() -> bool:
 				combat_ui.display_round_history(
 					"🪶 PHOENIX FEATHER! You fall... then blaze back to %d HP (dormant %d turns)." % [PHOENIX_REVIVE_HP, player_phoenix_cd], true)
 			await _play_phoenix_revive()   # die beat + golden rebirth flash
+			# Reborn clean: every buff AND debuff on the player is wiped, so you
+			# don't come back still stunned/poisoned/cursed from the hit that killed you.
+			_clear_player_status()
 			QuestManager.player_health = PHOENIX_REVIVE_HP
 			if combat_ui: combat_ui._refresh_ui_states()
 			return false
@@ -1465,6 +2264,29 @@ func _check_combat_end_conditions() -> bool:
 			lose_ui.show_death_screen()
 		await ScreenFade.fade_in()
 		return true
+
+	# ── UNDYING: one death save, mirroring the player's Phoenix Feather ───────
+	# Checked BEFORE the death branch so the fight simply continues. has_threat,
+	# NOT threat_procs — the save always fires; `_undying_spent` is what makes it
+	# once per fight, and it is reset in _reset_all_combat_modifiers.
+	if enemy_health <= 0 and not _undying_spent and has_threat("undying"):
+		_undying_spent = true
+		SFX.play(SFX.enemy_heal if SFX.enemy_heal else SFX.player_heal)
+		if combat_ui: combat_ui.display_round_history(
+			"🪶 UNDYING — it refuses to fall!", false)
+		# The full Phoenix treatment: it keels over and sinks, then flashes gold
+		# and rights itself. Snapping it back to 10 HP with a one-frame tint gave
+		# no sense that anything had died, so a revive the player had no way to
+		# prevent also read as if the hit simply had not registered.
+		await _play_phoenix_revive("enemy")
+		if not is_in_combat: return true
+		# Reborn clean, exactly as the player's Phoenix revive is.
+		_clear_enemy_status()
+		enemy_health = PHOENIX_REVIVE_HP
+		if combat_ui: combat_ui.display_round_history(
+			"🪶 It rises again with %d HP!" % PHOENIX_REVIVE_HP, false)
+		_sync_ui()
+		return false
 
 	if enemy_health <= 0:
 		if player_clone_active: _dismiss_clone()
@@ -1486,7 +2308,7 @@ func _check_combat_end_conditions() -> bool:
 		xp = roundi(xp * 1.30)   # +30% global XP gain across all mob levels
 		var _lvl_before = QuestManager.player_level
 		# Fire the side-quest hook BEFORE gain_xp so an "underdog" check sees the
-		# pre-level-up player level (beating a foe 2+ levels above you).
+		# pre-level-up player level (beating a foe 3+ levels above you).
 		QuestManager.notify_quest_event("enemy_defeated", {"enemy_level": enemy_level})
 		QuestManager.gain_xp(xp)
 		var _victory_toast = "⚔️  Victory!  +%d XP" % xp

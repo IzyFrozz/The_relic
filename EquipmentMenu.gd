@@ -80,7 +80,7 @@ func _ready() -> void:
 
 	# ── Title ──
 	if is_instance_valid(title_label):
-		title_label.text = "⚙️  LOADOUT CONFIGURATION"
+		title_label.text = "LOADOUT CONFIGURATION"
 		title_label.add_theme_font_size_override("font_size", 22)
 		title_label.add_theme_color_override("font_color", COL_GOLD)
 		title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -122,7 +122,7 @@ func _try_close() -> void:
 		return
 	# Not full — refuse to close, flash a warning on the button instead.
 	if is_instance_valid(close_button):
-		close_button.text = "⚠️  Fill all %d slots first!" % max_slots
+		close_button.text = "Fill all %d slots first!" % max_slots
 		await get_tree().create_timer(1.1).timeout
 		if is_instance_valid(close_button):
 			_update_close_button()
@@ -141,7 +141,7 @@ func _update_close_button() -> void:
 		close_button.add_theme_stylebox_override("hover",  _btn_s(Color(0.10, 0.30, 0.14), COL_GREEN))
 		close_button.add_theme_color_override("font_color", COL_GREEN)
 	else:
-		close_button.text = "🔒  Need %d more item%s to Save & Exit" % [max_slots - current, "" if max_slots - current == 1 else "s"]
+		close_button.text = "Need %d more item%s to Save & Exit" % [max_slots - current, "" if max_slots - current == 1 else "s"]
 		close_button.disabled = false  # stays clickable so _try_close can show the warning flash
 		close_button.modulate.a = 0.85
 		close_button.add_theme_stylebox_override("normal", _btn_s(Color(0.22, 0.16, 0.06), Color(0.55, 0.40, 0.15)))
@@ -186,10 +186,13 @@ func _build_unlocked_list() -> void:
 		if icon_tex: btn.add_theme_constant_override("icon_max_width", 40)
 		var em = "" if icon_tex else meta["emoji"] + "  "
 		btn.text = "%s%s%s" % [em, meta["label"], "  ✓" if already else ""]
-		btn.tooltip_text = meta["desc"] + ("\n(Already in loadout)" if already else "\nClick to equip")
+		btn.tooltip_text = QuestManager.item_tooltip(meta,
+			"(Already in loadout)" if already else "Click to equip")
 		btn.disabled = already or full
 		btn.focus_mode = Control.FOCUS_NONE
-		btn.custom_minimum_size = Vector2(155, 50)
+		btn.custom_minimum_size = Vector2(0, 50)
+		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		btn.clip_text = true   # guard only — the columns are sized to fit every label
 		btn.add_theme_font_size_override("font_size", 14)
 		btn.add_theme_stylebox_override("normal",   _btn_s(COL_BTN_BG, COL_BORDER if not already else COL_GREEN))
 		btn.add_theme_stylebox_override("hover",    _btn_s(COL_BTN_HOV, COL_GOLD))
@@ -219,10 +222,15 @@ func _build_equipped_list() -> void:
 		btn.icon = icon_tex
 		if icon_tex: btn.add_theme_constant_override("icon_max_width", 40)
 		var em = "" if icon_tex else meta["emoji"] + "  "
+		# Equipped rows are FULL WIDTH (EquippedGrid is 1 column): the slot number,
+		# icon, longest item name and the ✕ together can't fit a half-width cell.
 		btn.text = "[%d]  %s%s  ✕" % [i + 1, em, meta["label"]]
-		btn.tooltip_text = "Slot %d — %s\nClick to remove" % [i + 1, meta["desc"]]
+		btn.tooltip_text = QuestManager.item_tooltip(meta,
+			"Slot %d — click to remove" % (i + 1))
 		btn.focus_mode = Control.FOCUS_NONE
-		btn.custom_minimum_size = Vector2(175, 50)
+		btn.custom_minimum_size = Vector2(0, 50)
+		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		btn.clip_text = true   # guard only — the columns are sized to fit every label
 		btn.add_theme_font_size_override("font_size", 14)
 		btn.add_theme_stylebox_override("normal",   _btn_s(COL_BTN_BG, COL_BORDER))
 		btn.add_theme_stylebox_override("hover",    _btn_s(Color(0.22, 0.09, 0.09), Color(0.80, 0.28, 0.28)))
@@ -237,7 +245,9 @@ func _build_equipped_list() -> void:
 		empty_btn.text = "[%d]  — empty slot —" % (i + 1)
 		empty_btn.tooltip_text = "Equip an item from the Unlocked list to fill this slot"
 		empty_btn.disabled = true
-		empty_btn.custom_minimum_size = Vector2(175, 50)
+		empty_btn.custom_minimum_size = Vector2(0, 50)
+		empty_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		empty_btn.clip_text = true
 		empty_btn.add_theme_font_size_override("font_size", 13)
 		empty_btn.add_theme_stylebox_override("disabled", _btn_s(Color(0.09,0.09,0.12), Color(0.45,0.35,0.15)))
 		empty_btn.add_theme_color_override("font_disabled_color", COL_GOLD)
@@ -245,10 +255,15 @@ func _build_equipped_list() -> void:
 		equipped_grid.add_child(empty_btn)
 
 func _inject_header_above(grid: GridContainer, header_text: String) -> void:
-	# Walk up to parent to insert a label sibling above the grid
-	var parent = grid.get_parent()
+	# The grid lives inside a ScrollContainer (so a long item list scrolls instead
+	# of bursting the panel), and a ScrollContainer takes exactly one child — so
+	# the header goes above the SCROLL, in the section's VBox.
+	var anchor: Control = grid
+	if grid.get_parent() is ScrollContainer:
+		anchor = grid.get_parent()
+	var parent = anchor.get_parent()
 	if not is_instance_valid(parent): return
-	var grid_idx = grid.get_index()
+	var grid_idx = anchor.get_index()
 	# Check if label already exists above
 	if grid_idx > 0:
 		var above = parent.get_child(grid_idx - 1)
