@@ -24,8 +24,7 @@ extends RefCounted
 #                      notify_quest_event keys; count defaults to 1.
 #   how              — objective text shown once available/active
 #   type             — "kill_count" | "loadout_kill" | "underdog_kill"
-#                    | "coin_lifetime" | "potion_count" | "talk_npcs"
-#                    | "fish_count"
+#                    | "coin_lifetime" | "talk_npcs" | "fish_count"
 #   goal             — target count (talk_npcs: number of distinct npc ids)
 #   params           — type-specific (loadout_kill: {items:[...]},
 #                      underdog_kill: {level_diff:2}, talk_npcs: {npcs:[...]})
@@ -72,14 +71,6 @@ const QUESTS := {
 		"type": "kill_count", "goal": 5, "params": {},
 		"reward": { "xp": 320 },
 	},
-	"herbalist": {
-		"title": "Herbalist", "emoji": "🧪",
-		"teaser": "They say potions grow wild out past the treeline.",
-		"desc": "Potions grow wild out there. Stock up before a tough fight.",
-		"how": "Collect 3 potions from the overworld.",
-		"type": "potion_count", "goal": 3, "params": {},
-		"reward": { "xp": 150 },
-	},
 	"village_census": {
 		"title": "Meet the Locals", "emoji": "🗣️",
 		"teaser": "New face in town? The locals would like to put a name to it.",
@@ -101,7 +92,7 @@ const QUESTS := {
 
 # Quests that start "available" (startable from the outset). Everything else in
 # QUESTS starts as a "rumour" and is revealed by its `reveal` trigger.
-const INITIALLY_AVAILABLE := ["first_blood", "herbalist", "village_census", "gone_fishing"]
+const INITIALLY_AVAILABLE := ["first_blood", "village_census", "gone_fishing"]
 
 static func get_def(id: String) -> Dictionary:
 	return QUESTS.get(id, {})

@@ -177,7 +177,6 @@ const MAX_ACTIVE_QUESTS := 3              # how many side quests can be active a
 var side_quest_states: Dictionary = {}    # id -> state string
 var side_quest_progress: Dictionary = {}  # id -> int progress
 var coins_lifetime: int = 0               # never decreases (coin_hoarder)
-var potions_lifetime: int = 0             # never decreases (herbalist)
 var fish_caught: int = 0                  # total fish reeled in
 var fishing_tutorial_done: bool = false   # fisherman's how-to shown once
 var intro_tutorial_done: bool = false     # controls/goal intro shown once, right after char creation
@@ -231,7 +230,7 @@ func accept_side_quest(id: String) -> void:
 	# talked to earlier, potions/fish/coins already gathered). These types derive
 	# their count from stored state; the per-event types (kill_count…) must NOT be
 	# seeded or they'd wrongly gain a point on accept.
-	if d.get("type", "") in ["talk_npcs", "coin_lifetime", "potion_count", "fish_count"]:
+	if d.get("type", "") in ["talk_npcs", "coin_lifetime", "fish_count"]:
 		_advance_side_quest(id, d)
 	side_quests_changed.emit()
 
@@ -269,7 +268,6 @@ func _rumour_reveal_met(id: String) -> bool:
 	match rv.get("event", ""):
 		"enemy_defeated":   return enemies_defeated >= need
 		"coin_lifetime":    return coins_lifetime >= need
-		"potion_collected": return potions_lifetime >= need
 		"fish_caught":      return fish_caught >= need
 		"npc_talked":       return talked_npcs.has(rv.get("npc", ""))
 	return false
@@ -290,8 +288,6 @@ func _event_matches_quest(event: String, d: Dictionary, ctx: Dictionary) -> bool
 			return ctx.get("enemy_level", 0) - player_level >= diff
 		"coin_lifetime":
 			return event == "coin_lifetime"
-		"potion_count":
-			return event == "potion_collected"
 		"fish_count":
 			return event == "fish_caught"
 		"talk_npcs":
@@ -305,7 +301,6 @@ func _advance_side_quest(id: String, d: Dictionary) -> bool:
 	var new_progress: int
 	match qtype:
 		"coin_lifetime":  new_progress = coins_lifetime
-		"potion_count":   new_progress = potions_lifetime
 		"fish_count":     new_progress = fish_caught
 		"talk_npcs":
 			var need: Array = d.get("params", {}).get("npcs", [])
@@ -493,7 +488,6 @@ func _serialize() -> Dictionary:
 		"side_quest_states":   side_quest_states,
 		"side_quest_progress": side_quest_progress,
 		"coins_lifetime":      coins_lifetime,
-		"potions_lifetime":    potions_lifetime,
 		"fish_caught":         fish_caught,
 		"fishing_tutorial_done": fishing_tutorial_done,
 		"intro_tutorial_done":   intro_tutorial_done,
@@ -649,7 +643,6 @@ func _deserialize(parsed: Dictionary) -> void:
 	for k in side_quest_progress:
 		side_quest_progress[k] = int(side_quest_progress[k])
 	coins_lifetime    = int(parsed.get("coins_lifetime",   0))
-	potions_lifetime  = int(parsed.get("potions_lifetime", 0))
 	fish_caught       = int(parsed.get("fish_caught",      0))
 	fishing_tutorial_done = bool(parsed.get("fishing_tutorial_done", false))
 	intro_tutorial_done   = bool(parsed.get("intro_tutorial_done",   false))
@@ -692,7 +685,7 @@ func reset_to_defaults() -> void:
 	defeated_enemies.clear()
 	# Side quests — fresh slate for a new run.
 	side_quest_states.clear(); side_quest_progress.clear()
-	coins_lifetime = 0; potions_lifetime = 0; fish_caught = 0; enemies_defeated = 0
+	coins_lifetime = 0; fish_caught = 0; enemies_defeated = 0
 	fishing_tutorial_done = false
 	intro_tutorial_done = false; combat_tutorial_done = false; tutorial_mob_defeated = false
 	has_compass = false; explored_cells.clear()
@@ -720,7 +713,7 @@ func restart_fresh_run() -> void:
 	is_in_combat = false
 	defeated_enemies.clear(); tutorial_mob_defeated = false
 	side_quest_states.clear(); side_quest_progress.clear()
-	coins_lifetime = 0; potions_lifetime = 0; fish_caught = 0; enemies_defeated = 0
+	coins_lifetime = 0; fish_caught = 0; enemies_defeated = 0
 	has_compass = false; explored_cells.clear()
 	relic_uses = 0
 	talked_npcs.clear()
