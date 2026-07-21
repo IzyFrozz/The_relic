@@ -2,6 +2,12 @@ extends CanvasLayer
 
 func _ready() -> void:
 	visible = false
+	# Draw ABOVE every other CanvasLayer. Nothing in the project sets `layer`, so
+	# they all sit at the default 1 and paint in tree order — and PauseMenu is
+	# declared after LoseUI in ui.tscn, which left its "☰ Menu" button floating on
+	# top of the death screen and still clickable. Death is terminal: no other UI
+	# may sit over it.
+	layer = 100
 	# Remove hardcoded scene children — we build at runtime so any resolution works
 	for c in get_children():
 		c.queue_free()
@@ -17,28 +23,37 @@ func _build() -> void:
 	bg.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(bg)
 
-	# Centre root — anchors so it always centres regardless of resolution
-	var centre_root = Control.new()
+	# Centre root — a CenterContainer, so the card is centred at whatever size it
+	# needs at any resolution instead of being positioned by hand.
+	var centre_root = CenterContainer.new()
 	centre_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	centre_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(centre_root)
 
-	# Card panel
-	var card = Panel.new()
-	card.custom_minimum_size = Vector2(560, 400)
+	# Card — sizes to its CONTENT.
+	#
+	# This was a fixed 560x400 Panel with the content anchored inside it at a 40px
+	# inset, leaving 320px of usable height. The content needs ~350 (64 icon + 46
+	# title + 20 subtitle + separator + two 58px buttons + five 20px gaps), so the
+	# "Main Menu" button was clipped off the bottom edge. A PanelContainer cannot
+	# clip its child — it takes the child's minimum size — so this cannot recur if
+	# the text wraps to another line or a button is added later.
+	var card = PanelContainer.new()
+	card.custom_minimum_size = Vector2(560, 0)   # width only; height follows content
 	_style_panel(card, Color(0.07, 0.04, 0.04, 0.97), Color(0.55, 0.14, 0.14))
 	centre_root.add_child(card)
-	card.set_anchors_preset(Control.PRESET_CENTER)
-	card.set_offsets_preset(Control.PRESET_CENTER)
-	card.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	card.grow_vertical   = Control.GROW_DIRECTION_BOTH
+
+	# Inner padding, replacing the old anchor inset.
+	var pad = MarginContainer.new()
+	for side in ["left", "right", "top", "bottom"]:
+		pad.add_theme_constant_override("margin_" + side, 40)
+	card.add_child(pad)
 
 	# Content VBox inside card
 	var vbox = VBoxContainer.new()
-	vbox.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT, Control.PRESET_MODE_MINSIZE, 40)
 	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
 	vbox.add_theme_constant_override("separation", 20)
-	card.add_child(vbox)
+	pad.add_child(vbox)
 
 	# Icon
 	# Real pixel icon rather than an OS emoji glyph. Hidden if the art is missing,
@@ -89,7 +104,10 @@ func _build() -> void:
 	vbox.add_child(exit_btn)
 
 # ── Style helpers ─────────────────────────────────────────────────────────────
-func _style_panel(p: Panel, bg: Color, border: Color) -> void:
+# Typed Control, not Panel: PanelContainer is NOT a subclass of Panel, and both
+# take the same "panel" stylebox override. Typing this as Panel would fail at
+# runtime — a parse check would not catch it.
+func _style_panel(p: Control, bg: Color, border: Color) -> void:
 	var s = StyleBoxFlat.new()
 	s.bg_color = bg; s.set_corner_radius_all(14); s.set_border_width_all(2)
 	s.border_color = border
