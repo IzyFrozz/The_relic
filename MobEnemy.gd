@@ -811,8 +811,8 @@ const ENEMY_BEAM_DAMAGE := 40   # unblockable, multiple of ten
 var _dmg_since_split: int = 0
 var _last_beam_mark: int = 0
 
-# A mob carries MULTIPLE traits: one to start with, and another every 5 levels
-# from 5 onward — so a level 10 foe fields 2, a level 15 foe 3, a level 20 foe 4.
+# A mob gains one trait slot per 5 levels, starting AT level 5 — so levels 1-4
+# field none at all, a level 5 foe fields 1, a level 10 foe 2, a level 15 foe 3.
 # All are still level-gated individually, so the extra slots can only draw from
 # what that tier has actually unlocked.
 const THREAT_SLOT_EVERY := 5
@@ -890,8 +890,13 @@ func threat_procs(id: String) -> bool:
 			return randf() < float(t["proc"])
 	return false
 
+# One slot per full THREAT_SLOT_EVERY levels, and ZERO below the first one:
+#   1-4 → 0    5-9 → 1    10-14 → 2    15-19 → 3 …
+# Levels 1-4 are the low tier and carry no traits at all, so a new character
+# meets the difficulty's basic maths before it starts stacking modifiers on top.
+# The old formula floored at 1, which handed even a level 1 mob a trait.
 func threat_slots() -> int:
-	return maxi(1, 1 + int(floor(float(enemy_level - THREAT_SLOT_EVERY) / float(THREAT_SLOT_EVERY))))
+	return maxi(0, int(floor(float(enemy_level) / float(THREAT_SLOT_EVERY))))
 
 # Rolls this mob's traits. NORMAL difficulty always yields none, so that mode is
 # genuinely the game as it was.
