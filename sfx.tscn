@@ -26,16 +26,29 @@
 [ext_resource type="AudioStream" uid="uid://vvdom4d43urv" path="res://Asset/Main Sound/fx/voicebosch-sword-block-the-ballad-of-blades-257226.mp3" id="17_n04gt"]
 [ext_resource type="AudioStream" uid="uid://byn8px84mwv0e" path="res://Asset/Main Sound/fx/alphix-game-over-417465.mp3" id="18_d1pu6"]
 [ext_resource type="AudioStream" uid="uid://bupdjk0m0g5hx" path="res://Asset/Main Sound/fx/relic ready.mp3" id="21_ngyqj"]
+[ext_resource type="AudioStream" uid="uid://cr27kbl2j5a7r" path="res://Asset/Main Sound/Item Use SFX/yodguard-potion-drink-3-540167.mp3" id="23_7qmv8"]
+[ext_resource type="AudioStream" uid="uid://b7h6an2wff6ab" path="res://Asset/Main Sound/Item Use SFX/data_pion-sfx33-shield-tap-534306.mp3" id="24_ny7ps"]
 [ext_resource type="AudioStream" uid="uid://dns7lvjx6mgxb" path="res://Asset/Main Sound/fx/universfield-character-fall-impact-352287.mp3" id="24_vnkdg"]
 [ext_resource type="AudioStream" uid="uid://beb6pqnxix0eo" path="res://Asset/Main Sound/fx/data_pion-st2-footstep-sfx-323055.mp3" id="25_qq0c2"]
+[ext_resource type="AudioStream" uid="uid://dp1sufku7naha" path="res://Asset/Main Sound/Item Use SFX/Grindstone.mp3" id="25_vnkdg"]
+[ext_resource type="AudioStream" uid="uid://bwuwa1vi1p78q" path="res://Asset/Main Sound/Item Use SFX/universfield-whip-06-487886.mp3" id="26_qq0c2"]
+[ext_resource type="AudioStream" uid="uid://ddvljv37ghhyc" path="res://Asset/Main Sound/Item Use SFX/Magnet.mp3" id="27_4dc2a"]
 [ext_resource type="AudioStream" uid="uid://cycjknn5mc6be" path="res://Asset/Main Sound/fx/freesound_community-item-pickup-37089.mp3" id="27_ogdet"]
+[ext_resource type="AudioStream" uid="uid://da5muvqpk5wrb" path="res://Asset/Main Sound/Item Use SFX/freesound_community-velcro-pull-02-38722.mp3" id="28_02mh6"]
 [ext_resource type="AudioStream" uid="uid://bedc8cfiyj1a0" path="res://Asset/Main Sound/fx/floraphonic-wooden-trunk-latch-1-183944.mp3" id="28_4dc2a"]
 [ext_resource type="AudioStream" uid="uid://cpy7sykkabisw" path="res://Asset/Main Sound/fx/prmodrai-key-404884.mp3" id="29_02mh6"]
+[ext_resource type="AudioStream" uid="uid://xr6s6oyppa1l" path="res://Asset/Main Sound/Item Use SFX/kave_msri-bomb-explosion-sfx-352274.mp3" id="29_wl7r4"]
+[ext_resource type="AudioStream" uid="uid://cshehbs515eyv" path="res://Asset/Main Sound/Item Use SFX/Totem.mp3" id="30_scftg"]
 [ext_resource type="AudioStream" uid="uid://ci8pt5d66qbok" path="res://Asset/Main Sound/fx/relic get.mp3" id="30_svynh"]
 [ext_resource type="AudioStream" uid="uid://cisj3hbi6n0fv" path="res://Asset/Main Sound/fx/yodguard-quest-accept-2-540182.mp3" id="31_duai0"]
+[ext_resource type="AudioStream" uid="uid://b6tboj7qmkdhc" path="res://Asset/Main Sound/Item Use SFX/freesound_community-grappling-hook-14680.mp3" id="31_s8rp1"]
+[ext_resource type="AudioStream" uid="uid://bg6kb8hv0n4hl" path="res://Asset/Main Sound/Item Use SFX/Static Field.mp3" id="32_qecgh"]
 [ext_resource type="AudioStream" uid="uid://dp8mf534saqlo" path="res://Asset/Main Sound/fx/yodguard-quest-complete-1-540192.mp3" id="32_wl7r4"]
 [ext_resource type="AudioStream" uid="uid://djto3h6s73fik" path="res://Asset/Main Sound/fx/freesound_community-medium-text-blip-14855.mp3" id="33_scftg"]
+[ext_resource type="AudioStream" uid="uid://cdawslpxbvo5s" path="res://Asset/Main Sound/Item Use SFX/Time.mp3" id="33_xxemo"]
+[ext_resource type="AudioStream" uid="uid://dstinmexdc50" path="res://Asset/Main Sound/Item Use SFX/u_kse9ncnirq-bird-creature-screams-399552.mp3" id="34_q2xyo"]
 [ext_resource type="AudioStream" uid="uid://s1l0s0g4cs8m" path="res://Asset/Main Sound/fx/spinopel-fishing-rod-whoosh-411640.mp3" id="34_s8rp1"]
+[ext_resource type="AudioStream" uid="uid://bw7og4n0v6gci" path="res://Asset/Main Sound/Item Use SFX/Clone.mp3" id="35_256ju"]
 [ext_resource type="AudioStream" uid="uid://dbvrie2goi4uw" path="res://Asset/Main Sound/fx/beep.mp3" id="35_mwlvx"]
 [ext_resource type="AudioStream" uid="uid://cjibkmtmo88l5" path="res://Asset/Main Sound/fx/audiopapkin-fishing-reel-302355.mp3" id="36_xxemo"]
 [ext_resource type="AudioStream" uid="uid://dvhgracabruvv" path="res://Asset/Main Sound/fx/fishing win.mp3" id="37_q2xyo"]
@@ -47,6 +60,8 @@
 [node name="SFX" type="Node" unique_id=896281284]
 script = ExtResource("1_sfx")
 sfx_volume_db = -4.0
+footstep_interval = 0.8
+sprint_step_interval = 0.4
 ui_open = ExtResource("2_hwani")
 ui_close = ExtResource("3_4gtne")
 ui_click = ExtResource("4_yhbrh")
@@ -77,6 +92,19 @@ level_up = ExtResource("6_ji11y")
 crate_drop = ExtResource("13_j7ilf")
 relic_ready = ExtResource("21_ngyqj")
 relic_unleash = ExtResource("14_v8a3w")
+item_potion = ExtResource("23_7qmv8")
+item_shield = ExtResource("24_ny7ps")
+item_grindstone = ExtResource("25_vnkdg")
+item_whip = ExtResource("26_qq0c2")
+item_magnet = ExtResource("27_4dc2a")
+item_bandage = ExtResource("28_02mh6")
+item_smoke_bomb = ExtResource("29_wl7r4")
+item_weaken_totem = ExtResource("30_scftg")
+item_chain_hook = ExtResource("31_s8rp1")
+item_static_field = ExtResource("32_qecgh")
+item_time_warp = ExtResource("33_xxemo")
+item_phoenix_feather = ExtResource("34_q2xyo")
+item_clone = ExtResource("35_256ju")
 item_relic = ExtResource("17_n04gt")
 enemy_hit = ExtResource("9_7qmv8")
 enemy_death = ExtResource("24_vnkdg")

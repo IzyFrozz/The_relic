@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://dp1sufku7naha"
+path="res://.godot/imported/Grindstone.mp3-09e71c1de0c64e838f3f59a05b40c4f9.mp3str"
+
+[deps]
+
+source_file="res://Asset/Main Sound/Item Use SFX/Grindstone.mp3"
+dest_files=["res://.godot/imported/Grindstone.mp3-09e71c1de0c64e838f3f59a05b40c4f9.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

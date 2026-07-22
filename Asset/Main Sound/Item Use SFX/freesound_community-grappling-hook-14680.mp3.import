@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://b6tboj7qmkdhc"
+path="res://.godot/imported/freesound_community-grappling-hook-14680.mp3-0d0efc9abe9e0284ef1e35a54387490a.mp3str"
+
+[deps]
+
+source_file="res://Asset/Main Sound/Item Use SFX/freesound_community-grappling-hook-14680.mp3"
+dest_files=["res://.godot/imported/freesound_community-grappling-hook-14680.mp3-0d0efc9abe9e0284ef1e35a54387490a.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4
