@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://bg6kb8hv0n4hl"
+path="res://.godot/imported/Static Field.mp3-245e05bb40d83e99e61668ee92531247.mp3str"
+
+[deps]
+
+source_file="res://Asset/Main Sound/Item Use SFX/Static Field.mp3"
+dest_files=["res://.godot/imported/Static Field.mp3-245e05bb40d83e99e61668ee92531247.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

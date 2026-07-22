@@ -40829,6 +40829,7 @@ texture = ExtResource("55_ir2v7")
 0:0/animation_frame_2/duration = 1.0
 0:0/animation_frame_3/duration = 1.0
 0:0/0 = 0
+0:0/0/physics_layer_0/polygon_0/points = PackedVector2Array(2.3381634, 6.115198, 8, 6.2950554, 8, 8, 0.35971832, 8)
 1:0/animation_columns = 4
 1:0/animation_separation = Vector2i(1, 0)
 1:0/animation_speed = 2.0
@@ -40837,6 +40838,7 @@ texture = ExtResource("55_ir2v7")
 1:0/animation_frame_2/duration = 1.0
 1:0/animation_frame_3/duration = 1.0
 1:0/0 = 0
+1:0/0/physics_layer_0/polygon_0/points = PackedVector2Array(-8, 5.5756207, -2.1583042, 5.215904, 0.8992939, 8, -8, 8)
 1:1/animation_columns = 4
 1:1/animation_separation = Vector2i(1, 0)
 1:1/animation_speed = 2.0
@@ -40845,6 +40847,7 @@ texture = ExtResource("55_ir2v7")
 1:1/animation_frame_2/duration = 1.0
 1:1/animation_frame_3/duration = 1.0
 1:1/0 = 0
+1:1/0/physics_layer_0/polygon_0/points = PackedVector2Array(-8, -8, 0, -8, 2.3381634, -3.057598, -8, -2.1583042)
 0:1/animation_columns = 4
 0:1/animation_separation = Vector2i(1, 0)
 0:1/animation_speed = 2.0
@@ -40853,6 +40856,7 @@ texture = ExtResource("55_ir2v7")
 0:1/animation_frame_2/duration = 1.0
 0:1/animation_frame_3/duration = 1.0
 0:1/0 = 0
+0:1/0/physics_layer_0/polygon_0/points = PackedVector2Array(-0.35971832, -8, 8, -8, 8, -2.3381624, -1.6187286, -3.5971737)
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_pdtks"]
 texture = ExtResource("56_nw1h7")
@@ -41773,6 +41777,7 @@ texture = ExtResource("32_hltbc")
 10:17/0 = 0
 
 [sub_resource type="TileSet" id="TileSet_mm8r0"]
+physics_layer_0/collision_layer = 1
 sources/0 = SubResource("TileSetAtlasSource_3d51c")
 sources/1 = SubResource("TileSetAtlasSource_c43ok")
 sources/2 = SubResource("TileSetAtlasSource_8xwrb")

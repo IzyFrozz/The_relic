@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://bw7og4n0v6gci"
+path="res://.godot/imported/Clone.mp3-2197d9eb9ac95dce9db0fa85a12026fe.mp3str"
+
+[deps]
+
+source_file="res://Asset/Main Sound/Item Use SFX/Clone.mp3"
+dest_files=["res://.godot/imported/Clone.mp3-2197d9eb9ac95dce9db0fa85a12026fe.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

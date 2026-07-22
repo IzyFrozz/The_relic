@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://dmljkut7sf6h7"
+path="res://.godot/imported/freesound_community-medieval-horn-by-kris-klavenes-wav-77565.mp3-879ef951e40aa4119765e4af625d8659.mp3str"
+
+[deps]
+
+source_file="res://Asset/Main Sound/Item Use SFX/freesound_community-medieval-horn-by-kris-klavenes-wav-77565.mp3"
+dest_files=["res://.godot/imported/freesound_community-medieval-horn-by-kris-klavenes-wav-77565.mp3-879ef951e40aa4119765e4af625d8659.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4
