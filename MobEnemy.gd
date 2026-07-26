@@ -1892,6 +1892,11 @@ func _enemy_execute_item(item_type: String, tracking: Dictionary) -> void:
 	enemy_inventory.erase(item_type)
 	tracking[item_type] = tracking.get(item_type, 0) + 1
 
+	# Per-item use sound, the exact cue the player gets in use_player_item — the
+	# enemy branch never played one, so only the player's own items were audible.
+	# _item_map is shared, so the same item sounds the same whoever uses it.
+	SFX.item(item_type)
+
 	match item_type:
 		"potion":
 			var healed := _enemy_heal(20)

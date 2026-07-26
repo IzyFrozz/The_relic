@@ -1,6 +1,6 @@
 # Assets still needed (exact list)
 
-## Enemies (by level — currently 8 sheets reused across Lv.1–20)
+<!-- ## Enemies (by level — currently 8 sheets reused across Lv.1–20)
 1. Lv.1 — Orc Rogue
 2. Lv.2 — Orc Shaman
 3. Lv.3 — Orc Warrior
@@ -8,7 +8,7 @@
 5. Lv.5 — Skeleton Warrior
 6. Lv.6 — Orc
 7. Lv.7 — Skeleton Base
-8. Lv.8 — Skeleton Rogue
+8. Lv.8 — Skeleton Rogue -->
 9. Lv.9 — Orc (reuse)
 10. Lv.10 — Skeleton Base (reuse)
 11. Lv.11 — Skeleton Rogue (reuse)
@@ -22,24 +22,24 @@
 19. Lv.19 — Orc (reuse)
 20. Lv.20 — Skeleton Base (reuse)
 
-Each needs an **Idle** sheet + a **Death** sheet. Lv.9–20 currently just repeat the
+<!-- Each needs an **Idle** sheet + a **Death** sheet. Lv.9–20 currently just repeat the
 Lv.1–8 sheets, so the minimum is **8 unique enemies**; for a distinct enemy every
-level you need up to **20**.
+level you need up to **20**. -->
 
-## NPCs
-1. Elder / Wizard (save point)
-2. Fisherman
-3. Navigator
-4. Street Kid (quest giver)
+<!-- ## NPCs
+1. Elder / Wizard (save point) -->
+2. Fisherman /no
+<!-- 3. Navigator
+4. Street Kid (quest giver) -->
 
-## Player
-1. Hero sprite sheet (walk + combat, recolorable)
+<!-- ## Player
+1. Hero sprite sheet (walk + combat, recolorable) -->
 
-## Objects
+<!-- ## Objects
 1. Ancient chest (closed + open)
 2. World coin pickup
-3. Anvil / crafting station
-4. Signpost
+3. Anvil / crafting station -->
+4. Signpost /no
 5. Projectile / hit FX
 
 ## World / Tilemap
@@ -65,7 +65,7 @@ level you need up to **20**.
 10. Warning
 11. Hamburger menu
 
-## Audio (SFX slots in sfx.tscn)
+<!-- ## Audio (SFX slots in sfx.tscn)
 1. Menu / UI (open, close, click, hover, confirm, cancel, error, tab, toggle, slider, save, load, pause, rebind)
 2. Player combat (attack, hit, block, dodge, reflect, heal, crit)
 3. Combat flow (start, flee, victory, defeat, level-up, crate, relic ready, relic unleash)
@@ -73,12 +73,12 @@ level you need up to **20**.
 5. Enemy hit + death, and one attack sound per level (Lv.1–20)
 6. Movement (footstep A/B, sprint, bump)
 7. World (coin, chest, key, relic, quest accept, quest complete, dialogue blip, interact)
-8. Fishing (cast, countdown, reel, catch, fail)
+8. Fishing (cast, countdown, reel, catch, fail) -->
 
-## Music
+<!-- ## Music
 1. Menu
 2. Overworld
 3. Combat
 4. Town
 5. Interior
-6. Victory
+6. Victory -->

@@ -117,6 +117,7 @@ offset_bottom = 418.0
 text = "Exit Game!"
 
 [node name="CombatUI" type="CanvasLayer" parent="." unique_id=313349406]
+visible = false
 script = ExtResource("2_nltto")
 
 [node name="TopLeftCard" type="Panel" parent="CombatUI" unique_id=-2094967295]
@@ -279,6 +280,7 @@ label_settings = SubResource("LabelSettings_n5ude")
 script = ExtResource("3_ibotj")
 
 [node name="RoadmapPopup" type="CanvasLayer" parent="." unique_id=3717834]
+visible = false
 script = ExtResource("4_ui001")
 
 [node name="Panel" type="Panel" parent="RoadmapPopup" unique_id=1727531082]
@@ -318,6 +320,7 @@ layout_mode = 2
 text = "Close Roadmap"
 
 [node name="EquipmentMenu" type="CanvasLayer" parent="." unique_id=2021918082]
+visible = false
 script = ExtResource("5_ui002")
 
 [node name="Panel" type="Panel" parent="EquipmentMenu" unique_id=1422517685]
@@ -360,8 +363,8 @@ theme_override_constants/separation = 14
 [node name="UnlockedSection" type="PanelContainer" parent="EquipmentMenu/Panel/MainVBox/ColumnsHBox" unique_id=-2084928293]
 layout_mode = 2
 size_flags_horizontal = 3
-size_flags_stretch_ratio = 1.35
 size_flags_vertical = 3
+size_flags_stretch_ratio = 1.35
 
 [node name="UnlockedVBox" type="VBoxContainer" parent="EquipmentMenu/Panel/MainVBox/ColumnsHBox/UnlockedSection" unique_id=-2084928292]
 layout_mode = 2
@@ -396,7 +399,6 @@ horizontal_scroll_mode = 0
 [node name="EquippedGrid" type="GridContainer" parent="EquipmentMenu/Panel/MainVBox/ColumnsHBox/EquippedSection/EquippedVBox/EquippedScroll" unique_id=285528932]
 layout_mode = 2
 size_flags_horizontal = 3
-columns = 1
 
 [node name="CloseButton" type="Button" parent="EquipmentMenu/Panel/MainVBox" unique_id=166129530]
 custom_minimum_size = Vector2(0, 46)
@@ -404,6 +406,7 @@ layout_mode = 2
 text = "Save & Close"
 
 [node name="SavePopup" type="CanvasLayer" parent="." unique_id=-1894967295]
+visible = false
 script = ExtResource("6_ui003")
 
 [node name="Panel" type="Panel" parent="SavePopup" unique_id=-1894967294]
@@ -465,6 +468,7 @@ layout_mode = 2
 text = "Back Out"
 
 [node name="PauseMenu" type="CanvasLayer" parent="." unique_id=-1894967195]
+visible = false
 script = ExtResource("7_ui004")
 
 [node name="MenuButton" type="Button" parent="PauseMenu" unique_id=-1894967096]
