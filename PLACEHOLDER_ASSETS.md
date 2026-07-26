@@ -26,11 +26,19 @@
 Lv.1–8 sheets, so the minimum is **8 unique enemies**; for a distinct enemy every
 level you need up to **20**. -->
 
+<<<<<<< Updated upstream
 <!-- ## NPCs
 1. Elder / Wizard (save point) -->
 2. Fisherman /no
 <!-- 3. Navigator
 4. Street Kid (quest giver) -->
+=======
+## NPCs
+1. Elder / Wizard (save point)
+2. Fisherman /no
+3. Navigator
+4. Street Kid (quest giver)
+>>>>>>> Stashed changes
 
 <!-- ## Player
 1. Hero sprite sheet (walk + combat, recolorable) -->
@@ -38,19 +46,23 @@ level you need up to **20**. -->
 <!-- ## Objects
 1. Ancient chest (closed + open)
 2. World coin pickup
+<<<<<<< Updated upstream
 3. Anvil / crafting station -->
+=======
+3. Anvil / crafting station
+>>>>>>> Stashed changes
 4. Signpost /no
 5. Projectile / hit FX
 
-## World / Tilemap
+<!-- ## World / Tilemap
 1. Ground & water tiles
 2. Wall / building tiles
 3. Trees, rocks, vegetation
 4. Furniture / interior props
-5. Stations (bonfire, sawmill, workbench, alchemy)
+5. Stations (bonfire, sawmill, workbench, alchemy) -->
 
 ## UI
-1. Main-menu key art (title banner)
+1. Main-menu key art (title banner) /no
 
 ## Missing icons (still emoji)
 1. Display / monitor
