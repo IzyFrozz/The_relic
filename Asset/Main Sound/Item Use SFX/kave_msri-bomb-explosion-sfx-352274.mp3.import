@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://xr6s6oyppa1l"
+path="res://.godot/imported/kave_msri-bomb-explosion-sfx-352274.mp3-d5fa729ffcee1b8e649ddf6ed9a6a044.mp3str"
+
+[deps]
+
+source_file="res://Asset/Main Sound/Item Use SFX/kave_msri-bomb-explosion-sfx-352274.mp3"
+dest_files=["res://.godot/imported/kave_msri-bomb-explosion-sfx-352274.mp3-d5fa729ffcee1b8e649ddf6ed9a6a044.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://b7h6an2wff6ab"
+path="res://.godot/imported/data_pion-sfx33-shield-tap-534306.mp3-0bbd588b47a8f2ec0d3dd7590395f40f.mp3str"
+
+[deps]
+
+source_file="res://Asset/Main Sound/Item Use SFX/data_pion-sfx33-shield-tap-534306.mp3"
+dest_files=["res://.godot/imported/data_pion-sfx33-shield-tap-534306.mp3-0bbd588b47a8f2ec0d3dd7590395f40f.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

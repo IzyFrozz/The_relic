@@ -139,18 +139,16 @@ theme_override_constants/separation = 6
 [node name="PlayerHPLabel" type="RichTextLabel" parent="CombatUI/TopLeftCard/PlayerCardVBox" unique_id=-2094967293]
 layout_mode = 2
 bbcode_enabled = true
+text = "YOU"
 fit_content = true
 scroll_active = false
-autowrap_mode = 3
-text = "YOU"
 
 [node name="PlayerBuffsLabel" type="RichTextLabel" parent="CombatUI/TopLeftCard/PlayerCardVBox" unique_id=-2094967292]
 layout_mode = 2
 bbcode_enabled = true
+text = "Normal"
 fit_content = true
 scroll_active = false
-autowrap_mode = 3
-text = "Normal"
 
 [node name="TopRightCard" type="Panel" parent="CombatUI" unique_id=-2094967291]
 anchors_preset = 1
@@ -178,18 +176,16 @@ theme_override_constants/separation = 6
 [node name="EnemyHPLabel" type="RichTextLabel" parent="CombatUI/TopRightCard/EnemyCardVBox" unique_id=-2094967289]
 layout_mode = 2
 bbcode_enabled = true
+text = "ENEMY LV.1"
 fit_content = true
 scroll_active = false
-autowrap_mode = 3
-text = "ENEMY LV.1"
 
 [node name="EnemyBuffsLabel" type="RichTextLabel" parent="CombatUI/TopRightCard/EnemyCardVBox" unique_id=-2094967288]
 layout_mode = 2
 bbcode_enabled = true
+text = "Normal"
 fit_content = true
 scroll_active = false
-autowrap_mode = 3
-text = "Normal"
 
 [node name="BottomPanel" type="Panel" parent="CombatUI" unique_id=-2094967287]
 anchors_preset = 12
@@ -237,9 +233,9 @@ alignment = 2
 layout_mode = 2
 size_flags_horizontal = 3
 bbcode_enabled = true
+text = "Drop in 1 round (+1 items)"
 fit_content = true
 scroll_active = false
-text = "Drop in 1 round (+1 items)"
 
 [node name="fight_button" type="Button" parent="CombatUI/BottomPanel/BottomHBox/BottomCenterVBox" unique_id=741457388]
 custom_minimum_size = Vector2(420, 86)
@@ -440,9 +436,9 @@ theme_override_constants/separation = 12
 layout_mode = 2
 size_flags_horizontal = 3
 bbcode_enabled = true
+text = "[center]🧙  Elder NPC[/center]"
 fit_content = true
 scroll_active = false
-text = "[center]🧙  Elder NPC[/center]"
 
 [node name="StatusLabel" type="Label" parent="SavePopup/Panel/MainVBox" unique_id=-1894967291]
 layout_mode = 2
