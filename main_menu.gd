@@ -201,6 +201,10 @@ func _build() -> void:
 	views_holder.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	views_scroll.add_child(views_holder)
 	card_views_holder = views_holder
+	# Self-correcting sizing: whenever the showing view's content settles to a
+	# different minimum height — first build, a rebuilt session list, a font
+	# finishing measurement — the card re-fits itself. See _resize_card.
+	views_holder.minimum_size_changed.connect(_apply_card_height)
 
 	# ── Main view — OUTSIDE the card, straight onto the key art ──────────────
 	# It is the only view with no panel behind it: the art is the backdrop and the
@@ -1002,9 +1006,42 @@ func _show_view(which: String) -> void:
 # Deferred by a frame: a view that was just made visible has not been laid out
 # yet, so its combined minimum size still reads as the PREVIOUS view's until the
 # container updates. Measuring immediately gives a card sized for the last screen.
+# Fits the card to whatever view is showing.
+#
+# This used to await exactly ONE frame, measure, and keep that number until the
+# next view change. That is a race: a view being shown for the FIRST time has
+# just had its contents built, and if its minimum size had not finished
+# propagating up through the ScrollContainer by that single frame, the card was
+# sized from a stale measurement and stayed wrong — while opening the same view
+# later, with its layout already settled, measured fine. Hence "only the first
+# screen I open is wrong".
+#
+# Now it also re-runs whenever the content's minimum size actually changes (see
+# the minimum_size_changed connection in _build), so a late-settling layout
+# corrects itself instead of leaving the card stuck. `_resize_queued` coalesces
+# the several requests that can arrive in one frame, and it is a coroutine
+# guard too: without it, clicking quickly between views left several of these
+# racing, and whichever resumed last won regardless of which view was showing.
+var _resize_queued: bool = false
+
 func _resize_card() -> void:
-	await get_tree().process_frame
+	if _resize_queued:
+		return
+	_resize_queued = true
+	# Re-measure over several frames instead of trusting one. Waiting a fixed
+	# number of frames is guesswork either way, but re-APPLYING each frame means
+	# a stale early reading is overwritten as soon as the real one is available,
+	# so the card converges rather than latching whatever it saw first.
+	for _i in 4:
+		await get_tree().process_frame
+		_apply_card_height()
+	_resize_queued = false
+
+func _apply_card_height() -> void:
 	if not (is_instance_valid(card_panel) and is_instance_valid(card_views_holder)):
+		return
+	# A late frame must not resize the card while the main view is up.
+	if _current_view == "main":
 		return
 	# The ScrollContainer reports a small minimum of its own (it is happy to be
 	# tiny and scroll), so the content has to be measured directly.
