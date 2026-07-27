@@ -14,6 +14,20 @@ const COL_BORDER  := Color(0.35, 0.40, 0.60, 1.0)
 const COL_GOLD    := Color(1.00, 0.85, 0.30, 1.0)
 const COL_DANGER  := Color(0.95, 0.34, 0.32, 1.0)
 
+const MENU_ART_PATH := "res://Asset/Menu/mainmenu.png"
+
+# Main-view button column. TOP_A is an ANCHOR (fraction of window height), not a
+# pixel offset, so the column keeps its place under the painted logo whatever the
+# window size — the logo is part of the art and scales with it.
+const MAIN_BTN_SIZE  := Vector2(300, 56)
+const MAIN_BTN_GAP   := 18
+const MAIN_BTN_TOP_A := 0.36
+
+const CARD_PAD := 34   # inset between the card's edge and its content
+
+var scrim: ColorRect
+var card_vbox: VBoxContainer          # card chrome: title + separator + view scroll
+var card_views_holder: VBoxContainer  # the swapped views, for measuring the card
 var main_view:     VBoxContainer
 var load_view:      VBoxContainer
 var settings_view:  VBoxContainer   # hub: Audio / Display / Controls
@@ -75,77 +89,79 @@ func _ready() -> void:
 
 # ── Build ─────────────────────────────────────────────────────────────────
 func _build() -> void:
-	# Solid opaque background — this is the very first screen, nothing
-	# should ever show through it regardless of resolution.
+	# Solid opaque base — this is the very first screen, nothing should ever show
+	# through it. The key art sits on top; this only fills any letterbox gap.
 	var bg = ColorRect.new()
 	bg.color = COL_BG
 	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	bg.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(bg)
 
+	# ── Key art ──────────────────────────────────────────────────────────────
+	# KEEP_ASPECT_COVERED crops rather than letterboxing, so the forest fills the
+	# window at any aspect ratio. The game's title is painted INTO this art, which
+	# is why the main view draws no title text of its own.
+	var art = TextureRect.new()
+	art.texture = load(MENU_ART_PATH)
+	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	art.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST   # keep the pixel art crisp
+	art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	art.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(art)
+
+	# Dimmer for the SUB-VIEWS only. A settings panel over full-brightness forest
+	# is hard to read, so the art is knocked back while a card is open and left at
+	# full strength on the main view.
+	scrim = ColorRect.new()
+	scrim.color = Color(0.02, 0.03, 0.05, 0.72)
+	scrim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	scrim.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	scrim.visible = false
+	add_child(scrim)
+
 	var centre_root = Control.new()
 	centre_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	centre_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(centre_root)
 
-	# The card is ANCHORED to the viewport with a fixed margin rather than sized to
-	# its content. The tall screens (Create Your Hero, Controls) need far more room
-	# than a 1080p window has, and growing the card to fit simply pushed the bottom
-	# of the content off the screen — the content scrolls inside the card instead.
+	# The card is CENTRED and sized to the active view, capped at the window height
+	# (see _resize_card). It used to span the full window height always, which was
+	# fine over a flat background but wastes most of the panel on a short screen
+	# like Settings — and now that there is art behind, that empty space is art
+	# being hidden for nothing. The cap is what keeps the original guarantee: the
+	# tall screens (Create Your Hero, Controls) never outgrow the window, they
+	# scroll inside the card instead.
 	var card = Panel.new()
 	card.custom_minimum_size = Vector2(600, 0)
 	card_panel = card
 	_style_panel(card, COL_CARD_BG, COL_BORDER)
 	centre_root.add_child(card)
-	# Horizontally centred at a fixed 600 wide; vertically it spans the window
-	# minus a margin, so the card is always exactly as tall as there is room for.
 	card.anchor_left = 0.5;  card.anchor_right  = 0.5
-	card.anchor_top  = 0.0;  card.anchor_bottom = 1.0
+	card.anchor_top  = 0.5;  card.anchor_bottom = 0.5
 	card.offset_left = -300; card.offset_right  = 300
-	card.offset_top  = CARD_MARGIN_Y
-	card.offset_bottom = -CARD_MARGIN_Y
 	card.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	card.grow_vertical   = Control.GROW_DIRECTION_BOTH
 
 	var vbox = VBoxContainer.new()
-	vbox.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT, Control.PRESET_MODE_MINSIZE, 34)
+	vbox.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT, Control.PRESET_MODE_MINSIZE, CARD_PAD)
 	vbox.add_theme_constant_override("separation", 16)
 	card.add_child(vbox)
-
-	# ── Placeholder art banner — swap for real key art later ────────────────
-	var art_panel = Panel.new()
-	art_panel.custom_minimum_size = Vector2(0, 150)
-	art_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var art_style = StyleBoxFlat.new()
-	art_style.bg_color = Color(0.13, 0.14, 0.20, 1.0)
-	art_style.set_corner_radius_all(10); art_style.set_border_width_all(2)
-	art_style.border_color = Color(0.30, 0.33, 0.48)
-	art_panel.add_theme_stylebox_override("panel", art_style)
-	vbox.add_child(art_panel)
-	var art_label = Label.new()
-	art_label.text = "Artwork Placeholder"
-	art_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	art_label.vertical_alignment   = VERTICAL_ALIGNMENT_CENTER
-	art_label.add_theme_font_size_override("font_size", 16)
-	art_label.add_theme_color_override("font_color", Color(0.5, 0.52, 0.62))
-	art_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	art_panel.add_child(art_label)
+	card_vbox = vbox
 
 	# ── Title ────────────────────────────────────────────────────────────────
+	# Compact: the art behind carries the full logo, and the card covers it, so
+	# this is only a marker for which game you're in — not a second title card.
+	# The old 150px "Artwork Placeholder" banner is gone, which hands its height
+	# to the tall views (Controls, Create Your Hero) that were short of room.
 	var title = RichTextLabel.new()
 	title.bbcode_enabled = true; title.fit_content = true; title.scroll_active = false
 	title.autowrap_mode = TextServer.AUTOWRAP_OFF
 	title.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	title.add_theme_font_size_override("normal_font_size", 40)
+	title.add_theme_font_size_override("normal_font_size", 26)
 	title.add_theme_color_override("default_color", COL_GOLD)
-	title.text = IconDB.iconify("⚔️  THE RELIC", 42)
+	title.text = IconDB.iconify("⚔️  THE RELIC", 28)
 	vbox.add_child(title)
-
-	var sub = Label.new()
-	sub.text = "A JRPG Adventure"
-	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	sub.add_theme_font_size_override("font_size", 14)
-	sub.add_theme_color_override("font_color", Color(0.60, 0.62, 0.75))
-	vbox.add_child(sub)
 
 	vbox.add_child(HSeparator.new())
 
@@ -159,12 +175,23 @@ func _build() -> void:
 	var views_holder = VBoxContainer.new()
 	views_holder.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	views_scroll.add_child(views_holder)
+	card_views_holder = views_holder
 
-	# ── Views container — only one of these three is visible at a time ─────
+	# ── Main view — OUTSIDE the card, straight onto the key art ──────────────
+	# It is the only view with no panel behind it: the art is the backdrop and the
+	# buttons float on it, so the card (and its scrim) are hidden while it shows.
+	# Anchored below the painted logo and centred, so it holds that position at
+	# any resolution rather than being pinned to the middle of the window.
 	main_view = VBoxContainer.new()
-	main_view.add_theme_constant_override("separation", 12)
-	main_view.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	views_holder.add_child(main_view)
+	main_view.add_theme_constant_override("separation", MAIN_BTN_GAP)
+	main_view.alignment = BoxContainer.ALIGNMENT_BEGIN
+	main_view.anchor_left = 0.5;            main_view.anchor_right  = 0.5
+	main_view.anchor_top  = MAIN_BTN_TOP_A; main_view.anchor_bottom = MAIN_BTN_TOP_A
+	main_view.offset_left  = -MAIN_BTN_SIZE.x * 0.5
+	main_view.offset_right =  MAIN_BTN_SIZE.x * 0.5
+	main_view.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	main_view.grow_vertical   = Control.GROW_DIRECTION_END
+	centre_root.add_child(main_view)
 	_build_main_view()
 
 	load_view = VBoxContainer.new()
@@ -218,31 +245,63 @@ func _build() -> void:
 	views_holder.add_child(saveselect_view)
 	_build_saveselect_view()
 
+	# Settle the initial state through the same path every later switch uses, so
+	# the card and scrim start hidden rather than relying on their built defaults.
+	_show_view("main")
+
 # ── Main view ────────────────────────────────────────────────────────────────
 func _build_main_view() -> void:
-	var start_btn = Button.new()
-	start_btn.text = "▶  Start New Game"
-	_style_btn(start_btn, Color(0.07, 0.18, 0.07), Color(0.20, 0.62, 0.20))
+	# Short uppercase labels and no icons: these buttons sit on busy forest art, so
+	# they read as solid shapes with a word on them. The sub-view buttons keep
+	# their icons and longer labels — those live on a flat card where detail reads.
+	var start_btn = _make_main_btn("START", Color(0.16, 0.55, 0.18))
 	start_btn.pressed.connect(func(): _show_view("customize"))
 	main_view.add_child(start_btn)
 
-	var load_btn = Button.new()
-	_style_btn(load_btn, Color(0.09, 0.12, 0.20), Color(0.30, 0.42, 0.75))
-	IconDB.decorate_button(load_btn, "📂", "Load Game")
+	var load_btn = _make_main_btn("LOAD", Color(0.24, 0.30, 0.68))
 	load_btn.pressed.connect(func(): _session_mode = "load"; _show_view("session"))
 	main_view.add_child(load_btn)
 
-	var settings_btn = Button.new()
-	_style_btn(settings_btn, Color(0.14, 0.12, 0.05), Color(0.62, 0.52, 0.20))
-	IconDB.decorate_button(settings_btn, "⚙️", "Settings")
+	var settings_btn = _make_main_btn("SETTINGS", Color(0.93, 0.70, 0.11))
 	settings_btn.pressed.connect(func(): _show_view("settings"))
 	main_view.add_child(settings_btn)
 
-	var exit_btn = Button.new()
-	_style_btn(exit_btn, Color(0.22, 0.07, 0.07), Color(0.65, 0.20, 0.20))
-	IconDB.decorate_button(exit_btn, "🚪", "Exit Game")
+	var exit_btn = _make_main_btn("EXIT", Color(0.87, 0.27, 0.30))
 	exit_btn.pressed.connect(func(): get_tree().quit())
 	main_view.add_child(exit_btn)
+
+# A main-menu pill: saturated fill, light rim, hard shadow. Distinct from
+# _style_btn (the flat rectangular style used inside the card) because these have
+# to hold their own against the artwork instead of sitting on a dark panel.
+func _make_main_btn(label: String, fill: Color) -> Button:
+	var b = Button.new()
+	b.text = label
+	b.focus_mode = Control.FOCUS_NONE
+	b.custom_minimum_size = MAIN_BTN_SIZE
+
+	var s = StyleBoxFlat.new()
+	s.bg_color = fill
+	s.set_corner_radius_all(int(MAIN_BTN_SIZE.y * 0.5))   # full pill
+	s.set_border_width_all(3)
+	s.border_color = Color(0.97, 0.97, 0.99, 0.95)
+	# Grounds the button against the art — without it they look pasted on.
+	s.shadow_color = Color(0, 0, 0, 0.55)
+	s.shadow_size = 6
+	s.shadow_offset = Vector2(0, 3)
+	b.add_theme_stylebox_override("normal", s)
+
+	var sh = s.duplicate(); sh.bg_color = fill.lightened(0.20)
+	b.add_theme_stylebox_override("hover", sh)
+	var sp = s.duplicate(); sp.bg_color = fill.darkened(0.22); sp.shadow_size = 2
+	b.add_theme_stylebox_override("pressed", sp)
+
+	b.add_theme_font_size_override("font_size", 22)
+	b.add_theme_color_override("font_color", Color.WHITE)
+	b.add_theme_color_override("font_hover_color", Color.WHITE)
+	# Dark outline keeps the white label legible over the brightest fills (gold).
+	b.add_theme_color_override("font_outline_color", Color(0.05, 0.05, 0.08, 0.9))
+	b.add_theme_constant_override("outline_size", 5)
+	return b
 
 # ── Session picker (load_view) — used for both New Game and Load ──────────────
 func _build_load_view() -> void:
@@ -855,7 +914,13 @@ func _on_confirm_customize() -> void:
 # ── View switching ───────────────────────────────────────────────────────────
 func _show_view(which: String) -> void:
 	_current_view = which
-	main_view.visible      = which == "main"
+	# The main view is the ONLY one drawn straight onto the art. Every other view
+	# lives in the card, which brings the dimming scrim with it so its text reads
+	# against the forest.
+	var on_main := which == "main"
+	if is_instance_valid(card_panel): card_panel.visible = not on_main
+	if is_instance_valid(scrim):      scrim.visible      = not on_main
+	main_view.visible      = on_main
 	load_view.visible      = which == "session"
 	settings_view.visible  = which == "settings"
 	audio_view.visible     = which == "audio"
@@ -883,6 +948,32 @@ func _show_view(which: String) -> void:
 		load_status_label.add_theme_color_override("font_color", Color(0.85, 0.85, 0.92))
 	if which == "saveselect":
 		_refresh_saveselect()
+	if not on_main:
+		_resize_card()
+
+# Fit the card to whatever view is showing, capped at the window.
+#
+# Deferred by a frame: a view that was just made visible has not been laid out
+# yet, so its combined minimum size still reads as the PREVIOUS view's until the
+# container updates. Measuring immediately gives a card sized for the last screen.
+func _resize_card() -> void:
+	await get_tree().process_frame
+	if not (is_instance_valid(card_panel) and is_instance_valid(card_views_holder)):
+		return
+	# The ScrollContainer reports a small minimum of its own (it is happy to be
+	# tiny and scroll), so the content has to be measured directly.
+	var content_h: float = card_views_holder.get_combined_minimum_size().y
+	var chrome_h: float = CARD_PAD * 2.0
+	for child in card_vbox.get_children():
+		if child is ScrollContainer:
+			continue
+		chrome_h += (child as Control).get_combined_minimum_size().y
+	chrome_h += card_vbox.get_theme_constant("separation") * maxi(card_vbox.get_child_count() - 1, 0)
+
+	var max_h: float = get_viewport().get_visible_rect().size.y - CARD_MARGIN_Y * 2.0
+	var h: float = minf(content_h + chrome_h, max_h)
+	card_panel.offset_top    = -h * 0.5
+	card_panel.offset_bottom =  h * 0.5
 
 # ── Style helpers ──────────────────────────────────────────────────────────
 func _style_panel(p: Panel, bg: Color, border: Color) -> void:
