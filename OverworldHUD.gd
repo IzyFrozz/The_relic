@@ -8,7 +8,9 @@ var roadmap_button: Button      = null
 var roadmap_popup:  CanvasLayer = null
 
 # Quest objective banner (built in code, top-centre).
-var quest_panel: Panel = null
+# PanelContainer, NOT Panel — the two are unrelated classes and a Panel-typed
+# assignment fails at runtime, not at parse time.
+var quest_panel: PanelContainer = null
 var quest_label: RichTextLabel = null
 var key_icon:    TextureRect = null
 const KEY_TEX_PATH := "res://Asset/Meta data assets files/Visuals/OBJECTS/items/key.png"
@@ -33,6 +35,8 @@ const BTN_SIZE   := Vector2(150, 46)   # shared size for every overworld button
 const COL_GOLD   := Color(1.00, 0.85, 0.30, 1.0)
 const COL_BORDER := Color(0.28, 0.33, 0.52, 1.0)
 const COL_PANEL  := Color(0.08, 0.09, 0.13, 0.90)
+# Text column for the objective banner; longer lines wrap instead of bleeding.
+const TRACKER_TEXT_W := 420.0
 const COL_XP_BG  := Color(0.13, 0.14, 0.20, 1.0)
 const COL_XP_FG  := Color(0.22, 0.52, 1.00, 1.0)
 
@@ -125,22 +129,35 @@ func _on_side_quests_changed() -> void:
 
 # ── Quest objective banner ─────────────────────────────────────────────────────
 func _build_quest_tracker() -> void:
-	quest_panel = Panel.new()
+	# Same shape as the Toast, and for the same reason: this was a fixed 420-wide
+	# Panel holding a non-wrapping label, so any objective line longer than that
+	# ran out past the border. PanelContainer + wrapping label means the box grows
+	# downward for a long objective instead of bleeding sideways.
+	quest_panel = PanelContainer.new()
 	quest_panel.anchor_left = 0.5; quest_panel.anchor_right = 0.5
 	quest_panel.anchor_top = 0.0;  quest_panel.anchor_bottom = 0.0
-	quest_panel.offset_left = -210; quest_panel.offset_right = 210
-	quest_panel.offset_top = 72;    quest_panel.offset_bottom = 112
+	quest_panel.offset_left  = -(TRACKER_TEXT_W * 0.5 + 14)
+	quest_panel.offset_right =  (TRACKER_TEXT_W * 0.5 + 14)
+	quest_panel.offset_top = 72;    quest_panel.offset_bottom = 72   # grows down
 	quest_panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	quest_panel.grow_vertical   = Control.GROW_DIRECTION_END
 	quest_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	quest_panel.add_theme_stylebox_override("panel", _s(COL_PANEL, COL_GOLD, 9))
 	add_child(quest_panel)
 
+	var pad = MarginContainer.new()
+	pad.add_theme_constant_override("margin_left", 14)
+	pad.add_theme_constant_override("margin_right", 14)
+	pad.add_theme_constant_override("margin_top", 9)
+	pad.add_theme_constant_override("margin_bottom", 9)
+	pad.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	quest_panel.add_child(pad)
+
 	var hb = HBoxContainer.new()
-	hb.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	hb.alignment = BoxContainer.ALIGNMENT_CENTER
 	hb.add_theme_constant_override("separation", 8)
 	hb.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	quest_panel.add_child(hb)
+	pad.add_child(hb)
 
 	key_icon = TextureRect.new()
 	key_icon.texture = load(KEY_TEX_PATH)
@@ -155,7 +172,9 @@ func _build_quest_tracker() -> void:
 	quest_label.bbcode_enabled = true
 	quest_label.fit_content = true
 	quest_label.scroll_active = false
-	quest_label.autowrap_mode = TextServer.AUTOWRAP_OFF
+	# Wraps rather than overflowing; expands to whatever width the key icon leaves.
+	quest_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	quest_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	quest_label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	quest_label.add_theme_font_size_override("normal_font_size", 15)
 	quest_label.add_theme_color_override("default_color", Color(0.95, 0.92, 0.80))
@@ -176,7 +195,8 @@ func _refresh_quest_tracker() -> void:
 		t = "🪙  Coins  %d / %d   →  bring to the Street Kid" % [QuestManager.coins_collected, QuestManager.COINS_NEEDED]
 	else:
 		t = "❔  Seek out the Street Kid near the village"
-	quest_label.text = IconDB.iconify(t, 18)
+	# [center] because the label now fills the column rather than hugging its text.
+	quest_label.text = "[center]%s[/center]" % IconDB.iconify(t, 18)
 	if is_instance_valid(key_icon):
 		key_icon.visible = show_key
 

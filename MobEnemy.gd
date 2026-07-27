@@ -765,20 +765,28 @@ func _apply_item_upgrades(pool: Array) -> Array:
 # it gets an opportunity, so a fight never becomes a guaranteed grind of the same
 # effect every single swing.
 #
-# `proc` follows a deliberate DOWNWARD curve against min_level: ~50% for what a
-# low mob can roll, easing to ~18% at the top. The late-tier traits are the
-# nastiest, so they land as occasional spikes rather than a constant tax — and a
-# level 20 foe carrying four of them still gets a readable number of procs a round.
+# `proc` follows a deliberate DOWNWARD curve against min_level: the late-tier
+# traits are the nastiest, so they land as occasional spikes rather than a
+# constant tax, and a level 20 foe carrying four of them still gets a readable
+# number of procs a round.
+#
+# HARD CEILING: no rolled trait may sit at or above 1-in-3 (0.33). The curve used
+# to open at 0.50, which meant Brutal fired on half of all swings — that reads as
+# the mob's baseline damage rather than as a trait, and it stacked with every
+# other trait the mob was carrying. Keep new entries at or below 0.33, and keep
+# the ladder descending by min_level.
+# The two LOCKOUT traits (jammer / disarming) sit far below the rest — see the
+# note above them. `undying` at 1.00 is NOT rolled; its call site uses has_threat.
 const ENEMY_THREATS := [
-	{ "id": "brutal",     "min_level": 3,  "proc": 0.50, "emoji": "💥", "name": "Brutal",     "desc": "Half its swings hit 10 harder." },
-	{ "id": "ironhide",   "min_level": 4,  "proc": 0.48, "emoji": "🛡️", "name": "Ironhide",   "desc": "Often shrugs 10 off a hit." },
-	{ "id": "cornered",   "min_level": 6,  "proc": 0.43, "emoji": "🔥", "name": "Cornered",   "desc": "Below half health, its swings can hit 10 harder." },
-	{ "id": "venomous",   "min_level": 7,  "proc": 0.41, "emoji": "☠️", "name": "Venomous",   "desc": "Its hits can leave you poisoned." },
-	{ "id": "leeching",   "min_level": 8,  "proc": 0.39, "emoji": "🩸", "name": "Leeching",   "desc": "Its hits can drain 10 HP back." },
-	{ "id": "evasive",    "min_level": 9,  "proc": 0.36, "emoji": "💨", "name": "Evasive",    "desc": "Your attacks sometimes slip past it." },
-	{ "id": "warded",     "min_level": 10, "proc": 0.34, "emoji": "🪞", "name": "Warded",     "desc": "May raise a reflecting ward each round." },
-	{ "id": "thorned",    "min_level": 11, "proc": 0.32, "emoji": "📌", "name": "Thorned",    "desc": "Landing a hit can cost you 10 HP." },
-	{ "id": "hexer",      "min_level": 12, "proc": 0.29, "emoji": "🗿", "name": "Hexer",      "desc": "Its hits can weaken your next attack." },
+	{ "id": "brutal",     "min_level": 3,  "proc": 0.33, "emoji": "💥", "name": "Brutal",     "desc": "About a third of its swings hit 10 harder." },
+	{ "id": "ironhide",   "min_level": 4,  "proc": 0.32, "emoji": "🛡️", "name": "Ironhide",   "desc": "Often shrugs 10 off a hit." },
+	{ "id": "cornered",   "min_level": 6,  "proc": 0.31, "emoji": "🔥", "name": "Cornered",   "desc": "Below half health, its swings can hit 10 harder." },
+	{ "id": "venomous",   "min_level": 7,  "proc": 0.30, "emoji": "☠️", "name": "Venomous",   "desc": "Its hits can leave you poisoned." },
+	{ "id": "leeching",   "min_level": 8,  "proc": 0.29, "emoji": "🩸", "name": "Leeching",   "desc": "Its hits can drain 10 HP back." },
+	{ "id": "evasive",    "min_level": 9,  "proc": 0.28, "emoji": "💨", "name": "Evasive",    "desc": "Your attacks sometimes slip past it." },
+	{ "id": "warded",     "min_level": 10, "proc": 0.27, "emoji": "🪞", "name": "Warded",     "desc": "May raise a reflecting ward each round." },
+	{ "id": "thorned",    "min_level": 11, "proc": 0.26, "emoji": "📌", "name": "Thorned",    "desc": "Landing a hit can cost you 10 HP." },
+	{ "id": "hexer",      "min_level": 12, "proc": 0.25, "emoji": "🗿", "name": "Hexer",      "desc": "Its hits can weaken your next attack." },
 	# JAMMER + DISARMING are the two LOCKOUT traits — between them they can take
 	# away your items and your swing. Individually the anti-lockout rules already
 	# stop them landing on the same round, but at their old rates (0.27 / 0.25) a
@@ -803,6 +811,26 @@ const ENEMY_THREATS := [
 ]
 
 # Splitter: one clone per this much cumulative damage taken.
+# ── HP GRID — HARD INVARIANT ────────────────────────────────────────────────
+# EVERY HP value in the game must be a multiple of HP_STEP. The nameplate draws
+# one heart per HP_PER_HEART (20) with a half-heart at 10, and there is no
+# quarter-heart sprite — anything ending in 5 lands between glyphs and renders as
+# the wrong heart.
+#
+# All the literal damage and heal amounts are already written as multiples of
+# ten. The hole was the COMPUTED ones: lifesteal takes "half the damage dealt",
+# and half of an odd multiple of ten is a 5 (30 -> 15), which is how an enemy
+# ended up sitting on 55/400 HP.
+#
+# Any future value that is DERIVED rather than written as a literal — a
+# percentage, a share, a scaled amount — must go through _hp_step().
+const HP_STEP := 10
+
+# Floors `v` onto the heart grid. Floors rather than rounds so a halving can
+# never round UP into a larger steal than the rule promises.
+func _hp_step(v: int) -> int:
+	return maxi(0, v / HP_STEP) * HP_STEP
+
 const SPLIT_DAMAGE := 80
 # Relicbound: fires when current HP drops below each multiple of this.
 const BEAM_HP_MARK := 100
@@ -1580,12 +1608,16 @@ func _resolve_player_swing() -> void:
 	if player_lifesteal_active:
 		player_lifesteal_active = false
 		if actual_dmg_dealt > 0:
-			var steal_heal = actual_dmg_dealt / 2
-			# Must go through heal_player() — writing player_health directly skipped
-			# the red-heart cap and let lifesteal top you up inside the gold zone.
-			QuestManager.heal_player(steal_heal)
-			await _fx_heal("player")
-			if combat_ui: combat_ui.display_round_history("🩸 Lifesteal — healed %d HP!" % steal_heal, true)
+			# _hp_step: half of an odd multiple of ten is a 5, which is off the
+			# heart grid. Skipped entirely when it floors to nothing, rather than
+			# logging a "+0 HP" heal.
+			var steal_heal := _hp_step(actual_dmg_dealt / 2)
+			if steal_heal > 0:
+				# Must go through heal_player() — writing player_health directly
+				# skipped the red-heart cap and let lifesteal top you up in gold.
+				QuestManager.heal_player(steal_heal)
+				await _fx_heal("player")
+				if combat_ui: combat_ui.display_round_history("🩸 Lifesteal — healed %d HP!" % steal_heal, true)
 
 	# THORNED: landing a hit costs you 10 — the price of touching it.
 	if actual_dmg_dealt > 0 and threat_procs("thorned"):
@@ -1816,7 +1848,8 @@ func _execute_enemy_turn_ai() -> void:
 	if enemy_lifesteal_active:
 		enemy_lifesteal_active = false
 		if actual_dmg_to_player > 0:
-			var steal_heal = actual_dmg_to_player / 2
+			# _hp_step keeps the steal on the heart grid — see the HP GRID note.
+			var steal_heal := _hp_step(actual_dmg_to_player / 2)
 			# Silent when it drew nothing (enemy already past healing) — no log spam.
 			var stolen := _enemy_heal(steal_heal)
 			if stolen > 0:
@@ -1883,6 +1916,11 @@ func _enemy_execute_item(item_type: String, tracking: Dictionary) -> void:
 		return
 	enemy_inventory.erase(item_type)
 	tracking[item_type] = tracking.get(item_type, 0) + 1
+
+	# Per-item use sound, the exact cue the player gets in use_player_item — the
+	# enemy branch never played one, so only the player's own items were audible.
+	# _item_map is shared, so the same item sounds the same whoever uses it.
+	SFX.item(item_type)
 
 	match item_type:
 		"potion":
