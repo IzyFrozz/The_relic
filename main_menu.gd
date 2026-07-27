@@ -36,6 +36,9 @@ const MENU_ART_PATH := "res://Asset/Menu/mainmenu.png"
 # pixel offset, so the column keeps its place under the painted logo whatever the
 # window size — the logo is part of the art and scales with it. Only the WIDTH is
 # set here; the height comes from _style_btn, the same as every other button.
+# Richer than the popup's BTN_PRIMARY_BG: these sit on bright artwork rather than
+# inside a dark card, so the same brown reads as washed-out grey there.
+const MAIN_BTN_BG    := Color(0.24, 0.165, 0.09)
 const MAIN_BTN_W     := 460.0
 const MAIN_BTN_H     := 72.0
 const MAIN_BTN_FONT  := 21
@@ -300,10 +303,43 @@ func _build_main_view() -> void:
 # Pass icon "" for a text-only label.
 func _make_main_btn(icon: String, label: String) -> Button:
 	var b = Button.new()
-	_style_btn(b, BTN_PRIMARY_BG, BTN_PRIMARY_LINE)
+	b.focus_mode = Control.FOCUS_NONE
 	b.custom_minimum_size = Vector2(0, MAIN_BTN_H)
-	# MUST precede decorate_button: it reads the button's font size to size the
-	# label it builds, so overriding afterwards would leave that label at 16.
+
+	# Built like the popup CARD rather than like an in-card button: a 3px bright
+	# gold frame and a drop shadow. _style_btn's 2px muted border reads as flat
+	# and washed-out at this size standing on artwork — it was drawn to sit on a
+	# dark panel, where a thin line is enough.
+	var s = StyleBoxFlat.new()
+	s.bg_color = MAIN_BTN_BG
+	s.set_corner_radius_all(10)
+	s.set_border_width_all(3)
+	s.border_color = COL_BORDER          # the same gold as the popup frame
+	s.content_margin_left = 20; s.content_margin_right  = 20
+	s.content_margin_top  = 12; s.content_margin_bottom = 12
+	s.shadow_color = Color(0, 0, 0, 0.6)
+	s.shadow_size = 8
+	s.shadow_offset = Vector2(0, 4)
+	b.add_theme_stylebox_override("normal", s)
+
+	# Hover lifts the wood AND the frame — brightening only the fill left the
+	# border looking dead.
+	var sh = s.duplicate()
+	sh.bg_color = MAIN_BTN_BG.lightened(0.22)
+	sh.border_color = COL_BORDER.lightened(0.30)
+	sh.shadow_size = 12
+	b.add_theme_stylebox_override("hover", sh)
+
+	var sp = s.duplicate()
+	sp.bg_color = MAIN_BTN_BG.darkened(0.25)
+	sp.shadow_size = 3; sp.shadow_offset = Vector2(0, 1)
+	b.add_theme_stylebox_override("pressed", sp)
+
+	b.add_theme_color_override("font_color", Color(0.97, 0.93, 0.84))
+	b.add_theme_color_override("font_hover_color", Color(1.0, 0.97, 0.90))
+	# MUST precede decorate_button: it reads the button's font size AND font
+	# colour to build its inner label, so setting them after leaves that label
+	# at the theme defaults while the button's own text picks these up.
 	b.add_theme_font_size_override("font_size", MAIN_BTN_FONT)
 	if icon == "":
 		b.text = label

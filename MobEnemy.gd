@@ -811,6 +811,26 @@ const ENEMY_THREATS := [
 ]
 
 # Splitter: one clone per this much cumulative damage taken.
+# ── HP GRID — HARD INVARIANT ────────────────────────────────────────────────
+# EVERY HP value in the game must be a multiple of HP_STEP. The nameplate draws
+# one heart per HP_PER_HEART (20) with a half-heart at 10, and there is no
+# quarter-heart sprite — anything ending in 5 lands between glyphs and renders as
+# the wrong heart.
+#
+# All the literal damage and heal amounts are already written as multiples of
+# ten. The hole was the COMPUTED ones: lifesteal takes "half the damage dealt",
+# and half of an odd multiple of ten is a 5 (30 -> 15), which is how an enemy
+# ended up sitting on 55/400 HP.
+#
+# Any future value that is DERIVED rather than written as a literal — a
+# percentage, a share, a scaled amount — must go through _hp_step().
+const HP_STEP := 10
+
+# Floors `v` onto the heart grid. Floors rather than rounds so a halving can
+# never round UP into a larger steal than the rule promises.
+func _hp_step(v: int) -> int:
+	return maxi(0, v / HP_STEP) * HP_STEP
+
 const SPLIT_DAMAGE := 80
 # Relicbound: fires when current HP drops below each multiple of this.
 const BEAM_HP_MARK := 100
@@ -1588,12 +1608,16 @@ func _resolve_player_swing() -> void:
 	if player_lifesteal_active:
 		player_lifesteal_active = false
 		if actual_dmg_dealt > 0:
-			var steal_heal = actual_dmg_dealt / 2
-			# Must go through heal_player() — writing player_health directly skipped
-			# the red-heart cap and let lifesteal top you up inside the gold zone.
-			QuestManager.heal_player(steal_heal)
-			await _fx_heal("player")
-			if combat_ui: combat_ui.display_round_history("🩸 Lifesteal — healed %d HP!" % steal_heal, true)
+			# _hp_step: half of an odd multiple of ten is a 5, which is off the
+			# heart grid. Skipped entirely when it floors to nothing, rather than
+			# logging a "+0 HP" heal.
+			var steal_heal := _hp_step(actual_dmg_dealt / 2)
+			if steal_heal > 0:
+				# Must go through heal_player() — writing player_health directly
+				# skipped the red-heart cap and let lifesteal top you up in gold.
+				QuestManager.heal_player(steal_heal)
+				await _fx_heal("player")
+				if combat_ui: combat_ui.display_round_history("🩸 Lifesteal — healed %d HP!" % steal_heal, true)
 
 	# THORNED: landing a hit costs you 10 — the price of touching it.
 	if actual_dmg_dealt > 0 and threat_procs("thorned"):
@@ -1824,7 +1848,8 @@ func _execute_enemy_turn_ai() -> void:
 	if enemy_lifesteal_active:
 		enemy_lifesteal_active = false
 		if actual_dmg_to_player > 0:
-			var steal_heal = actual_dmg_to_player / 2
+			# _hp_step keeps the steal on the heart grid — see the HP GRID note.
+			var steal_heal := _hp_step(actual_dmg_to_player / 2)
 			# Silent when it drew nothing (enemy already past healing) — no log spam.
 			var stolen := _enemy_heal(steal_heal)
 			if stolen > 0:
