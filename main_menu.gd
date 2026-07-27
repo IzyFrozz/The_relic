@@ -36,9 +36,12 @@ const MENU_ART_PATH := "res://Asset/Menu/mainmenu.png"
 # pixel offset, so the column keeps its place under the painted logo whatever the
 # window size — the logo is part of the art and scales with it. Only the WIDTH is
 # set here; the height comes from _style_btn, the same as every other button.
-const MAIN_BTN_W     := 360.0
-const MAIN_BTN_GAP   := 14
-const MAIN_BTN_TOP_A := 0.36
+const MAIN_BTN_W     := 460.0
+const MAIN_BTN_H     := 72.0
+const MAIN_BTN_FONT  := 21
+const MAIN_BTN_ICON  := 34
+const MAIN_BTN_GAP   := 16
+const MAIN_BTN_TOP_A := 0.34
 
 const CARD_PAD := 34   # inset between the card's edge and its content
 
@@ -270,32 +273,43 @@ func _build() -> void:
 
 # ── Main view ────────────────────────────────────────────────────────────────
 func _build_main_view() -> void:
-	# The project's standard button — same _style_btn, icons and labels as every
-	# other screen. Only the LAYOUT moved onto the artwork; the buttons themselves
-	# are deliberately unchanged so the menu still looks like the rest of the game.
-	var start_btn = Button.new()
-	start_btn.text = "▶  Start New Game"
-	_style_btn(start_btn, BTN_CONFIRM_BG, BTN_CONFIRM_LINE)
+	# One uniform woody slab for all four: same fill, same frame, same size as
+	# each other and as the popup's nav buttons. The menu previously coloured each
+	# one semantically (green Start, red Exit), but on the front door there is no
+	# risk to warn about — the colours were decoration, and four different ones
+	# fought both each other and the artwork.
+	var start_btn = _make_main_btn("", "▶  Start New Game")
 	start_btn.pressed.connect(func(): _show_view("customize"))
 	main_view.add_child(start_btn)
 
-	var load_btn = Button.new()
-	_style_btn(load_btn, BTN_PRIMARY_BG, BTN_PRIMARY_LINE)
-	IconDB.decorate_button(load_btn, "📂", "Load Game")
+	var load_btn = _make_main_btn("📂", "Load Game")
 	load_btn.pressed.connect(func(): _session_mode = "load"; _show_view("session"))
 	main_view.add_child(load_btn)
 
-	var settings_btn = Button.new()
-	_style_btn(settings_btn, Color(0.14, 0.12, 0.05), Color(0.62, 0.52, 0.20))
-	IconDB.decorate_button(settings_btn, "⚙️", "Settings")
+	var settings_btn = _make_main_btn("⚙️", "Settings")
 	settings_btn.pressed.connect(func(): _show_view("settings"))
 	main_view.add_child(settings_btn)
 
-	var exit_btn = Button.new()
-	_style_btn(exit_btn, BTN_DANGER_BG, BTN_DANGER_LINE)
-	IconDB.decorate_button(exit_btn, "🚪", "Exit Game")
+	var exit_btn = _make_main_btn("🚪", "Exit Game")
 	exit_btn.pressed.connect(func(): get_tree().quit())
 	main_view.add_child(exit_btn)
+
+# A main-menu button: the standard _style_btn in the popup's wood-and-gold
+# colours, scaled up — this is the game's front door, and the in-card size looks
+# undersized standing alone on full-screen art.
+# Pass icon "" for a text-only label.
+func _make_main_btn(icon: String, label: String) -> Button:
+	var b = Button.new()
+	_style_btn(b, BTN_PRIMARY_BG, BTN_PRIMARY_LINE)
+	b.custom_minimum_size = Vector2(0, MAIN_BTN_H)
+	# MUST precede decorate_button: it reads the button's font size to size the
+	# label it builds, so overriding afterwards would leave that label at 16.
+	b.add_theme_font_size_override("font_size", MAIN_BTN_FONT)
+	if icon == "":
+		b.text = label
+	else:
+		IconDB.decorate_button(b, icon, label, MAIN_BTN_ICON)
+	return b
 
 # ── Session picker (load_view) — used for both New Game and Load ──────────────
 func _build_load_view() -> void:
