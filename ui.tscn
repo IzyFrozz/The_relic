@@ -468,7 +468,6 @@ layout_mode = 2
 text = "Back Out"
 
 [node name="PauseMenu" type="CanvasLayer" parent="." unique_id=-1894967195]
-visible = false
 script = ExtResource("7_ui004")
 
 [node name="MenuButton" type="Button" parent="PauseMenu" unique_id=-1894967096]
