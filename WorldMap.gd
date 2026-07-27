@@ -192,9 +192,10 @@ func _build_fullmap() -> void:
 # ── Update loop ───────────────────────────────────────────────────────────────
 func _process(delta: float) -> void:
 	var gate := _map_gate_ok()
-	var available := gate and _map_available()
 	# The live mini-map + compass only show on the mappable island. In a house or
 	# in combat they hide (the full map still opens, to say "Map Unavailable").
+	# They deliberately IGNORE the pause menu, so pausing leaves the HUD intact.
+	var available := _map_gate_ok(true) and _map_available()
 	_mini_panel.visible = available
 	_compass_bar.visible = available
 	if _open_full and not gate:
@@ -471,7 +472,14 @@ func _player_node() -> Node2D:
 # (not the menu), and no higher-priority modal (dialogue / pause / end screen) is
 # up. This still allows opening the map in combat / inside a house — where it will
 # report "Map Unavailable" — so the M key never feels dead.
-func _map_gate_ok() -> bool:
+# `ignore_pause` exempts the pause menu from the gate. Pausing should NOT strip
+# the HUD — it stops the world, it does not take your map and compass away — so
+# the mini-map and compass bar pass `true` and stay up behind the panel. The
+# FULL map still passes `false`, because a fullscreen map and the pause panel
+# fighting over the same screen is a different problem.
+# Every other reason to hide (no compass, dialogue, end screens, off-island,
+# in combat) applies to both.
+func _map_gate_ok(ignore_pause: bool = false) -> bool:
 	if not QuestManager.has_compass:
 		return false
 	if not is_instance_valid(_player_node()):
@@ -485,9 +493,10 @@ func _map_gate_ok() -> bool:
 		# stayed on top of the victory/defeat screen.
 		if is_instance_valid(node) and "visible" in node and node.visible:
 			return false
-	var pause := get_tree().root.find_child("PauseMenu", true, false)
-	if is_instance_valid(pause) and pause.has_method("is_open") and pause.is_open():
-		return false
+	if not ignore_pause:
+		var pause := get_tree().root.find_child("PauseMenu", true, false)
+		if is_instance_valid(pause) and pause.has_method("is_open") and pause.is_open():
+			return false
 	return true
 
 # Whether there's an actual map to show right now: on the overworld island, not in
