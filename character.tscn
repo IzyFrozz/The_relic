@@ -12,10 +12,6 @@
 [ext_resource type="Texture2D" uid="uid://bwqhstthe6ntb" path="res://Asset/Pixel Crawler - Free Pack/Entities/Mobs/Orc Crew/Orc - Warrior/Death/Death-Sheet.png" id="7_bwfjh"]
 [ext_resource type="Texture2D" uid="uid://jy0g6hn4e01" path="res://Asset/Pixel Crawler - Free Pack/Entities/Mobs/Skeleton Crew/Skeleton - Mage/Death/Death-Sheet.png" id="9_x1sy7"]
 [ext_resource type="Texture2D" uid="uid://u1p7talf1ko1" path="res://Asset/Pixel Crawler - Free Pack/Entities/Mobs/Skeleton Crew/Skeleton - Warrior/Death/Death-Sheet.png" id="11_sm1rv"]
-[ext_resource type="Texture2D" uid="uid://m52jxqjlyfqx" path="res://Asset/Tiny RPG Character Asset Pack 02 v1.01-Free Demon_A_Blood Monster_A/Tiny RPG Character Asset Pack 02 -Free Demon_A&Blood Monster_A/Characters(100x100 split)/Blood Monster_A/Blood Monster_A with shadows/Blood Monster_A.png" id="16_kjduu"]
-[ext_resource type="Texture2D" uid="uid://bis6s1k5o25u6" path="res://Asset/Enemy_Animations_Set/enemies-skeleton1_idle.png" id="17_3d8aq"]
-[ext_resource type="Texture2D" uid="uid://ci5pao72qipub" path="res://Asset/Tiny RPG Character Asset Pack 01 v2.0 -Free Soldier&Orc/Characters(100x100 split)/Orc/Orc with shadows/Orc_Idle.png" id="19_3d8aq"]
-[ext_resource type="Texture2D" uid="uid://dgwevrv46m1i4" path="res://Asset/FreeCharactersAnimationsAssetPack/SpriteSheets(96x96)/Monster_Slime/With_Shadows/Monster_Slime_Idle-Sheet.png" id="21_8i6g0"]
 [ext_resource type="Texture2D" uid="uid://r7hyuenkahb8" path="res://Asset/Pixel Crawler - Free Pack/Entities/Mobs/Orc Crew/Orc/Death/Death-Sheet.png" id="orc_death_tex"]
 [ext_resource type="Texture2D" uid="uid://dkaigb3vprmfw" path="res://Asset/Pixel Crawler - Free Pack/Entities/Mobs/Orc Crew/Orc/Idle/Idle-Sheet.png" id="orc_idle_tex"]
 [ext_resource type="Texture2D" uid="uid://h1gs32lccyru" path="res://Asset/Pixel Crawler - Free Pack/Entities/Mobs/Skeleton Crew/Skeleton - Base/Death/Death-Sheet.png" id="skel_base_death_tex"]
@@ -583,14 +579,6 @@ region = Rect2(64, 0, 32, 32)
 atlas = ExtResource("skel_base_idle_tex")
 region = Rect2(96, 0, 32, 32)
 
-[sub_resource type="AtlasTexture" id="AtlasTexture_n0b81"]
-atlas = ExtResource("16_kjduu")
-region = Rect2(0, 0, 100, 100)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_7suoe"]
-atlas = ExtResource("16_kjduu")
-region = Rect2(100, 0, 100, 100)
-
 [sub_resource type="AtlasTexture" id="skel_base_death_atlas_0"]
 atlas = ExtResource("skel_base_death_tex")
 region = Rect2(0, 0, 64, 64)
@@ -653,12 +641,6 @@ animations = [{
 }, {
 "duration": 1.0,
 "texture": SubResource("skel_base_idle_atlas_3")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_n0b81")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_7suoe")
 }],
 "loop": true,
 "name": &"default",
@@ -746,565 +728,6 @@ region = Rect2(256, 0, 64, 64)
 atlas = ExtResource("skel_rogue_death_tex")
 region = Rect2(320, 0, 64, 64)
 
-[sub_resource type="SpriteFrames" id="SpriteFrames_8i6g0"]
-animations = [{
-"frames": [{
-"duration": 1.0,
-"texture": SubResource("skel_rogue_idle_atlas_0")
-}, {
-"duration": 1.0,
-"texture": SubResource("skel_rogue_idle_atlas_1")
-}, {
-"duration": 1.0,
-"texture": SubResource("skel_rogue_idle_atlas_2")
-}, {
-"duration": 1.0,
-"texture": SubResource("skel_rogue_idle_atlas_3")
-}],
-"loop": true,
-"name": &"default",
-"speed": 5.0
-}, {
-"frames": [{
-"duration": 1.0,
-"texture": SubResource("skel_rogue_death_atlas_0")
-}, {
-"duration": 1.0,
-"texture": SubResource("skel_rogue_death_atlas_1")
-}, {
-"duration": 1.0,
-"texture": SubResource("skel_rogue_death_atlas_2")
-}, {
-"duration": 1.0,
-"texture": SubResource("skel_rogue_death_atlas_3")
-}, {
-"duration": 1.0,
-"texture": SubResource("skel_rogue_death_atlas_4")
-}, {
-"duration": 1.0,
-"texture": SubResource("skel_rogue_death_atlas_5")
-}],
-"loop": true,
-"name": &"die",
-"speed": 5.0
-}]
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_2xv5r"]
-atlas = ExtResource("16_kjduu")
-region = Rect2(200, 0, 100, 100)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_q5fly"]
-atlas = ExtResource("16_kjduu")
-region = Rect2(300, 0, 100, 100)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_suc4m"]
-atlas = ExtResource("16_kjduu")
-region = Rect2(400, 0, 100, 100)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_2q63v"]
-atlas = ExtResource("16_kjduu")
-region = Rect2(500, 0, 100, 100)
-
-[sub_resource type="SpriteFrames" id="SpriteFrames_i6hxo"]
-animations = [{
-"frames": [{
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_n0b81")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_7suoe")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_2xv5r")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_q5fly")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_suc4m")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_2q63v")
-}],
-"loop": true,
-"name": &"default",
-"speed": 5.0
-}, {
-"frames": [{
-"duration": 1.0,
-"texture": SubResource("skel_base_death_atlas_0")
-}, {
-"duration": 1.0,
-"texture": SubResource("skel_base_death_atlas_1")
-}, {
-"duration": 1.0,
-"texture": SubResource("skel_base_death_atlas_2")
-}, {
-"duration": 1.0,
-"texture": SubResource("skel_base_death_atlas_3")
-}, {
-"duration": 1.0,
-"texture": SubResource("skel_base_death_atlas_4")
-}, {
-"duration": 1.0,
-"texture": SubResource("skel_base_death_atlas_5")
-}, {
-"duration": 1.0,
-"texture": SubResource("skel_base_death_atlas_6")
-}, {
-"duration": 1.0,
-"texture": SubResource("skel_base_death_atlas_7")
-}, {
-"duration": 1.0,
-"texture": SubResource("skel_base_death_atlas_8")
-}, {
-"duration": 1.0,
-"texture": SubResource("skel_base_death_atlas_9")
-}, {
-"duration": 1.0,
-"texture": SubResource("skel_base_death_atlas_10")
-}, {
-"duration": 1.0,
-"texture": SubResource("skel_base_death_atlas_11")
-}],
-"loop": true,
-"name": &"die",
-"speed": 5.0
-}]
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_1pwx4"]
-atlas = ExtResource("19_3d8aq")
-region = Rect2(0, 0, 100, 100)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_sk8ur"]
-atlas = ExtResource("19_3d8aq")
-region = Rect2(100, 0, 100, 100)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_7yskq"]
-atlas = ExtResource("19_3d8aq")
-region = Rect2(200, 0, 100, 100)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_6nogu"]
-atlas = ExtResource("19_3d8aq")
-region = Rect2(300, 0, 100, 100)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_ghgpl"]
-atlas = ExtResource("19_3d8aq")
-region = Rect2(400, 0, 100, 100)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_ks6nc"]
-atlas = ExtResource("19_3d8aq")
-region = Rect2(500, 0, 100, 100)
-
-[sub_resource type="SpriteFrames" id="SpriteFrames_402ap"]
-animations = [{
-"frames": [{
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_1pwx4")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_sk8ur")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_7yskq")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_6nogu")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_ghgpl")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_ks6nc")
-}],
-"loop": true,
-"name": &"default",
-"speed": 5.0
-}, {
-"frames": [{
-"duration": 1.0,
-"texture": SubResource("skel_rogue_death_atlas_0")
-}, {
-"duration": 1.0,
-"texture": SubResource("skel_rogue_death_atlas_1")
-}, {
-"duration": 1.0,
-"texture": SubResource("skel_rogue_death_atlas_2")
-}, {
-"duration": 1.0,
-"texture": SubResource("skel_rogue_death_atlas_3")
-}, {
-"duration": 1.0,
-"texture": SubResource("skel_rogue_death_atlas_4")
-}, {
-"duration": 1.0,
-"texture": SubResource("skel_rogue_death_atlas_5")
-}],
-"loop": true,
-"name": &"die",
-"speed": 5.0
-}]
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_yf6y0"]
-atlas = ExtResource("21_8i6g0")
-region = Rect2(0, 0, 96, 96)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_5w6n7"]
-atlas = ExtResource("21_8i6g0")
-region = Rect2(96, 0, 96, 96)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_nvcip"]
-atlas = ExtResource("21_8i6g0")
-region = Rect2(192, 0, 96, 96)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_x63g7"]
-atlas = ExtResource("21_8i6g0")
-region = Rect2(288, 0, 96, 96)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_eec34"]
-atlas = ExtResource("21_8i6g0")
-region = Rect2(384, 0, 96, 96)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_bdoax"]
-atlas = ExtResource("21_8i6g0")
-region = Rect2(480, 0, 96, 96)
-
-[sub_resource type="SpriteFrames" id="SpriteFrames_a28ks"]
-animations = [{
-"frames": [{
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_yf6y0")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_5w6n7")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_nvcip")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_x63g7")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_eec34")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_bdoax")
-}],
-"loop": true,
-"name": &"default",
-"speed": 5.0
-}, {
-"frames": [{
-"duration": 1.0,
-"texture": SubResource("orc_death_atlas_0")
-}, {
-"duration": 1.0,
-"texture": SubResource("orc_death_atlas_1")
-}, {
-"duration": 1.0,
-"texture": SubResource("orc_death_atlas_2")
-}, {
-"duration": 1.0,
-"texture": SubResource("orc_death_atlas_3")
-}, {
-"duration": 1.0,
-"texture": SubResource("orc_death_atlas_4")
-}, {
-"duration": 1.0,
-"texture": SubResource("orc_death_atlas_5")
-}],
-"loop": true,
-"name": &"die",
-"speed": 5.0
-}]
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_i6hxo"]
-atlas = ExtResource("17_3d8aq")
-region = Rect2(0, 0, 32, 32)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_402ap"]
-atlas = ExtResource("17_3d8aq")
-region = Rect2(32, 0, 32, 32)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_3efuh"]
-atlas = ExtResource("17_3d8aq")
-region = Rect2(64, 0, 32, 32)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_hklsd"]
-atlas = ExtResource("17_3d8aq")
-region = Rect2(96, 0, 32, 32)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_hy0pa"]
-atlas = ExtResource("17_3d8aq")
-region = Rect2(128, 0, 32, 32)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_nu15y"]
-atlas = ExtResource("17_3d8aq")
-region = Rect2(160, 0, 32, 32)
-
-[sub_resource type="SpriteFrames" id="SpriteFrames_yf6y0"]
-animations = [{
-"frames": [{
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_i6hxo")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_402ap")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_3efuh")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_hklsd")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_hy0pa")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_nu15y")
-}],
-"loop": true,
-"name": &"default",
-"speed": 5.0
-}, {
-"frames": [{
-"duration": 1.0,
-"texture": SubResource("skel_base_death_atlas_0")
-}, {
-"duration": 1.0,
-"texture": SubResource("skel_base_death_atlas_1")
-}, {
-"duration": 1.0,
-"texture": SubResource("skel_base_death_atlas_2")
-}, {
-"duration": 1.0,
-"texture": SubResource("skel_base_death_atlas_3")
-}, {
-"duration": 1.0,
-"texture": SubResource("skel_base_death_atlas_4")
-}, {
-"duration": 1.0,
-"texture": SubResource("skel_base_death_atlas_5")
-}, {
-"duration": 1.0,
-"texture": SubResource("skel_base_death_atlas_6")
-}, {
-"duration": 1.0,
-"texture": SubResource("skel_base_death_atlas_7")
-}, {
-"duration": 1.0,
-"texture": SubResource("skel_base_death_atlas_8")
-}, {
-"duration": 1.0,
-"texture": SubResource("skel_base_death_atlas_9")
-}, {
-"duration": 1.0,
-"texture": SubResource("skel_base_death_atlas_10")
-}, {
-"duration": 1.0,
-"texture": SubResource("skel_base_death_atlas_11")
-}],
-"loop": true,
-"name": &"die",
-"speed": 5.0
-}]
-
-[sub_resource type="SpriteFrames" id="SpriteFrames_r5wlx"]
-animations = [{
-"frames": [{
-"duration": 1.0,
-"texture": SubResource("skel_rogue_idle_atlas_0")
-}, {
-"duration": 1.0,
-"texture": SubResource("skel_rogue_idle_atlas_1")
-}, {
-"duration": 1.0,
-"texture": SubResource("skel_rogue_idle_atlas_2")
-}, {
-"duration": 1.0,
-"texture": SubResource("skel_rogue_idle_atlas_3")
-}],
-"loop": true,
-"name": &"default",
-"speed": 5.0
-}, {
-"frames": [{
-"duration": 1.0,
-"texture": SubResource("skel_rogue_death_atlas_0")
-}, {
-"duration": 1.0,
-"texture": SubResource("skel_rogue_death_atlas_1")
-}, {
-"duration": 1.0,
-"texture": SubResource("skel_rogue_death_atlas_2")
-}, {
-"duration": 1.0,
-"texture": SubResource("skel_rogue_death_atlas_3")
-}, {
-"duration": 1.0,
-"texture": SubResource("skel_rogue_death_atlas_4")
-}, {
-"duration": 1.0,
-"texture": SubResource("skel_rogue_death_atlas_5")
-}],
-"loop": true,
-"name": &"die",
-"speed": 5.0
-}]
-
-[sub_resource type="SpriteFrames" id="SpriteFrames_1r1pa"]
-animations = [{
-"frames": [{
-"duration": 1.0,
-"texture": SubResource("orc_idle_atlas_0")
-}, {
-"duration": 1.0,
-"texture": SubResource("orc_idle_atlas_1")
-}, {
-"duration": 1.0,
-"texture": SubResource("orc_idle_atlas_2")
-}, {
-"duration": 1.0,
-"texture": SubResource("orc_idle_atlas_3")
-}],
-"loop": true,
-"name": &"default",
-"speed": 5.0
-}, {
-"frames": [{
-"duration": 1.0,
-"texture": SubResource("orc_death_atlas_0")
-}, {
-"duration": 1.0,
-"texture": SubResource("orc_death_atlas_1")
-}, {
-"duration": 1.0,
-"texture": SubResource("orc_death_atlas_2")
-}, {
-"duration": 1.0,
-"texture": SubResource("orc_death_atlas_3")
-}, {
-"duration": 1.0,
-"texture": SubResource("orc_death_atlas_4")
-}, {
-"duration": 1.0,
-"texture": SubResource("orc_death_atlas_5")
-}],
-"loop": true,
-"name": &"die",
-"speed": 5.0
-}]
-
-[sub_resource type="SpriteFrames" id="SpriteFrames_hvi53"]
-animations = [{
-"frames": [{
-"duration": 1.0,
-"texture": SubResource("orc_idle_atlas_0")
-}, {
-"duration": 1.0,
-"texture": SubResource("orc_idle_atlas_1")
-}, {
-"duration": 1.0,
-"texture": SubResource("orc_idle_atlas_2")
-}, {
-"duration": 1.0,
-"texture": SubResource("orc_idle_atlas_3")
-}],
-"loop": true,
-"name": &"default",
-"speed": 5.0
-}, {
-"frames": [{
-"duration": 1.0,
-"texture": SubResource("orc_death_atlas_0")
-}, {
-"duration": 1.0,
-"texture": SubResource("orc_death_atlas_1")
-}, {
-"duration": 1.0,
-"texture": SubResource("orc_death_atlas_2")
-}, {
-"duration": 1.0,
-"texture": SubResource("orc_death_atlas_3")
-}, {
-"duration": 1.0,
-"texture": SubResource("orc_death_atlas_4")
-}, {
-"duration": 1.0,
-"texture": SubResource("orc_death_atlas_5")
-}],
-"loop": true,
-"name": &"die",
-"speed": 5.0
-}]
-
-[sub_resource type="SpriteFrames" id="SpriteFrames_rr203"]
-animations = [{
-"frames": [{
-"duration": 1.0,
-"texture": SubResource("skel_base_idle_atlas_0")
-}, {
-"duration": 1.0,
-"texture": SubResource("skel_base_idle_atlas_1")
-}, {
-"duration": 1.0,
-"texture": SubResource("skel_base_idle_atlas_2")
-}, {
-"duration": 1.0,
-"texture": SubResource("skel_base_idle_atlas_3")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_n0b81")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_7suoe")
-}],
-"loop": true,
-"name": &"default",
-"speed": 5.0
-}, {
-"frames": [{
-"duration": 1.0,
-"texture": SubResource("skel_base_death_atlas_0")
-}, {
-"duration": 1.0,
-"texture": SubResource("skel_base_death_atlas_1")
-}, {
-"duration": 1.0,
-"texture": SubResource("skel_base_death_atlas_2")
-}, {
-"duration": 1.0,
-"texture": SubResource("skel_base_death_atlas_3")
-}, {
-"duration": 1.0,
-"texture": SubResource("skel_base_death_atlas_4")
-}, {
-"duration": 1.0,
-"texture": SubResource("skel_base_death_atlas_5")
-}, {
-"duration": 1.0,
-"texture": SubResource("skel_base_death_atlas_6")
-}, {
-"duration": 1.0,
-"texture": SubResource("skel_base_death_atlas_7")
-}, {
-"duration": 1.0,
-"texture": SubResource("skel_base_death_atlas_8")
-}, {
-"duration": 1.0,
-"texture": SubResource("skel_base_death_atlas_9")
-}, {
-"duration": 1.0,
-"texture": SubResource("skel_base_death_atlas_10")
-}, {
-"duration": 1.0,
-"texture": SubResource("skel_base_death_atlas_11")
-}],
-"loop": true,
-"name": &"die",
-"speed": 5.0
-}]
-
 [sub_resource type="SpriteFrames" id="SpriteFrames_skel_rogue"]
 animations = [{
 "frames": [{
@@ -1319,12 +742,6 @@ animations = [{
 }, {
 "duration": 1.0,
 "texture": SubResource("skel_rogue_idle_atlas_3")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_1pwx4")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_sk8ur")
 }],
 "loop": true,
 "name": &"default",
@@ -1348,49 +765,6 @@ animations = [{
 }, {
 "duration": 1.0,
 "texture": SubResource("skel_rogue_death_atlas_5")
-}],
-"loop": true,
-"name": &"die",
-"speed": 5.0
-}]
-
-[sub_resource type="SpriteFrames" id="SpriteFrames_8vvwr"]
-animations = [{
-"frames": [{
-"duration": 1.0,
-"texture": SubResource("orc_idle_atlas_0")
-}, {
-"duration": 1.0,
-"texture": SubResource("orc_idle_atlas_1")
-}, {
-"duration": 1.0,
-"texture": SubResource("orc_idle_atlas_2")
-}, {
-"duration": 1.0,
-"texture": SubResource("orc_idle_atlas_3")
-}],
-"loop": true,
-"name": &"default",
-"speed": 5.0
-}, {
-"frames": [{
-"duration": 1.0,
-"texture": SubResource("orc_death_atlas_0")
-}, {
-"duration": 1.0,
-"texture": SubResource("orc_death_atlas_1")
-}, {
-"duration": 1.0,
-"texture": SubResource("orc_death_atlas_2")
-}, {
-"duration": 1.0,
-"texture": SubResource("orc_death_atlas_3")
-}, {
-"duration": 1.0,
-"texture": SubResource("orc_death_atlas_4")
-}, {
-"duration": 1.0,
-"texture": SubResource("orc_death_atlas_5")
 }],
 "loop": true,
 "name": &"die",
@@ -1464,31 +838,6 @@ autoplay = "default"
 flip_h = true
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="mob1_2" unique_id=1621236172]
-position = Vector2(0, 3)
-shape = SubResource("CapsuleShape2D_7tnxx")
-
-[node name="mob1_4" type="CharacterBody2D" parent="." unique_id=1355829783 node_paths=PackedStringArray("battle_player_marker", "battle_enemy_marker", "graveyard_marker")]
-position = Vector2(310, 494)
-script = ExtResource("1_px5sl")
-is_tutorial_mob = true
-battle_player_marker = NodePath("../BattlePlayerMarker")
-battle_enemy_marker = NodePath("../BattleEnemyMarker")
-graveyard_marker = NodePath("../GraveyardMarker")
-
-[node name="deadzone" type="Area2D" parent="mob1_4" unique_id=579871372]
-
-[node name="DZcollison" type="CollisionShape2D" parent="mob1_4/deadzone" unique_id=2144178163]
-shape = SubResource("CircleShape2D_jb3kq")
-debug_color = Color(0.9823695, 0, 0.36699468, 0.41960785)
-
-[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="mob1_4" unique_id=1214134458]
-position = Vector2(4.7683716e-07, 3.8146973e-06)
-scale = Vector2(0.8359378, 0.8359378)
-sprite_frames = SubResource("SpriteFrames_c1b4b")
-autoplay = "default"
-flip_h = true
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="mob1_4" unique_id=1278598187]
 position = Vector2(0, 3)
 shape = SubResource("CapsuleShape2D_7tnxx")
 
@@ -1684,7 +1033,7 @@ debug_color = Color(0.9823695, 0, 0.36699468, 0.41960785)
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="mob8" unique_id=2100000014]
 position = Vector2(4.7683716e-07, 3.8146973e-06)
 scale = Vector2(0.8359378, 0.8359378)
-sprite_frames = SubResource("SpriteFrames_8i6g0")
+sprite_frames = SubResource("SpriteFrames_skel_rogue")
 autoplay = "default"
 flip_h = true
 
@@ -1734,9 +1083,9 @@ debug_color = Color(0.9823695, 0, 0.36699468, 0.41960785)
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="mob10" unique_id=2100000024]
 modulate = Color(1.15, 0.85, 0.85, 1)
-position = Vector2(2.0000005, 1.0000038)
-scale = Vector2(1.2400002, 1.2400002)
-sprite_frames = SubResource("SpriteFrames_i6hxo")
+position = Vector2(4.7683716e-07, 3.8146973e-06)
+scale = Vector2(0.8359378, 0.8359378)
+sprite_frames = SubResource("SpriteFrames_skel_base")
 autoplay = "default"
 flip_h = true
 
@@ -1760,9 +1109,9 @@ debug_color = Color(0.9823695, 0, 0.36699468, 0.41960785)
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="mob11" unique_id=2100000029]
 modulate = Color(1.15, 0.85, 0.85, 1)
-position = Vector2(2.0000005, -0.9999962)
-scale = Vector2(1.1999993, 1.1999993)
-sprite_frames = SubResource("SpriteFrames_402ap")
+position = Vector2(4.7683716e-07, 3.8146973e-06)
+scale = Vector2(0.8359378, 0.8359378)
+sprite_frames = SubResource("SpriteFrames_skel_rogue")
 autoplay = "default"
 flip_h = true
 
@@ -1786,11 +1135,10 @@ debug_color = Color(0.9823695, 0, 0.36699468, 0.41960785)
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="mob12" unique_id=2100000034]
 modulate = Color(1.3, 0.65, 0.9, 1)
-position = Vector2(9.059906e-06, 1.0000026)
-scale = Vector2(0.9075519, 0.9075519)
-sprite_frames = SubResource("SpriteFrames_a28ks")
+position = Vector2(4.7683716e-07, 3.8146973e-06)
+scale = Vector2(0.8359378, 0.8359378)
+sprite_frames = SubResource("SpriteFrames_orc")
 autoplay = "default"
-frame_progress = 0.31962505
 flip_h = true
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="mob12" unique_id=2100000035]
@@ -1813,11 +1161,10 @@ debug_color = Color(0.9823695, 0, 0.36699468, 0.41960785)
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="mob13" unique_id=2100000039]
 modulate = Color(1.3, 0.65, 0.9, 1)
-position = Vector2(-1.9999971, -3.9999933)
-scale = Vector2(1.1464846, 1.1464846)
-sprite_frames = SubResource("SpriteFrames_yf6y0")
+position = Vector2(4.7683716e-07, 3.8146973e-06)
+scale = Vector2(0.8359378, 0.8359378)
+sprite_frames = SubResource("SpriteFrames_skel_base")
 autoplay = "default"
-frame_progress = 0.3927016
 flip_h = true
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="mob13" unique_id=2100000040]
@@ -1842,9 +1189,8 @@ debug_color = Color(0.9823695, 0, 0.36699468, 0.41960785)
 modulate = Color(1.3, 0.65, 0.9, 1)
 position = Vector2(4.7683716e-07, 3.8146973e-06)
 scale = Vector2(0.8359378, 0.8359378)
-sprite_frames = SubResource("SpriteFrames_r5wlx")
+sprite_frames = SubResource("SpriteFrames_skel_rogue")
 autoplay = "default"
-frame_progress = 0.29570717
 flip_h = true
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="mob14" unique_id=2100000045]
@@ -1869,7 +1215,7 @@ debug_color = Color(0.9823695, 0, 0.36699468, 0.41960785)
 modulate = Color(1.6, 1.15, 0.3, 1)
 position = Vector2(4.7683716e-07, 3.8146973e-06)
 scale = Vector2(0.8359378, 0.8359378)
-sprite_frames = SubResource("SpriteFrames_1r1pa")
+sprite_frames = SubResource("SpriteFrames_orc")
 autoplay = "default"
 flip_h = true
 
@@ -1895,7 +1241,7 @@ debug_color = Color(0.9823695, 0, 0.36699468, 0.41960785)
 modulate = Color(1.5, 0.5, 0.5, 1)
 position = Vector2(4.7683716e-07, 3.8146973e-06)
 scale = Vector2(0.8359378, 0.8359378)
-sprite_frames = SubResource("SpriteFrames_hvi53")
+sprite_frames = SubResource("SpriteFrames_orc")
 autoplay = "default"
 flip_h = true
 
@@ -1921,7 +1267,7 @@ debug_color = Color(0.9823695, 0, 0.36699468, 0.41960785)
 modulate = Color(0.5, 1.2, 1.5, 1)
 position = Vector2(4.7683716e-07, 3.8146973e-06)
 scale = Vector2(0.8359378, 0.8359378)
-sprite_frames = SubResource("SpriteFrames_rr203")
+sprite_frames = SubResource("SpriteFrames_skel_base")
 autoplay = "default"
 flip_h = true
 
@@ -1973,7 +1319,7 @@ debug_color = Color(0.9823695, 0, 0.36699468, 0.41960785)
 modulate = Color(0.6, 1.5, 0.6, 1)
 position = Vector2(4.7683716e-07, 3.8146973e-06)
 scale = Vector2(0.8359378, 0.8359378)
-sprite_frames = SubResource("SpriteFrames_8vvwr")
+sprite_frames = SubResource("SpriteFrames_orc")
 autoplay = "default"
 flip_h = true
 
@@ -2009,7 +1355,6 @@ shape = SubResource("CapsuleShape2D_7tnxx")
 
 [connection signal="body_entered" from="mob1/deadzone" to="mob1" method="_on_deadzone_body_entered"]
 [connection signal="body_entered" from="mob1_2/deadzone" to="mob1_2" method="_on_deadzone_body_entered"]
-[connection signal="body_entered" from="mob1_4/deadzone" to="mob1_4" method="_on_deadzone_body_entered"]
 [connection signal="body_entered" from="mob1_3/deadzone" to="mob1_3" method="_on_deadzone_body_entered"]
 [connection signal="body_entered" from="mob6/deadzone" to="mob6" method="_on_deadzone_body_entered"]
 [connection signal="body_entered" from="mob7/deadzone" to="mob7" method="_on_deadzone_body_entered"]
