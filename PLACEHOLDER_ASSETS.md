@@ -1,4 +1,4 @@
-# Assets still needed (exact list)
+	# Assets still needed (exact list)
 
 <!-- ## Enemies (by level — currently 8 sheets reused across Lv.1–20)
 1. Lv.1 — Orc Rogue
@@ -10,10 +10,10 @@
 7. Lv.7 — Skeleton Base
 8. Lv.8 — Skeleton Rogue -->
 9. Lv.9 — Orc (reuse)
-10. Lv.10 — Skeleton Base (reuse)
-11. Lv.11 — Skeleton Rogue (reuse)
-12. Lv.12 — Orc (reuse)
-13. Lv.13 — Skeleton Base (reuse)
+10. Lv.10 — Skeleton Base
+11. Lv.11 — Skeleton Rogue 
+12. Lv.12 — Orc 
+13. Lv.13 — Skeleton Base
 14. Lv.14 — Skeleton Rogue (reuse)
 15. Lv.15 — Orc (reuse)
 16. Lv.16 — Orc (reuse)

@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://cnl7pfp5vopbr"
+path="res://.godot/imported/yodguard-potion-drink-2-540167.mp3-e58cc905faa8cdbd2754637aef16bf00.mp3str"
+
+[deps]
+
+source_file="res://Asset/Main Sound/Item Use SFX/yodguard-potion-drink-2-540167.mp3"
+dest_files=["res://.godot/imported/yodguard-potion-drink-2-540167.mp3-e58cc905faa8cdbd2754637aef16bf00.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

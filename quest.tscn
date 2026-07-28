@@ -13,7 +13,7 @@ radius = 11.401754
 visible = false
 
 [node name="QuestItem" type="Area2D" parent="." unique_id=686129129]
-position = Vector2(-161, 249)
+position = Vector2(-208, 124)
 script = ExtResource("1_k6fxs")
 
 [node name="Label" type="Label" parent="QuestItem" unique_id=1400593140]
@@ -33,7 +33,7 @@ scale = Vector2(0.7, 0.7)
 texture = ExtResource("2_0m6oi")
 
 [node name="QuestItem2" type="Area2D" parent="." unique_id=121284780]
-position = Vector2(-383, 175)
+position = Vector2(-145, 444)
 script = ExtResource("1_k6fxs")
 
 [node name="Label" type="Label" parent="QuestItem2" unique_id=663040469]
@@ -53,7 +53,7 @@ scale = Vector2(0.7, 0.7)
 texture = ExtResource("2_0m6oi")
 
 [node name="QuestItem3" type="Area2D" parent="." unique_id=1956589706]
-position = Vector2(30, 273)
+position = Vector2(251, 485)
 script = ExtResource("1_k6fxs")
 
 [node name="Label" type="Label" parent="QuestItem3" unique_id=252338516]
@@ -73,7 +73,7 @@ scale = Vector2(0.7, 0.7)
 texture = ExtResource("2_0m6oi")
 
 [node name="QuestItem4" type="Area2D" parent="." unique_id=961203095]
-position = Vector2(-328, 448)
+position = Vector2(493, -200)
 script = ExtResource("1_k6fxs")
 
 [node name="Label" type="Label" parent="QuestItem4" unique_id=847858455]
@@ -93,7 +93,7 @@ scale = Vector2(0.7, 0.7)
 texture = ExtResource("2_0m6oi")
 
 [node name="QuestItem5" type="Area2D" parent="." unique_id=299110873]
-position = Vector2(370, 262)
+position = Vector2(671, 573)
 script = ExtResource("1_k6fxs")
 
 [node name="Label" type="Label" parent="QuestItem5" unique_id=723421388]
@@ -113,7 +113,7 @@ scale = Vector2(0.7, 0.7)
 texture = ExtResource("2_0m6oi")
 
 [node name="QuestItem6" type="Area2D" parent="." unique_id=942836682]
-position = Vector2(531, -207)
+position = Vector2(1131, 570)
 script = ExtResource("1_k6fxs")
 
 [node name="Label" type="Label" parent="QuestItem6" unique_id=238033655]
@@ -133,7 +133,7 @@ scale = Vector2(0.7, 0.7)
 texture = ExtResource("2_0m6oi")
 
 [node name="QuestItem7" type="Area2D" parent="." unique_id=1795054188]
-position = Vector2(813, 190)
+position = Vector2(-3089, 1340)
 script = ExtResource("1_k6fxs")
 
 [node name="Label" type="Label" parent="QuestItem7" unique_id=1236315824]
@@ -153,7 +153,7 @@ scale = Vector2(0.7, 0.7)
 texture = ExtResource("2_0m6oi")
 
 [node name="QuestItem8" type="Area2D" parent="." unique_id=793524220]
-position = Vector2(1107, 631)
+position = Vector2(-2625, 1068)
 script = ExtResource("1_k6fxs")
 
 [node name="Label" type="Label" parent="QuestItem8" unique_id=1886619570]
@@ -173,7 +173,7 @@ scale = Vector2(0.7, 0.7)
 texture = ExtResource("2_0m6oi")
 
 [node name="QuestItem9" type="Area2D" parent="." unique_id=1809527125]
-position = Vector2(474, 376)
+position = Vector2(-2529, 769)
 script = ExtResource("1_k6fxs")
 
 [node name="Label" type="Label" parent="QuestItem9" unique_id=1423130703]
@@ -193,7 +193,7 @@ scale = Vector2(0.7, 0.7)
 texture = ExtResource("2_0m6oi")
 
 [node name="QuestItem10" type="Area2D" parent="." unique_id=446069766]
-position = Vector2(733, 371)
+position = Vector2(-2111, 862)
 script = ExtResource("1_k6fxs")
 
 [node name="Label" type="Label" parent="QuestItem10" unique_id=1131884656]
