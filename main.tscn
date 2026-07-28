@@ -957,12 +957,12 @@ shape = SubResource("CircleShape2D_qsp4k")
 debug_color = Color(0.1767202, 0.64351225, 0, 0.41960785)
 
 [node name="StartSign" type="CharacterBody2D" parent="." unique_id=770033001]
-position = Vector2(-503, 181)
+position = Vector2(-455, 194)
 script = ExtResource("35_sign")
 
 [node name="Sprite2D" type="Sprite2D" parent="StartSign" unique_id=770033006]
 position = Vector2(1.4305115e-06, -8.000002)
-scale = Vector2(1.0999994, 1.0999994)
+scale = Vector2(0.62499994, 0.6250001)
 texture = ExtResource("13_lswn8")
 
 [node name="CollisionShape2D2" type="CollisionShape2D" parent="StartSign" unique_id=2005486001]
@@ -981,7 +981,7 @@ shape = SubResource("CircleShape2D_htxhm")
 debug_color = Color(0.9, 0.8, 0.3, 0.35)
 
 [node name="mainplayer" type="CharacterBody2D" parent="." unique_id=1827658377]
-position = Vector2(-554, 182)
+position = Vector2(-470, 214)
 script = ExtResource("3_82xsv")
 
 [node name="Camera2D" type="Camera2D" parent="mainplayer" unique_id=1520419372]
