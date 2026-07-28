@@ -8,6 +8,10 @@
 [ext_resource type="PackedScene" uid="uid://dg10mi6wvc7bq" path="res://sfx.tscn" id="3_lswn8"]
 [ext_resource type="PackedScene" uid="uid://b5s0bfhkjp1hq" path="res://character.tscn" id="4_vivmo"]
 [ext_resource type="PackedScene" uid="uid://bthp4nwyq6ewh" path="res://quest.tscn" id="5_dg77c"]
+[ext_resource type="Texture2D" uid="uid://wauu2ghex6m5" path="res://Asset/Pixel Crawler - Free Pack/Entities/Mobs/Skeleton Crew/Skeleton - Base/Idle/Idle-Sheet.png" id="7_kq58d"]
+[ext_resource type="Texture2D" uid="uid://ci5pao72qipub" path="res://Asset/Tiny RPG Character Asset Pack 01 v2.0 -Free Soldier&Orc/Characters(100x100 split)/Orc/Orc with shadows/Orc_Idle.png" id="7_xuqvo"]
+[ext_resource type="Texture2D" uid="uid://dbmyqk54db6a8" path="res://Asset/Pixel Crawler - Free Pack/Entities/Mobs/Skeleton Crew/Skeleton - Rogue/Death/Death-Sheet.png" id="8_qsp4k"]
+[ext_resource type="Texture2D" uid="uid://h1gs32lccyru" path="res://Asset/Pixel Crawler - Free Pack/Entities/Mobs/Skeleton Crew/Skeleton - Base/Death/Death-Sheet.png" id="8_seu75"]
 [ext_resource type="Script" uid="uid://ch7qn1m4lhwlc" path="res://ItemsStation.gd" id="9_lswn8"]
 [ext_resource type="Texture2D" uid="uid://c1wrl0sg74qpk" path="res://Asset/Pixel Crawler - Free Pack/Entities/Npc's/Wizzard/Idle/Idle-Sheet.png" id="12_2cqfq"]
 [ext_resource type="Texture2D" uid="uid://coeptqmt044hn" path="res://Asset/sprites/characters/player.png" id="12_cegan"]
@@ -26,6 +30,228 @@
 [ext_resource type="Script" uid="uid://bdwyr087x63tp" path="res://FishingSpot.gd" id="33_fspot"]
 [ext_resource type="Script" uid="uid://c3ky81fomi5c2" path="res://NavigatorNPC.gd" id="34_navig"]
 [ext_resource type="Script" uid="uid://bd1jjl3pnuicv" path="res://Sign.gd" id="35_sign"]
+
+[sub_resource type="AtlasTexture" id="skel_base_idle_atlas_0"]
+atlas = ExtResource("7_kq58d")
+region = Rect2(0, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="skel_base_idle_atlas_1"]
+atlas = ExtResource("7_kq58d")
+region = Rect2(32, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="skel_base_idle_atlas_2"]
+atlas = ExtResource("7_kq58d")
+region = Rect2(64, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="skel_base_idle_atlas_3"]
+atlas = ExtResource("7_kq58d")
+region = Rect2(96, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="skel_base_death_atlas_0"]
+atlas = ExtResource("8_seu75")
+region = Rect2(0, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="skel_base_death_atlas_1"]
+atlas = ExtResource("8_seu75")
+region = Rect2(64, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="skel_base_death_atlas_2"]
+atlas = ExtResource("8_seu75")
+region = Rect2(128, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="skel_base_death_atlas_3"]
+atlas = ExtResource("8_seu75")
+region = Rect2(192, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="skel_base_death_atlas_4"]
+atlas = ExtResource("8_seu75")
+region = Rect2(256, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="skel_base_death_atlas_5"]
+atlas = ExtResource("8_seu75")
+region = Rect2(320, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="skel_base_death_atlas_6"]
+atlas = ExtResource("8_seu75")
+region = Rect2(384, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="skel_base_death_atlas_7"]
+atlas = ExtResource("8_seu75")
+region = Rect2(448, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="skel_base_death_atlas_8"]
+atlas = ExtResource("8_seu75")
+region = Rect2(512, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="skel_base_death_atlas_9"]
+atlas = ExtResource("8_seu75")
+region = Rect2(576, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="skel_base_death_atlas_10"]
+atlas = ExtResource("8_seu75")
+region = Rect2(640, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="skel_base_death_atlas_11"]
+atlas = ExtResource("8_seu75")
+region = Rect2(704, 0, 64, 64)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_htxhm"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("skel_base_idle_atlas_0")
+}, {
+"duration": 1.0,
+"texture": SubResource("skel_base_idle_atlas_1")
+}, {
+"duration": 1.0,
+"texture": SubResource("skel_base_idle_atlas_2")
+}, {
+"duration": 1.0,
+"texture": SubResource("skel_base_idle_atlas_3")
+}],
+"loop": true,
+"name": &"default",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("skel_base_death_atlas_0")
+}, {
+"duration": 1.0,
+"texture": SubResource("skel_base_death_atlas_1")
+}, {
+"duration": 1.0,
+"texture": SubResource("skel_base_death_atlas_2")
+}, {
+"duration": 1.0,
+"texture": SubResource("skel_base_death_atlas_3")
+}, {
+"duration": 1.0,
+"texture": SubResource("skel_base_death_atlas_4")
+}, {
+"duration": 1.0,
+"texture": SubResource("skel_base_death_atlas_5")
+}, {
+"duration": 1.0,
+"texture": SubResource("skel_base_death_atlas_6")
+}, {
+"duration": 1.0,
+"texture": SubResource("skel_base_death_atlas_7")
+}, {
+"duration": 1.0,
+"texture": SubResource("skel_base_death_atlas_8")
+}, {
+"duration": 1.0,
+"texture": SubResource("skel_base_death_atlas_9")
+}, {
+"duration": 1.0,
+"texture": SubResource("skel_base_death_atlas_10")
+}, {
+"duration": 1.0,
+"texture": SubResource("skel_base_death_atlas_11")
+}],
+"loop": true,
+"name": &"die",
+"speed": 5.0
+}]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_gx4rg"]
+atlas = ExtResource("7_xuqvo")
+region = Rect2(0, 0, 100, 100)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_5dllo"]
+atlas = ExtResource("7_xuqvo")
+region = Rect2(100, 0, 100, 100)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_phcyf"]
+atlas = ExtResource("7_xuqvo")
+region = Rect2(200, 0, 100, 100)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_birbe"]
+atlas = ExtResource("7_xuqvo")
+region = Rect2(300, 0, 100, 100)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_f1p13"]
+atlas = ExtResource("7_xuqvo")
+region = Rect2(400, 0, 100, 100)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_4obbf"]
+atlas = ExtResource("7_xuqvo")
+region = Rect2(500, 0, 100, 100)
+
+[sub_resource type="AtlasTexture" id="skel_rogue_death_atlas_0"]
+atlas = ExtResource("8_qsp4k")
+region = Rect2(0, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="skel_rogue_death_atlas_1"]
+atlas = ExtResource("8_qsp4k")
+region = Rect2(64, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="skel_rogue_death_atlas_2"]
+atlas = ExtResource("8_qsp4k")
+region = Rect2(128, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="skel_rogue_death_atlas_3"]
+atlas = ExtResource("8_qsp4k")
+region = Rect2(192, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="skel_rogue_death_atlas_4"]
+atlas = ExtResource("8_qsp4k")
+region = Rect2(256, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="skel_rogue_death_atlas_5"]
+atlas = ExtResource("8_qsp4k")
+region = Rect2(320, 0, 64, 64)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_ovcoh"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_gx4rg")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_5dllo")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_phcyf")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_birbe")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_f1p13")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_4obbf")
+}],
+"loop": true,
+"name": &"default",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("skel_rogue_death_atlas_0")
+}, {
+"duration": 1.0,
+"texture": SubResource("skel_rogue_death_atlas_1")
+}, {
+"duration": 1.0,
+"texture": SubResource("skel_rogue_death_atlas_2")
+}, {
+"duration": 1.0,
+"texture": SubResource("skel_rogue_death_atlas_3")
+}, {
+"duration": 1.0,
+"texture": SubResource("skel_rogue_death_atlas_4")
+}, {
+"duration": 1.0,
+"texture": SubResource("skel_rogue_death_atlas_5")
+}],
+"loop": true,
+"name": &"die",
+"speed": 5.0
+}]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_cegan"]
 size = Vector2(48, 29)
@@ -726,12 +952,17 @@ combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
 
 [node name="AnimatedSprite2D" parent="Character/mob10" index="1" unique_id=2100000024]
+sprite_frames = SubResource("SpriteFrames_htxhm")
 flip_h = false
 
 [node name="mob11" parent="Character" index="17" unique_id=2100000026 node_paths=PackedStringArray("combat_ui", "lose_ui")]
 position = Vector2(-2975, 1096)
 combat_ui = NodePath("../../ui/CombatUI")
 lose_ui = NodePath("../../ui/LoseUI")
+
+[node name="AnimatedSprite2D" parent="Character/mob11" index="1" unique_id=2100000029]
+scale = Vector2(1.0399996, 1.0399996)
+sprite_frames = SubResource("SpriteFrames_ovcoh")
 
 [node name="mob12" parent="Character" index="18" unique_id=2100000031 node_paths=PackedStringArray("combat_ui", "lose_ui")]
 position = Vector2(-3029, 1341)
